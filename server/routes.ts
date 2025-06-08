@@ -1,0 +1,287 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { setupAuth } from "./auth";
+import { storage } from "./storage";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema } from "@shared/schema";
+import { z } from "zod";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+// Middleware to check authentication
+function requireAuth(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+}
+
+// Middleware to check admin role
+function requireAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated() || req.user.perfil !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Sets up /api/register, /api/login, /api/logout, /api/user
+  setupAuth(app);
+
+  // Custom registration endpoint that requires admin
+  app.post("/api/register-user", requireAdmin, async (req, res, next) => {
+    try {
+      const userData = insertUsuarioSchema.parse(req.body);
+      
+      const existingUser = await storage.getUserByUsername(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email já está em uso" });
+      }
+
+      const hashedPassword = await hashPassword(userData.password);
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
+
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  // Companies endpoints
+  app.get("/api/empresas", requireAuth, async (req, res, next) => {
+    try {
+      const empresas = await storage.getAllEmpresas();
+      res.json(empresas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/empresas", requireAdmin, async (req, res, next) => {
+    try {
+      const empresaData = insertEmpresaSchema.parse(req.body);
+      const empresa = await storage.createEmpresa(empresaData);
+      res.status(201).json(empresa);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.get("/api/empresas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const empresa = await storage.getEmpresa(req.params.id);
+      if (!empresa) {
+        return res.status(404).json({ message: "Empresa não encontrada" });
+      }
+      res.json(empresa);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/empresas/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const empresaData = insertEmpresaSchema.partial().parse(req.body);
+      const empresa = await storage.updateEmpresa(req.params.id, empresaData);
+      if (!empresa) {
+        return res.status(404).json({ message: "Empresa não encontrada" });
+      }
+      res.json(empresa);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/empresas/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const deleted = await storage.deleteEmpresa(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Empresa não encontrada" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Departments endpoints
+  app.get("/api/departamentos", requireAuth, async (req, res, next) => {
+    try {
+      const { empresaId } = req.query;
+      const departamentos = empresaId 
+        ? await storage.getDepartamentosByEmpresa(empresaId as string)
+        : await storage.getAllDepartamentos();
+      res.json(departamentos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/departamentos", requireAdmin, async (req, res, next) => {
+    try {
+      const departamentoData = insertDepartamentoSchema.parse(req.body);
+      const departamento = await storage.createDepartamento(departamentoData);
+      res.status(201).json(departamento);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.get("/api/departamentos/:id", requireAuth, async (req, res, next) => {
+    try {
+      const departamento = await storage.getDepartamento(req.params.id);
+      if (!departamento) {
+        return res.status(404).json({ message: "Departamento não encontrado" });
+      }
+      res.json(departamento);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/departamentos/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const departamentoData = insertDepartamentoSchema.partial().parse(req.body);
+      const departamento = await storage.updateDepartamento(req.params.id, departamentoData);
+      if (!departamento) {
+        return res.status(404).json({ message: "Departamento não encontrado" });
+      }
+      res.json(departamento);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/departamentos/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const deleted = await storage.deleteDepartamento(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Departamento não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Users endpoints
+  app.get("/api/usuarios", requireAuth, async (req, res, next) => {
+    try {
+      const { empresaId } = req.query;
+      const usuarios = empresaId 
+        ? await storage.getUsuariosByEmpresa(empresaId as string)
+        : await storage.getAllUsuarios();
+      
+      // Remove passwords from response
+      const usuariosSemSenha = usuarios.map(({ password, ...user }) => user);
+      res.json(usuariosSemSenha);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/usuarios/:id", requireAuth, async (req, res, next) => {
+    try {
+      const usuario = await storage.getUser(req.params.id);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      const { password, ...usuarioSemSenha } = usuario;
+      res.json(usuarioSemSenha);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/usuarios/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const userData = insertUsuarioSchema.partial().parse(req.body);
+      
+      // Hash password if provided
+      if (userData.password) {
+        userData.password = await hashPassword(userData.password);
+      }
+      
+      const usuario = await storage.updateUsuario(req.params.id, userData);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const { password, ...usuarioSemSenha } = usuario;
+      res.json(usuarioSemSenha);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/usuarios/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const deleted = await storage.deleteUsuario(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Stats endpoint
+  app.get("/api/stats", requireAuth, async (req, res, next) => {
+    try {
+      const [empresas, departamentos, usuarios] = await Promise.all([
+        storage.getAllEmpresas(),
+        storage.getAllDepartamentos(),
+        storage.getAllUsuarios(),
+      ]);
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      const usuariosHoje = usuarios.filter(user => 
+        new Date(user.dataCriacao) >= hoje
+      );
+
+      res.json({
+        empresas: empresas.length,
+        departamentos: departamentos.length,
+        usuarios: usuarios.length,
+        usuariosHoje: usuariosHoje.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
