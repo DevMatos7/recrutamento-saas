@@ -44,11 +44,11 @@ export interface IStorage {
   updateUsuario(id: string, usuario: Partial<InsertUsuario>): Promise<Usuario | undefined>;
   deleteUsuario(id: string): Promise<boolean>;
   
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
