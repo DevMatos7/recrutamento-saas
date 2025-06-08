@@ -29,9 +29,9 @@ export default function Dashboard() {
     queryKey: ["/api/departamentos"],
   });
 
-  // Create lookup maps for displaying related data
-  const empresaMap = new Map(empresas.map((e: any) => [e.id, e]));
-  const departamentoMap = new Map(departamentos.map((d: any) => [d.id, d]));
+  // Create lookup objects for displaying related data
+  const empresaMap = Array.isArray(empresas) ? empresas.reduce((acc: any, e: any) => ({ ...acc, [e.id]: e }), {}) : {};
+  const departamentoMap = Array.isArray(departamentos) ? departamentos.reduce((acc: any, d: any) => ({ ...acc, [d.id]: d }), {}) : {};
 
   const handleEditUser = (user: Usuario) => {
     setEditingUser(user);
@@ -90,7 +90,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total de Empresas</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.empresas || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900">{(stats as any)?.empresas || 0}</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                     <Building className="h-6 w-6 text-blue-600" />
@@ -104,7 +104,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Departamentos</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.departamentos || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900">{(stats as any)?.departamentos || 0}</p>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
                     <Map className="h-6 w-6 text-emerald-600" />
@@ -185,8 +185,8 @@ export default function Dashboard() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{empresaMap.get(usuario.empresaId)?.nome || '-'}</TableCell>
-                      <TableCell>{departamentoMap.get(usuario.departamentoId)?.nome || '-'}</TableCell>
+                      <TableCell>{empresaMap[usuario.empresaId]?.nome || '-'}</TableCell>
+                      <TableCell>{departamentoMap[usuario.departamentoId]?.nome || '-'}</TableCell>
                       <TableCell>
                         <Badge className={getProfileColor(usuario.perfil)}>
                           {usuario.perfil}
