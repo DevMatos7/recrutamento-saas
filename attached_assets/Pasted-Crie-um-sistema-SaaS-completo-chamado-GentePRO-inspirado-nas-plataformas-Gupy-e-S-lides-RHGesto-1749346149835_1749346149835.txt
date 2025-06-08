@@ -1,0 +1,74 @@
+Crie um sistema SaaS completo chamado **GentePRO**, inspirado nas plataformas Gupy e Sólides RHGestor, focado em recrutamento e seleção de ponta a ponta.
+
+---
+
+### 🎯 OBJETIVO DESTA PRIMEIRA ENTREGA
+
+Construir a **estrutura base do sistema**, com backend FastAPI e banco PostgreSQL, contendo:
+
+#### 🔐 AUTENTICAÇÃO COMPLETA
+- Cadastro e login de usuários
+- Senha criptografada com bcrypt
+- Geração de token JWT
+- Proteção de rotas autenticadas com JWT
+- Middleware que identifica o usuário logado e aplica as permissões
+
+#### 👥 USUÁRIOS E PERFIS
+- Usuários com os seguintes perfis:
+  - `admin` (acesso total)
+  - `recrutador` (acesso ao módulo de vagas e candidatos da empresa)
+  - `gestor` (acesso limitado a sua equipe/departamento)
+  - `candidato` (usará o portal externo no futuro)
+- Cada usuário está vinculado a uma empresa e pode estar vinculado a um departamento
+
+#### 🏢 EMPRESAS E DEPARTAMENTOS
+- Empresa: nome, CNPJ, data_criacao
+- Departamento: nome, empresa_id
+
+#### 📦 ESTRUTURA DE BANCO DE DADOS (PostgreSQL)
+- Tabelas:
+  - `empresas`
+  - `departamentos`
+  - `usuarios`
+- Usar UUID como chave primária
+- Relacionamentos entre usuário, empresa e departamento
+- Alembic para controle de migrações
+
+#### 📤 SEED INICIAL AUTOMÁTICO
+Ao rodar o projeto pela primeira vez, criar:
+- Empresa: GentePRO
+- Departamento: Administrativo
+- Usuário Master:
+  - nome: "Administrador Master"
+  - email: "admin@gentepro.com"
+  - senha: "123456" (com bcrypt)
+  - perfil: "admin"
+
+---
+
+### 📲 ENDPOINTS A IMPLEMENTAR
+
+- **/auth/register** → Cadastro de novos usuários (restrito a admins)
+- **/auth/login** → Login e geração de JWT
+- **/auth/me** → Retorna dados do usuário logado
+- CRUD completo para:
+  - `/empresas`
+  - `/departamentos`
+  - `/usuarios`
+- Controle de acesso por perfil em todas as rotas
+
+---
+
+### 🧱 STACK
+
+- **Backend:** FastAPI (Python)
+- **Banco de Dados:** PostgreSQL
+- **ORM:** SQLAlchemy
+- **Autenticação:** JWT + bcrypt
+- **Migrações:** Alembic
+- **Organização Modular:** Separar models, schemas, routers, services e core (config e segurança)
+
+---
+
+### 🗂 ESTRUTURA DE PASTAS
+
