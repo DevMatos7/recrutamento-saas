@@ -118,7 +118,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Usuários Ativos</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.usuarios || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900">{(stats as any)?.usuarios || 0}</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <Users className="h-6 w-6 text-purple-600" />
@@ -132,7 +132,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Novos Hoje</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.usuariosHoje || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900">{(stats as any)?.usuariosHoje || 0}</p>
                   </div>
                   <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
                     <UserPlus className="h-6 w-6 text-amber-600" />
@@ -186,7 +186,7 @@ export default function Dashboard() {
                         </div>
                       </TableCell>
                       <TableCell>{empresaMap[usuario.empresaId]?.nome || '-'}</TableCell>
-                      <TableCell>{departamentoMap[usuario.departamentoId]?.nome || '-'}</TableCell>
+                      <TableCell>{departamentoMap[usuario.departamentoId || '']?.nome || '-'}</TableCell>
                       <TableCell>
                         <Badge className={getProfileColor(usuario.perfil)}>
                           {usuario.perfil}
@@ -226,7 +226,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {empresas.slice(0, 3).map((empresa: any) => (
+                  {(empresas as any[]).slice(0, 3).map((empresa: any) => (
                     <div key={empresa.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                       <div>
                         <h4 className="font-medium text-gray-900">{empresa.nome}</h4>
