@@ -10,7 +10,8 @@ import {
   UserCheck,
   Network,
   Settings,
-  LogOut 
+  LogOut,
+  GitBranch
 } from "lucide-react";
 
 export function Sidebar() {
@@ -38,6 +39,12 @@ export function Sidebar() {
       name: "Candidatos",
       href: "/candidatos",
       icon: UserCheck,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Pipeline",
+      href: "/pipeline",
+      icon: GitBranch,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
