@@ -340,9 +340,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/usuarios/:id", requireAdmin, async (req, res, next) => {
     try {
-      // Soft delete - set ativo = 0
-      const usuario = await storage.updateUsuario(req.params.id, { ativo: 0 });
-      if (!usuario) {
+      // Soft delete - set ativo = 0 using direct storage method
+      const deleted = await storage.deleteUsuario(req.params.id);
+      if (!deleted) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       res.status(204).send();
