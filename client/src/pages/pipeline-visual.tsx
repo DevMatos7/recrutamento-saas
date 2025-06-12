@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -26,9 +25,9 @@ import {
   Linkedin,
   FileText,
   ArrowRight,
-  Plus
+  Plus,
+  Eye
 } from "lucide-react";
-// import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 interface PipelineStage {
   id: string;
@@ -57,6 +56,15 @@ interface CandidateWithDetails {
     linkedin: string | null;
     status: string;
   };
+}
+
+interface Pipeline {
+  recebido: CandidateWithDetails[];
+  triagem: CandidateWithDetails[];
+  entrevista: CandidateWithDetails[];
+  avaliacao: CandidateWithDetails[];
+  aprovado: CandidateWithDetails[];
+  reprovado: CandidateWithDetails[];
 }
 
 const pipelineStages: PipelineStage[] = [
@@ -106,10 +114,12 @@ const pipelineStages: PipelineStage[] = [
 
 function CandidateCard({ 
   candidate, 
-  onViewDetails 
+  onViewDetails, 
+  onMoveCandidate 
 }: { 
   candidate: CandidateWithDetails; 
   onViewDetails: (candidate: CandidateWithDetails) => void;
+  onMoveCandidate: (candidate: CandidateWithDetails) => void;
 }) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
@@ -124,7 +134,7 @@ function CandidateCard({
   };
 
   return (
-    <Card className="mb-3 cursor-pointer hover:shadow-md transition-shadow">
+    <Card className="mb-3 hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h4 className="font-medium text-sm truncate">{candidate.candidato.nome}</h4>
@@ -150,25 +160,33 @@ function CandidateCard({
           </div>
         </div>
 
-        <div className="flex justify-between items-center mt-3">
+        <div className="flex justify-between items-center mt-3 gap-2">
           <div className="flex gap-1">
             {candidate.candidato.linkedin && (
-              <LinkedIn className="h-4 w-4 text-blue-600" />
+              <Linkedin className="h-4 w-4 text-blue-600" />
             )}
             {candidate.candidato.curriculoUrl && (
               <FileText className="h-4 w-4 text-gray-600" />
             )}
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewDetails(candidate);
-            }}
-          >
-            Ver detalhes
-          </Button>
+          <div className="flex gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => onViewDetails(candidate)}
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Ver
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onMoveCandidate(candidate)}
+            >
+              <ArrowRight className="h-3 w-3 mr-1" />
+              Mover
+            </Button>
+          </div>
         </div>
 
         {candidate.comentarios && (
@@ -249,7 +267,7 @@ function CandidateDetailsModal({
             {candidate.candidato.linkedin && (
               <Button variant="outline" size="sm" asChild>
                 <a href={candidate.candidato.linkedin} target="_blank" rel="noopener noreferrer">
-                  <LinkedIn className="h-4 w-4 mr-2" />
+                  <Linkedin className="h-4 w-4 mr-2" />
                   LinkedIn
                 </a>
               </Button>
@@ -381,46 +399,28 @@ function PipelineColumn({
       
       <p className="text-sm text-gray-600 mb-4">{stage.description}</p>
 
-      <Droppable droppableId={stage.id}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={`min-h-[400px] ${
-              snapshot.isDraggingOver ? "bg-blue-50 border-2 border-dashed border-blue-300" : ""
-            }`}
-          >
-            {candidates.map((candidate, index) => (
-              <Draggable
-                key={candidate.id}
-                draggableId={candidate.id}
-                index={index}
-              >
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className={snapshot.isDragging ? "opacity-50" : ""}
-                    onClick={() => onMoveCandidate(candidate)}
-                  >
-                    <CandidateCard
-                      candidate={candidate}
-                      onViewDetails={onViewDetails}
-                    />
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
+      <div className="space-y-3">
+        {candidates.map((candidate) => (
+          <CandidateCard
+            key={candidate.id}
+            candidate={candidate}
+            onViewDetails={onViewDetails}
+            onMoveCandidate={onMoveCandidate}
+          />
+        ))}
+        
+        {candidates.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Nenhum candidato nesta etapa</p>
           </div>
         )}
-      </Droppable>
+      </div>
     </div>
   );
 }
 
-export default function PipelineKanbanPage() {
+export default function PipelineVisualPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -437,7 +437,7 @@ export default function PipelineKanbanPage() {
   });
 
   // Fetch pipeline data for selected job
-  const { data: pipeline, isLoading: pipelineLoading } = useQuery({
+  const { data: pipeline, isLoading: pipelineLoading } = useQuery<Pipeline>({
     queryKey: ["/api/vagas", selectedVaga, "pipeline"],
     enabled: !!selectedVaga,
   });
@@ -451,10 +451,17 @@ export default function PipelineKanbanPage() {
       comentarios: string;
       nota?: number;
     }) => {
-      return apiRequest(`/api/vagas/${vagaId}/candidatos/${candidatoId}/mover`, {
+      const response = await fetch(`/api/vagas/${vagaId}/candidatos/${candidatoId}/mover`, {
         method: "PATCH",
-        body: { etapa, comentarios, nota },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ etapa, comentarios, nota }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao mover candidato');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Candidato movido com sucesso!" });
@@ -468,20 +475,6 @@ export default function PipelineKanbanPage() {
       });
     },
   });
-
-  const handleDragEnd = (result: any) => {
-    if (!result.destination || !selectedCandidate) return;
-    
-    const newEtapa = result.destination.droppableId;
-    if (newEtapa === selectedCandidate.etapa) return;
-
-    moveCandidateMutation.mutate({
-      vagaId: selectedCandidate.vagaId,
-      candidatoId: selectedCandidate.candidatoId,
-      etapa: newEtapa,
-      comentarios: `Movido via drag & drop para ${newEtapa}`,
-    });
-  };
 
   const handleViewDetails = (candidate: CandidateWithDetails) => {
     setSelectedCandidate(candidate);
@@ -535,7 +528,7 @@ export default function PipelineKanbanPage() {
                 <SelectValue placeholder="Escolha uma vaga para visualizar o pipeline" />
               </SelectTrigger>
               <SelectContent>
-                {vagas?.map((vaga: any) => (
+                {Array.isArray(vagas) && vagas.map((vaga: any) => (
                   <SelectItem key={vaga.id} value={vaga.id}>
                     {vaga.titulo} - {vaga.status}
                   </SelectItem>
@@ -550,19 +543,17 @@ export default function PipelineKanbanPage() {
               {pipelineLoading ? (
                 <div className="text-center py-8">Carregando pipeline...</div>
               ) : (
-                <DragDropContext onDragEnd={handleDragEnd}>
-                  <div className="flex gap-6 pb-4">
-                    {pipelineStages.map((stage) => (
-                      <PipelineColumn
-                        key={stage.id}
-                        stage={stage}
-                        candidates={pipeline?.[stage.id] || []}
-                        onViewDetails={handleViewDetails}
-                        onMoveCandidate={handleMoveCandidate}
-                      />
-                    ))}
-                  </div>
-                </DragDropContext>
+                <div className="flex gap-6 pb-4">
+                  {pipelineStages.map((stage) => (
+                    <PipelineColumn
+                      key={stage.id}
+                      stage={stage}
+                      candidates={pipeline?.[stage.id as keyof Pipeline] || []}
+                      onViewDetails={handleViewDetails}
+                      onMoveCandidate={handleMoveCandidate}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}
