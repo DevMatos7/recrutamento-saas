@@ -1,0 +1,111 @@
+Implemente o **Módulo de Gestão de Vagas** da plataforma GentePRO, um sistema SaaS multiempresa de recrutamento e seleção. O sistema utiliza backend em FastAPI, banco de dados PostgreSQL, autenticação JWT e perfil de acesso (admin, recrutador, gestor). Este módulo deve permitir criar, editar, listar, visualizar e encerrar vagas de emprego, além de integrá-las ao pipeline de seleção e aos candidatos.
+
+---
+
+### 🎯 OBJETIVO
+
+Gerenciar o ciclo completo de uma vaga de emprego, desde a sua criação até o encerramento. Cada vaga pertence a uma empresa e pode ser associada a um departamento e a um gestor responsável.
+
+---
+
+### 🧱 ESTRUTURA DO BANCO – Modelo `vaga`
+
+Crie o modelo `Vaga` com os seguintes campos:
+
+- `id`: UUID (PK)
+- `titulo`: string
+- `descricao`: text
+- `requisitos`: text (opcional)
+- `local`: string
+- `salario`: decimal (opcional)
+- `beneficios`: text (opcional)
+- `tipo_contratacao`: enum (`CLT`, `PJ`, `Estágio`, `Temporário`, `Freelancer`)
+- `status`: enum (`aberta`, `em_triagem`, `entrevistas`, `encerrada`, `cancelada`)
+- `data_abertura`: datetime
+- `data_fechamento`: datetime (opcional)
+- `empresa_id`: UUID (FK)
+- `departamento_id`: UUID (FK)
+- `gestor_id`: UUID (FK)
+- `data_criacao`: datetime
+- `data_atualizacao`: datetime
+
+---
+
+### 🔐 PERMISSÕES
+
+- `admin`: acesso total ao módulo
+- `recrutador`: CRUD de vagas da própria empresa
+- `gestor`: visualização de vagas do seu departamento
+- Todas as rotas devem ser protegidas com autenticação JWT
+- As ações devem respeitar o vínculo da vaga com a empresa do usuário logado
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `POST /vagas` → criar nova vaga
+- `GET /vagas` → listar vagas com filtros (status, local, departamento)
+- `GET /vagas/{id}` → visualizar detalhes da vaga
+- `PUT /vagas/{id}` → editar vaga
+- `PATCH /vagas/{id}/encerrar` → encerrar vaga
+- `DELETE /vagas/{id}` → excluir vaga (opcional)
+- `GET /vagas/{id}/pipeline` → listar candidatos por etapa (para futura integração)
+
+---
+
+### 📚 FUNCIONALIDADES COMPLEMENTARES
+
+- Filtro avançado por status, departamento, período e tipo de contratação
+- Campos obrigatórios validados no backend e frontend
+- Data de criação e última atualização geradas automaticamente
+- Campos auditáveis: quem criou, quem alterou (futuro)
+- Integração futura com publicação externa e envio por WhatsApp/E-mail
+
+---
+
+### 💻 FRONTEND – SUGESTÕES DE TELAS
+
+#### Tela: Lista de Vagas
+- Colunas: título, status, local, data de abertura, responsável
+- Filtros laterais: status, tipo de contratação, departamento
+- Botões: Nova Vaga, Editar, Encerrar, Ver Pipeline
+
+#### Tela: Cadastro / Edição
+- Seções:
+  - Informações Gerais
+  - Requisitos e Benefícios
+  - Vínculos (empresa, departamento, gestor)
+- Botões: Salvar / Cancelar
+
+#### Tela: Pipeline (Kanban por vaga)
+- Colunas: Recebidos, Triagem, Entrevista, Avaliação, Aprovado, Reprovado
+- Drag & drop dos candidatos entre etapas (futuro)
+
+---
+
+### ⚙️ EXTRAS TÉCNICOS
+
+- Usar UUID como chave primária
+- Separar model, schema, router e service
+- Validação de campos obrigatórios no schema Pydantic
+- Filtros usando query params no `GET /vagas`
+- Controle de acesso centralizado via `Depends(get_current_user)`
+
+---
+
+### 🔄 RELACIONAMENTOS
+
+- `empresa_id`: vincula a vaga a uma empresa
+- `departamento_id`: define o setor da vaga
+- `gestor_id`: usuário responsável pela vaga
+- Futura tabela `vaga_candidato`: ligação com candidatos por etapa
+
+---
+
+### 🧪 VALIDAÇÕES
+
+- Não permitir criar vaga sem título e descrição
+- Ao editar, validar que a vaga ainda não esteja encerrada
+- Só permitir encerrar vagas no status "aberta" ou "em_triagem"
+- Exibir erro amigável caso falte vínculo com empresa
+
