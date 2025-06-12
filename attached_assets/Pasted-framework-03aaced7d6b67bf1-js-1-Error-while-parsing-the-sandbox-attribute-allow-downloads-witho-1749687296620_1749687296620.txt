@@ -1,0 +1,88 @@
+framework-03aaced7d6b67bf1.js:1  Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'battery'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'layout-animations'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'navigation-override'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'oversized-images'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'publickey-credentials'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'speaker-selection'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'unoptimized-images'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'unsized-media'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Unrecognized feature: 'pointer-lock'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-03aaced7d6b67bf1.js:1
+framework-03aaced7d6b67bf1.js:1  Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-03aaced7d6b67bf1.js:1
+workspace_iframe.html:32  Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html:32  Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html:32  Unrecognized feature: 'battery'.
+workspace_iframe.html:32  Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html:32  Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html:32  Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32  Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32  Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32  Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32  Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32  Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html:32  Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32  Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32  Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32  Allow attribute will take precedence over 'allowpaymentrequest'.
+812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/api/user:1 
+            
+            
+            Failed to load resource: the server responded with a status of 401 (Unauthorized)
+2react-dom.development.js:15562  Uncaught Error: Rendered fewer hooks than expected. This may be caused by an accidental early return statement.
+    at renderWithHooks (react-dom.development.js:15562:11)
+    at updateFunctionComponent (react-dom.development.js:19617:20)
+    at beginWork (react-dom.development.js:21640:16)
+    at HTMLUnknownElement.callCallback2 (react-dom.development.js:4164:14)
+    at Object.invokeGuardedCallbackDev (react-dom.development.js:4213:16)
+    at invokeGuardedCallback (react-dom.development.js:4277:31)
+    at beginWork$1 (react-dom.development.js:27490:7)
+    at performUnitOfWork (react-dom.development.js:26596:12)
+    at workLoopSync (react-dom.development.js:26505:5)
+    at renderRootSync (react-dom.development.js:26473:7)
+Console.js:61  The above error occurred in the <AuthPage> component:
+
+    at AuthPage (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/pages/auth-page.tsx:34:53)
+    at Route (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=570f9ab2:323:16)
+    at Switch (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=570f9ab2:379:17)
+    at Router
+    at AuthProvider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=570f9ab2:48:15)
+    at TooltipProvider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=570f9ab2:58:5)
+    at QueryClientProvider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=570f9ab2:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Mt.forEach.n.<computed> @ Console.js:61
+react-dom.development.js:12056  Uncaught Error: Rendered fewer hooks than expected. This may be caused by an accidental early return statement.
+    at renderWithHooks (react-dom.development.js:15562:11)
+    at updateFunctionComponent (react-dom.development.js:19617:20)
+    at beginWork (react-dom.development.js:21640:16)
+    at beginWork$1 (react-dom.development.js:27465:14)
+    at performUnitOfWork (react-dom.development.js:26596:12)
+    at workLoopSync (react-dom.development.js:26505:5)
+    at renderRootSync (react-dom.development.js:26473:7)
+    at recoverFromConcurrentError (react-dom.development.js:25889:20)
+    at performSyncWorkOnRoot (react-dom.development.js:26135:20)
+    at flushSyncCallbacks (react-dom.development.js:12042:22)
