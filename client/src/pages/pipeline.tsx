@@ -157,7 +157,7 @@ export default function PipelinePage() {
 
   // Fetch job details
   const { data: vaga, isLoading } = useQuery({
-    queryKey: ["/api/vagas", id],
+    queryKey: [`/api/vagas/${id}`],
     enabled: !!id,
   });
 
@@ -222,8 +222,8 @@ export default function PipelinePage() {
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{vaga.titulo}</h1>
-          <p className="text-gray-600">{vaga.local} • {vaga.tipoContratacao}</p>
+          <h1 className="text-2xl font-bold">{(vaga as any)?.titulo || 'Carregando...'}</h1>
+          <p className="text-gray-600">{(vaga as any)?.local || ''} • {(vaga as any)?.tipoContratacao || ''}</p>
         </div>
         <Button>
           <Plus className="h-4 w-4 mr-2" />

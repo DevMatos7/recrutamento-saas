@@ -475,10 +475,20 @@ export default function VagasPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          <Link href={`/pipeline/${vaga.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Ver Pipeline"
+                            >
+                              <Users className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditVaga(vaga)}
+                            title="Visualizar"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -488,6 +498,7 @@ export default function VagasPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleEditVaga(vaga)}
+                                title="Editar"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -495,6 +506,7 @@ export default function VagasPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleEncerrarVaga(vaga.id)}
+                                title="Encerrar"
                               >
                                 <Square className="h-4 w-4" />
                               </Button>
@@ -505,6 +517,7 @@ export default function VagasPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteVaga(vaga.id)}
+                              title="Excluir"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
