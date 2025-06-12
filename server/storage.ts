@@ -2,12 +2,15 @@ import {
   empresas, 
   departamentos, 
   usuarios, 
+  vagas,
   type Empresa, 
   type InsertEmpresa,
   type Departamento, 
   type InsertDepartamento,
   type Usuario, 
-  type InsertUsuario 
+  type InsertUsuario,
+  type Vaga,
+  type InsertVaga
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -43,6 +46,15 @@ export interface IStorage {
   getUsuariosByEmpresa(empresaId: string): Promise<Usuario[]>;
   updateUsuario(id: string, usuario: Partial<InsertUsuario>): Promise<Usuario | undefined>;
   deleteUsuario(id: string): Promise<boolean>;
+  
+  // Job methods
+  getAllVagas(): Promise<Vaga[]>;
+  getVagasByEmpresa(empresaId: string): Promise<Vaga[]>;
+  getVagasByDepartamento(departamentoId: string): Promise<Vaga[]>;
+  getVaga(id: string): Promise<Vaga | undefined>;
+  createVaga(vaga: InsertVaga): Promise<Vaga>;
+  updateVaga(id: string, vaga: Partial<InsertVaga>): Promise<Vaga | undefined>;
+  deleteVaga(id: string): Promise<boolean>;
   
   sessionStore: any;
 }
@@ -168,6 +180,43 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUsuario(id: string): Promise<boolean> {
     const result = await db.delete(usuarios).where(eq(usuarios.id, id));
+    return result.rowCount! > 0;
+  }
+
+  // Job methods
+  async getAllVagas(): Promise<Vaga[]> {
+    return await db.select().from(vagas);
+  }
+
+  async getVagasByEmpresa(empresaId: string): Promise<Vaga[]> {
+    return await db.select().from(vagas).where(eq(vagas.empresaId, empresaId));
+  }
+
+  async getVagasByDepartamento(departamentoId: string): Promise<Vaga[]> {
+    return await db.select().from(vagas).where(eq(vagas.departamentoId, departamentoId));
+  }
+
+  async getVaga(id: string): Promise<Vaga | undefined> {
+    const [vaga] = await db.select().from(vagas).where(eq(vagas.id, id));
+    return vaga || undefined;
+  }
+
+  async createVaga(vaga: InsertVaga): Promise<Vaga> {
+    const [created] = await db.insert(vagas).values(vaga).returning();
+    return created;
+  }
+
+  async updateVaga(id: string, vaga: Partial<InsertVaga>): Promise<Vaga | undefined> {
+    const [updated] = await db
+      .update(vagas)
+      .set({ ...vaga, dataAtualizacao: new Date() })
+      .where(eq(vagas.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteVaga(id: string): Promise<boolean> {
+    const result = await db.delete(vagas).where(eq(vagas.id, id));
     return result.rowCount! > 0;
   }
 }
