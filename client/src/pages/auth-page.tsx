@@ -18,18 +18,6 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect if already logged in using useEffect
-  useEffect(() => {
-    if (user) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
-
-  // Show loading while redirecting
-  if (user) {
-    return null;
-  }
-
   const { data: empresas = [] } = useQuery({
     queryKey: ["/api/empresas"],
     enabled: false, // Only admins can register users, so we won't show this during initial load
@@ -59,6 +47,18 @@ export default function AuthPage() {
       departamentoId: "",
     },
   });
+
+  // Redirect if already logged in using useEffect
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+
+  // Show loading while redirecting
+  if (user) {
+    return null;
+  }
 
   const onLogin = (data: LoginData) => {
     loginMutation.mutate(data);
