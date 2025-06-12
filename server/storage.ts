@@ -19,7 +19,7 @@ import {
   type InsertVagaCandidato
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
 
@@ -70,10 +70,14 @@ export interface IStorage {
   deleteCandidato(id: string): Promise<boolean>;
   
   // Vaga-Candidato relationship methods
-  getCandidatosByVaga(vagaId: string): Promise<VagaCandidato[]>;
+  getCandidatosByVaga(vagaId: string): Promise<any[]>;
   getVagasByCanditato(candidatoId: string): Promise<VagaCandidato[]>;
   inscreverCandidatoVaga(data: InsertVagaCandidato): Promise<VagaCandidato>;
-  moverCandidatoEtapa(vagaId: string, candidatoId: string, etapa: string, comentarios?: string): Promise<VagaCandidato | undefined>;
+  moverCandidatoEtapa(vagaId: string, candidatoId: string, etapa: string, comentarios?: string, nota?: number, responsavelId?: string): Promise<VagaCandidato | undefined>;
+  
+  // Pipeline specific methods
+  getPipelineByVaga(vagaId: string): Promise<any>;
+  getCandidatoHistorico(candidatoId: string): Promise<any[]>;
   
   sessionStore: any;
 }
@@ -282,8 +286,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Vaga-Candidato relationship methods
-  async getCandidatosByVaga(vagaId: string): Promise<VagaCandidato[]> {
-    return await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.vagaId, vagaId)).orderBy(desc(vagaCandidatos.dataMovimentacao));
+  async getCandidatosByVaga(vagaId: string): Promise<any[]> {
+    return await db.select({
+      id: vagaCandidatos.id,
+      vagaId: vagaCandidatos.vagaId,
+      candidatoId: vagaCandidatos.candidatoId,
+      etapa: vagaCandidatos.etapa,
+      nota: vagaCandidatos.nota,
+      comentarios: vagaCandidatos.comentarios,
+      dataMovimentacao: vagaCandidatos.dataMovimentacao,
+      dataInscricao: vagaCandidatos.dataInscricao,
+      responsavelId: vagaCandidatos.responsavelId,
+      candidato: {
+        id: candidatos.id,
+        nome: candidatos.nome,
+        email: candidatos.email,
+        telefone: candidatos.telefone,
+        curriculoUrl: candidatos.curriculoUrl,
+        linkedin: candidatos.linkedin,
+        status: candidatos.status,
+      }
+    })
+    .from(vagaCandidatos)
+    .innerJoin(candidatos, eq(vagaCandidatos.candidatoId, candidatos.id))
+    .where(eq(vagaCandidatos.vagaId, vagaId))
+    .orderBy(desc(vagaCandidatos.dataMovimentacao));
   }
 
   async getVagasByCanditato(candidatoId: string): Promise<VagaCandidato[]> {
@@ -291,17 +318,73 @@ export class DatabaseStorage implements IStorage {
   }
 
   async inscreverCandidatoVaga(data: InsertVagaCandidato): Promise<VagaCandidato> {
-    const [inscricao] = await db.insert(vagaCandidatos).values(data).returning();
+    const [inscricao] = await db.insert(vagaCandidatos).values({
+      ...data,
+      dataInscricao: new Date(),
+      dataMovimentacao: new Date(),
+    }).returning();
     return inscricao;
   }
 
-  async moverCandidatoEtapa(vagaId: string, candidatoId: string, etapa: string, comentarios?: string): Promise<VagaCandidato | undefined> {
+  async moverCandidatoEtapa(vagaId: string, candidatoId: string, etapa: string, comentarios?: string, nota?: number, responsavelId?: string): Promise<VagaCandidato | undefined> {
     const [updated] = await db
       .update(vagaCandidatos)
-      .set({ etapa, comentarios, dataMovimentacao: new Date() })
-      .where(eq(vagaCandidatos.vagaId, vagaId))
+      .set({ 
+        etapa, 
+        comentarios, 
+        nota: nota?.toString(),
+        responsavelId,
+        dataMovimentacao: new Date() 
+      })
+      .where(and(
+        eq(vagaCandidatos.vagaId, vagaId),
+        eq(vagaCandidatos.candidatoId, candidatoId)
+      ))
       .returning();
     return updated || undefined;
+  }
+
+  // Pipeline specific methods
+  async getPipelineByVaga(vagaId: string): Promise<any> {
+    const candidatos = await this.getCandidatosByVaga(vagaId);
+    
+    const pipeline = {
+      recebido: candidatos.filter(c => c.etapa === 'recebido'),
+      triagem: candidatos.filter(c => c.etapa === 'triagem'),
+      entrevista: candidatos.filter(c => c.etapa === 'entrevista'),
+      avaliacao: candidatos.filter(c => c.etapa === 'avaliacao'),
+      aprovado: candidatos.filter(c => c.etapa === 'aprovado'),
+      reprovado: candidatos.filter(c => c.etapa === 'reprovado'),
+    };
+    
+    return pipeline;
+  }
+
+  async getCandidatoHistorico(candidatoId: string): Promise<any[]> {
+    return await db.select({
+      id: vagaCandidatos.id,
+      vagaId: vagaCandidatos.vagaId,
+      etapa: vagaCandidatos.etapa,
+      nota: vagaCandidatos.nota,
+      comentarios: vagaCandidatos.comentarios,
+      dataMovimentacao: vagaCandidatos.dataMovimentacao,
+      dataInscricao: vagaCandidatos.dataInscricao,
+      vaga: {
+        id: vagas.id,
+        titulo: vagas.titulo,
+        status: vagas.status,
+      },
+      responsavel: {
+        id: usuarios.id,
+        nome: usuarios.nome,
+        email: usuarios.email,
+      }
+    })
+    .from(vagaCandidatos)
+    .innerJoin(vagas, eq(vagaCandidatos.vagaId, vagas.id))
+    .leftJoin(usuarios, eq(vagaCandidatos.responsavelId, usuarios.id))
+    .where(eq(vagaCandidatos.candidatoId, candidatoId))
+    .orderBy(desc(vagaCandidatos.dataMovimentacao));
   }
 }
 
