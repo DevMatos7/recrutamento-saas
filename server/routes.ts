@@ -558,6 +558,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pipeline management routes
+  app.get("/api/vagas/:vagaId/candidatos", requireAuth, async (req, res, next) => {
+    try {
+      const vagaCandidatos = await storage.getCandidatosByVaga(req.params.vagaId);
+      res.json(vagaCandidatos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/vagas/:vagaId/candidatos/:candidatoId/move", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can move candidates
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { etapa, comentarios } = req.body;
+      const vagaCandidato = await storage.moverCandidatoEtapa(
+        req.params.vagaId,
+        req.params.candidatoId,
+        etapa,
+        comentarios
+      );
+      
+      if (!vagaCandidato) {
+        return res.status(404).json({ message: "Candidato não encontrado na vaga" });
+      }
+      
+      res.json(vagaCandidato);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/vagas/:vagaId/candidatos", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can add candidates to jobs
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const vagaCandidato = await storage.inscreverCandidatoVaga({
+        vagaId: req.params.vagaId,
+        candidatoId: req.body.candidatoId,
+        etapa: req.body.etapa || "recebido",
+        nota: req.body.nota,
+        comentarios: req.body.comentarios,
+      });
+      
+      res.status(201).json(vagaCandidato);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Stats endpoint
   app.get("/api/stats", requireAuth, async (req, res, next) => {
     try {

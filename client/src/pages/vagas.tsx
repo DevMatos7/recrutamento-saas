@@ -65,7 +65,7 @@ function VagaModal({ isOpen, onClose, editingVaga }: { isOpen: boolean; onClose:
       setFormData({
         titulo: editingVaga.titulo,
         descricao: editingVaga.descricao,
-        requisitos: editingVaga.requisitos,
+        requisitos: editingVaga.requisitos ?? "",
         local: editingVaga.local,
         salario: editingVaga.salario || "",
         beneficios: editingVaga.beneficios || "",
