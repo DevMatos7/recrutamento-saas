@@ -7,6 +7,8 @@ import {
   Briefcase, 
   Users, 
   Building2, 
+  UserCheck,
+  Network,
   Settings,
   LogOut 
 } from "lucide-react";
@@ -31,6 +33,18 @@ export function Sidebar() {
       href: "/vagas",
       icon: Briefcase,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Candidatos",
+      href: "/candidatos",
+      icon: UserCheck,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Departamentos",
+      href: "/departamentos",
+      icon: Network,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
     {
       name: "Usuários",

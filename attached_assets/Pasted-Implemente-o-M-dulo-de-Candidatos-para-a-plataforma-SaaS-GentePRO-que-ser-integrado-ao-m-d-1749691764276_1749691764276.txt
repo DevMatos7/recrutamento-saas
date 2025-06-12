@@ -1,0 +1,106 @@
+Implemente o **Módulo de Candidatos** para a plataforma SaaS **GentePRO**, que será integrado ao módulo de vagas. O sistema é multiempresa, utiliza FastAPI no backend, PostgreSQL como banco de dados e autenticação JWT.
+
+---
+
+### 🎯 OBJETIVO DO MÓDULO
+
+Gerenciar os candidatos que se aplicam a vagas. Permitir o cadastro manual de candidatos por recrutadores, ou automaticamente quando o portal externo estiver pronto. Associar cada candidato a uma ou mais vagas e acompanhar seu progresso no pipeline da vaga.
+
+---
+
+### 📦 BACKEND – FASTAPI
+
+#### 📌 Tabela `candidatos`
+
+Crie o modelo `Candidato` com os seguintes campos:
+
+- `id`: UUID (PK)
+- `nome`: string
+- `email`: string
+- `telefone`: string
+- `curriculo_url`: string (opcional, link para PDF)
+- `linkedin`: string (opcional)
+- `status`: enum (`ativo`, `inativo`)
+- `origem`: enum (`manual`, `portal_externo`, `importado`)
+- `empresa_id`: FK (UUID) – vínculo com empresa
+- `data_criacao`: datetime
+- `data_atualizacao`: datetime
+
+#### 📌 Relacionamento com Vaga
+
+Crie uma tabela intermediária `vaga_candidato` (N:N) com os seguintes campos:
+
+- `id`: UUID (PK)
+- `vaga_id`: FK
+- `candidato_id`: FK
+- `etapa`: enum (`recebido`, `em_triagem`, `entrevista_agendada`, `avaliacao`, `aprovado`, `reprovado`)
+- `nota`: decimal (opcional)
+- `comentarios`: texto (opcional)
+- `data_movimentacao`: datetime
+
+#### 🔐 Permissões
+
+- Apenas `admin` e `recrutador` podem cadastrar ou movimentar candidatos.
+- `gestor` pode visualizar candidatos das vagas do seu departamento.
+- `candidato` não interage com esse módulo (futuro portal externo).
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `POST /candidatos` → cadastrar novo candidato
+- `GET /candidatos` → listar candidatos (filtros: nome, vaga, status, origem)
+- `GET /candidatos/{id}` → ver detalhes do candidato
+- `PUT /candidatos/{id}` → atualizar dados
+- `POST /candidatos/{id}/inscrever` → inscrever o candidato em uma vaga
+- `PATCH /vagas/{vaga_id}/candidatos/{candidato_id}/mover` → movimentar candidato no pipeline
+- `GET /vagas/{vaga_id}/candidatos` → listar candidatos de uma vaga por etapa
+
+---
+
+### 🧪 VALIDAÇÕES E REGRAS
+
+- Um mesmo candidato pode ser inscrito em várias vagas
+- Um candidato não pode estar em duas etapas diferentes da mesma vaga
+- Registro automático de movimentação entre etapas no `data_movimentacao`
+- Não permitir candidatos com e-mail duplicado na mesma empresa
+
+---
+
+### 📱 FRONTEND – REACT + TAILWIND
+
+#### Tela: Lista de Candidatos
+- Tabela com colunas: nome, e-mail, status, origem, data de inscrição
+- Filtros por nome, vaga, status, origem
+- Ações: ver detalhes, editar, inscrever em vaga
+
+#### Tela: Perfil do Candidato
+- Dados pessoais
+- Currículo (botão visualizar/baixar)
+- Histórico de participação em vagas
+- Comentários e movimentações no pipeline
+
+#### Tela: Movimentação no Pipeline (Kanban)
+- Exibir candidatos por etapa da vaga (drag & drop)
+- Mover entre etapas e salvar alterações
+- Exibir nota e comentários (futuros)
+
+---
+
+### 💡 OPCIONAIS FUTUROS (JÁ PREPARAR BACKEND)
+
+- Integração com teste DISC
+- Envio de mensagem via WhatsApp ou e-mail após movimentação
+- Portal externo de inscrição
+- Upload de currículo direto no sistema
+
+---
+
+### 📌 CONSIDERAÇÕES FINAIS
+
+- Utilizar UUID como chave primária
+- Proteger rotas com JWT
+- Relacionar corretamente candidatos com empresas e vagas
+- Preparar estrutura para filtros avançados no frontend
+- Comentar o código para facilitar manutenção futura
+
