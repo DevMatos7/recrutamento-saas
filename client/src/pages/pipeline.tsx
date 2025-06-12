@@ -203,7 +203,7 @@ export default function PipelinePage() {
   });
 
   // Fetch pipeline data for selected job
-  const { data: pipeline, isLoading: pipelineLoading } = useQuery({
+  const { data: pipeline, isLoading: pipelineLoading } = useQuery<any>({
     queryKey: ["/api/vagas", selectedVaga, "pipeline"],
     enabled: !!selectedVaga,
   });
@@ -303,7 +303,8 @@ export default function PipelinePage() {
           {selectedVaga && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
               {PIPELINE_STAGES.map((stage) => {
-                const stageCandidates = pipeline?.[stage.id] || [];
+                const stageCandidates = (pipeline && pipeline[stage.id]) ? pipeline[stage.id] : [];
+                console.log(`Stage ${stage.id}:`, stageCandidates);
                 
                 return (
                   <div key={stage.id} className="space-y-4">
@@ -319,7 +320,7 @@ export default function PipelinePage() {
                         <div className="text-center text-gray-500 py-8">
                           Carregando...
                         </div>
-                      ) : stageCandidates.length > 0 ? (
+                      ) : Array.isArray(stageCandidates) && stageCandidates.length > 0 ? (
                         stageCandidates.map((candidate: CandidateWithDetails) => (
                           <CandidateCard
                             key={candidate.id}
