@@ -180,6 +180,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/departamentos/:id", requireAdmin, async (req, res, next) => {
     try {
+      // Check if department has users or jobs associated
+      const departamento = await storage.getDepartamento(req.params.id);
+      if (!departamento) {
+        return res.status(404).json({ message: "Departamento não encontrado" });
+      }
+
+      // Check for users in this department
+      const usuarios = await storage.getUsuariosByEmpresa(departamento.empresaId);
+      const usuariosNoDepartamento = usuarios.filter(u => u.departamentoId === req.params.id);
+      
+      if (usuariosNoDepartamento.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir departamento com usuários vinculados" 
+        });
+      }
+
+      // Check for jobs in this department
+      const vagas = await storage.getVagasByDepartamento(req.params.id);
+      if (vagas.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir departamento com vagas vinculadas" 
+        });
+      }
+
       const deleted = await storage.deleteDepartamento(req.params.id);
       if (!deleted) {
         return res.status(404).json({ message: "Departamento não encontrado" });
