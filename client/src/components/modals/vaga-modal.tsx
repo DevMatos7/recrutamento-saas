@@ -12,6 +12,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertVagaSchema, type InsertVaga, type Vaga } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { z } from "zod";
 
 interface VagaModalProps {
   isOpen: boolean;
