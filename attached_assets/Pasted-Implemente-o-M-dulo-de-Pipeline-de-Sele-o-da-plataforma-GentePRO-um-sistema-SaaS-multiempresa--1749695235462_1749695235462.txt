@@ -1,0 +1,102 @@
+Implemente o **Módulo de Pipeline de Seleção** da plataforma GentePRO, um sistema SaaS multiempresa de recrutamento e seleção. O sistema utiliza FastAPI no backend, PostgreSQL como banco de dados, autenticação JWT com perfis de acesso e frontend em React com Tailwind CSS.
+
+---
+
+### 🎯 OBJETIVO
+
+Gerenciar o fluxo de candidatos dentro das vagas usando um sistema de **pipeline visual (Kanban)** com etapas configuráveis. Este módulo conecta os candidatos às vagas e permite seu acompanhamento em tempo real, com movimentação entre etapas, anotações e histórico de interações.
+
+---
+
+### 🧱 BACKEND – ESTRUTURA DE BANCO
+
+#### 🔸 Tabela `vaga_candidato`
+
+Tabela intermediária (muitos para muitos) entre `vagas` e `candidatos`.
+
+Campos:
+- `id`: UUID (PK)
+- `vaga_id`: FK para `vagas`
+- `candidato_id`: FK para `candidatos`
+- `etapa`: enum (`recebido`, `triagem`, `entrevista`, `avaliacao`, `aprovado`, `reprovado`)
+- `nota`: decimal (opcional)
+- `comentarios`: text (opcional)
+- `data_movimentacao`: datetime (última movimentação)
+- `data_inscricao`: datetime (registro da inscrição)
+
+---
+
+### 🔐 PERMISSÕES
+
+- `admin` e `recrutador`: podem movimentar candidatos
+- `gestor`: pode apenas visualizar o pipeline e deixar comentários
+- Todas as rotas protegidas por JWT e checagem de perfil e empresa
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `GET /vagas/{vaga_id}/pipeline`  
+  → Retorna candidatos agrupados por etapa, ordenados por data de movimentação
+
+- `PATCH /vagas/{vaga_id}/candidatos/{candidato_id}/mover`  
+  → Move candidato de etapa no pipeline (exige motivo opcional e data automática)
+
+- `POST /vagas/{vaga_id}/candidatos`  
+  → Inscreve candidato na vaga (com etapa inicial `recebido`)
+
+- `GET /candidatos/{id}/historico`  
+  → Retorna todas as participações do candidato em vagas e etapas anteriores
+
+---
+
+### 💻 FRONTEND – REACT + TAILWIND
+
+#### Tela: Pipeline Visual (Kanban por Vaga)
+
+- Colunas fixas com etapas:
+  - Recebidos
+  - Em Triagem
+  - Entrevista
+  - Avaliação
+  - Aprovado
+  - Reprovado
+
+- Cada coluna:
+  - Lista de cards com nome do candidato, nota e ações rápidas
+  - Suporte a **drag & drop**
+  - Modal ao soltar para confirmar movimentação e adicionar comentário
+
+#### Tela: Histórico do Candidato
+- Tabela com: Vaga, etapa, data da movimentação, nota, comentário, recrutador
+
+---
+
+### 📚 FUNCIONALIDADES EXTRAS
+
+- Toda movimentação deve ser registrada com data, nova etapa e usuário responsável
+- Campo de observação opcional na movimentação
+- Campo `nota` para avaliação interna
+- Um candidato não pode estar em mais de uma etapa da mesma vaga
+- Um candidato pode estar em várias vagas simultaneamente
+
+---
+
+### ⚙️ CONSIDERAÇÕES TÉCNICAS
+
+- Utilizar UUID como chave primária
+- Criar relacionamento Many-to-Many com atributos
+- Todas as rotas protegidas por `Depends(get_current_user)`
+- Validação para impedir duplicidade de inscrições na mesma vaga
+- Preparar estrutura para integração futura com mensagens automáticas
+
+---
+
+### ✅ RESULTADO ESPERADO
+
+- Candidatos organizados por etapa dentro das vagas
+- Movimentação visual com histórico registrado
+- Integração perfeita entre módulos de vaga e candidato
+- Visual moderno e intuitivo no frontend (estilo Gupy ou Trello)
+- Estrutura pronta para automações e relatórios
+
