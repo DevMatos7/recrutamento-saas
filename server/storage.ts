@@ -82,9 +82,8 @@ export class DatabaseStorage implements IStorage {
   sessionStore: any;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    this.sessionStore = new MemStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
     });
   }
 
