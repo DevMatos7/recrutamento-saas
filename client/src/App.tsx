@@ -5,12 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import Dashboard from "@/pages/dashboard";
-import VagasPage from "@/pages/vagas";
+import VagasPage from "@/pages/vagas-enhanced";
 import CandidatosPage from "@/pages/candidatos";
 import DepartamentosPage from "@/pages/departamentos";
 import EmpresasPage from "@/pages/empresas";
 import UsuariosPage from "@/pages/usuarios";
-import PipelinePage from "@/pages/pipeline";
+import PipelinePage from "@/pages/pipeline-enhanced";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -24,7 +24,7 @@ function Router() {
       <ProtectedRoute path="/departamentos" component={DepartamentosPage} />
       <ProtectedRoute path="/empresas" component={EmpresasPage} />
       <ProtectedRoute path="/usuarios" component={UsuariosPage} />
-      <ProtectedRoute path="/pipeline/:id" component={PipelinePage} />
+      <ProtectedRoute path="/pipeline" component={PipelinePage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

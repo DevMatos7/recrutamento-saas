@@ -348,7 +348,9 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                       <Textarea
                         placeholder="Liste os requisitos técnicos e experiências necessárias..."
                         className="min-h-[100px]"
-                        {...field}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
                       />
                     </FormControl>
                     <FormMessage />
