@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema } from "@shared/schema";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema } from "@shared/schema";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -248,6 +248,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const deleted = await storage.deleteUsuario(req.params.id);
       if (!deleted) {
         return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Job management routes
+  app.get("/api/vagas", requireAuth, async (req, res, next) => {
+    try {
+      const { empresaId, departamentoId, status } = req.query;
+      let vagas;
+      
+      if (empresaId) {
+        vagas = await storage.getVagasByEmpresa(empresaId as string);
+      } else if (departamentoId) {
+        vagas = await storage.getVagasByDepartamento(departamentoId as string);
+      } else {
+        vagas = await storage.getAllVagas();
+      }
+      
+      // Filter by status if provided
+      if (status) {
+        vagas = vagas.filter(vaga => vaga.status === status);
+      }
+      
+      res.json(vagas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/vagas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const vaga = await storage.getVaga(req.params.id);
+      if (!vaga) {
+        return res.status(404).json({ message: "Vaga não encontrada" });
+      }
+      res.json(vaga);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/vagas", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can create jobs
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const vagaData = insertVagaSchema.parse(req.body);
+      const vaga = await storage.createVaga(vagaData);
+      res.status(201).json(vaga);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/vagas/:id", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can edit jobs
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const vagaData = insertVagaSchema.partial().parse(req.body);
+      const vaga = await storage.updateVaga(req.params.id, vagaData);
+      if (!vaga) {
+        return res.status(404).json({ message: "Vaga não encontrada" });
+      }
+      res.json(vaga);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.patch("/api/vagas/:id/encerrar", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can close jobs
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const vaga = await storage.updateVaga(req.params.id, { 
+        status: "encerrada",
+        dataFechamento: new Date()
+      });
+      if (!vaga) {
+        return res.status(404).json({ message: "Vaga não encontrada" });
+      }
+      res.json(vaga);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/vagas/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const deleted = await storage.deleteVaga(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Vaga não encontrada" });
       }
       res.status(204).send();
     } catch (error) {
