@@ -1,284 +1,366 @@
 import React, { useState } from "react";
-import { useParams } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Plus, MoreVertical } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Users, ArrowRight, Mail, Phone, Star, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Sidebar } from "@/components/layout/sidebar";
 
-// Pipeline stages
 const PIPELINE_STAGES = [
-  { id: "recebidos", title: "Recebidos", color: "bg-blue-500" },
-  { id: "em_triagem", title: "Em Triagem", color: "bg-yellow-500" },
-  { id: "entrevista_agendada", title: "Entrevista Agendada", color: "bg-purple-500" },
-  { id: "em_avaliacao", title: "Em Avaliação", color: "bg-orange-500" },
-  { id: "aprovados", title: "Aprovados", color: "bg-green-500" },
-  { id: "reprovados", title: "Reprovados", color: "bg-red-500" },
+  { id: "recebido", title: "Recebidos", color: "bg-blue-500 text-white" },
+  { id: "triagem", title: "Em Triagem", color: "bg-yellow-500 text-white" },
+  { id: "entrevista", title: "Entrevista", color: "bg-purple-500 text-white" },
+  { id: "avaliacao", title: "Avaliação", color: "bg-orange-500 text-white" },
+  { id: "aprovado", title: "Aprovados", color: "bg-green-500 text-white" },
+  { id: "reprovado", title: "Reprovados", color: "bg-red-500 text-white" },
 ];
 
-// Mock candidate data - in a real app this would come from the API
-const mockCandidates = [
-  {
-    id: "1",
-    nome: "Ana Silva",
-    email: "ana.silva@email.com",
-    telefone: "(11) 99999-9999",
-    etapa: "recebidos",
-    dataAplicacao: "2024-01-15",
-    experiencia: "3 anos",
-  },
-  {
-    id: "2",
-    nome: "Carlos Santos",
-    email: "carlos.santos@email.com",
-    telefone: "(11) 88888-8888",
-    etapa: "em_triagem",
-    dataAplicacao: "2024-01-14",
-    experiencia: "5 anos",
-  },
-  {
-    id: "3",
-    nome: "Maria Oliveira",
-    email: "maria.oliveira@email.com",
-    telefone: "(11) 77777-7777",
-    etapa: "entrevista_agendada",
-    dataAplicacao: "2024-01-13",
-    experiencia: "2 anos",
-  },
-];
+interface CandidateWithDetails {
+  id: string;
+  vagaId: string;
+  candidatoId: string;
+  etapa: string;
+  nota: string | null;
+  comentarios: string | null;
+  dataMovimentacao: string;
+  dataInscricao: string;
+  responsavelId: string | null;
+  candidato: {
+    id: string;
+    nome: string;
+    email: string;
+    telefone: string;
+    curriculoUrl: string | null;
+    linkedin: string | null;
+    status: string;
+  };
+}
 
-function CandidateCard({ candidate, onMoveCandidate }: { candidate: any; onMoveCandidate: (candidateId: string, newStage: string) => void }) {
-  const [isMoving, setIsMoving] = useState(false);
-
-  const handleMove = async (newStage: string) => {
-    setIsMoving(true);
-    await onMoveCandidate(candidate.id, newStage);
-    setIsMoving(false);
+function CandidateCard({ 
+  candidate, 
+  onMoveCandidate 
+}: { 
+  candidate: CandidateWithDetails; 
+  onMoveCandidate: (candidate: CandidateWithDetails) => void;
+}) {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
   return (
-    <Card className="mb-3 cursor-pointer hover:shadow-md transition-shadow">
+    <Card className="mb-3 hover:shadow-md transition-shadow">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h4 className="font-medium text-sm">{candidate.nome}</h4>
-            <p className="text-xs text-gray-600 mt-1">{candidate.email}</p>
-            <p className="text-xs text-gray-500">{candidate.telefone}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                {candidate.experiencia}
-              </Badge>
-              <span className="text-xs text-gray-500">{candidate.dataAplicacao}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="text-xs">
-                {candidate.nome.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-              <MoreVertical className="h-3 w-3" />
-            </Button>
-          </div>
+        <div className="flex justify-between items-start mb-2">
+          <h4 className="font-medium text-sm">{candidate.candidato.nome}</h4>
+          {candidate.nota && (
+            <Badge variant="outline">
+              <Star className="h-3 w-3 mr-1" />
+              {candidate.nota}
+            </Badge>
+          )}
         </div>
         
-        {/* Quick action buttons */}
-        <div className="mt-3 flex gap-1">
-          {PIPELINE_STAGES.filter(stage => stage.id !== candidate.etapa).slice(0, 2).map(stage => (
-            <Button
-              key={stage.id}
-              variant="outline"
-              size="sm"
-              className="text-xs h-6"
-              onClick={() => handleMove(stage.id)}
-              disabled={isMoving}
-            >
-              {stage.title}
-            </Button>
-          ))}
+        <div className="space-y-1 text-xs text-gray-600 mb-3">
+          <div className="flex items-center gap-1">
+            <Mail className="h-3 w-3" />
+            <span className="truncate">{candidate.candidato.email}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Phone className="h-3 w-3" />
+            <span>{candidate.candidato.telefone}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span>Atualizado em {formatDate(candidate.dataMovimentacao)}</span>
+          </div>
         </div>
+
+        {candidate.comentarios && (
+          <div className="text-xs bg-gray-50 p-2 rounded mb-3">
+            {candidate.comentarios}
+          </div>
+        )}
+
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="w-full"
+          onClick={() => onMoveCandidate(candidate)}
+        >
+          <ArrowRight className="h-3 w-3 mr-1" />
+          Mover Etapa
+        </Button>
       </CardContent>
     </Card>
   );
 }
 
-function PipelineColumn({ stage, candidates, onMoveCandidate }: { 
-  stage: any; 
-  candidates: any[]; 
-  onMoveCandidate: (candidateId: string, newStage: string) => void;
+function MoveModal({ 
+  candidate, 
+  isOpen, 
+  onClose, 
+  onMove 
+}: { 
+  candidate: CandidateWithDetails | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onMove: (etapa: string, comentarios: string, nota?: number) => void;
 }) {
+  const [etapa, setEtapa] = useState("");
+  const [comentarios, setComentarios] = useState("");
+  const [nota, setNota] = useState("");
+
+  const handleSubmit = () => {
+    if (!etapa) return;
+    onMove(etapa, comentarios, nota ? parseFloat(nota) : undefined);
+    onClose();
+    setEtapa("");
+    setComentarios("");
+    setNota("");
+  };
+
+  if (!candidate) return null;
+
   return (
-    <div className="flex-1 min-w-[280px]">
-      <Card className="h-full">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${stage.color}`}></div>
-              <CardTitle className="text-sm font-medium">{stage.title}</CardTitle>
-            </div>
-            <Badge variant="secondary" className="text-xs">
-              {candidates.length}
-            </Badge>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Mover: {candidate.candidato.nome}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="etapa">Nova Etapa</Label>
+            <Select value={etapa} onValueChange={setEtapa}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a nova etapa" />
+              </SelectTrigger>
+              <SelectContent>
+                {PIPELINE_STAGES.map((stage) => (
+                  <SelectItem key={stage.id} value={stage.id}>
+                    {stage.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-2">
-            {candidates.map(candidate => (
-              <CandidateCard
-                key={candidate.id}
-                candidate={candidate}
-                onMoveCandidate={onMoveCandidate}
-              />
-            ))}
-            
-            {candidates.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <p className="text-sm">Nenhum candidato</p>
-              </div>
-            )}
+
+          <div>
+            <Label htmlFor="nota">Nota (0-10)</Label>
+            <Input
+              id="nota"
+              type="number"
+              min="0"
+              max="10"
+              step="0.1"
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+              placeholder="Nota opcional"
+            />
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          <div>
+            <Label htmlFor="comentarios">Comentários</Label>
+            <Textarea
+              id="comentarios"
+              value={comentarios}
+              onChange={(e) => setComentarios(e.target.value)}
+              placeholder="Observações sobre a movimentação..."
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button onClick={handleSubmit} disabled={!etapa}>Mover</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 export default function PipelinePage() {
-  const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [candidates, setCandidates] = useState(mockCandidates);
+  const queryClient = useQueryClient();
+  
+  const [selectedVaga, setSelectedVaga] = useState<string>("");
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithDetails | null>(null);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
 
-  // Fetch job details
-  const { data: vaga, isLoading } = useQuery({
-    queryKey: [`/api/vagas/${id}`],
-    enabled: !!id,
+  // Fetch available jobs
+  const { data: vagas, isLoading: vagasLoading } = useQuery({
+    queryKey: ["/api/vagas"],
+    enabled: !!user,
   });
 
-  const handleMoveCandidate = async (candidateId: string, newStage: string) => {
-    try {
-      // Update local state immediately for better UX
-      setCandidates(prev => 
-        prev.map(candidate => 
-          candidate.id === candidateId 
-            ? { ...candidate, etapa: newStage }
-            : candidate
-        )
-      );
+  // Fetch pipeline data for selected job
+  const { data: pipeline, isLoading: pipelineLoading } = useQuery({
+    queryKey: ["/api/vagas", selectedVaga, "pipeline"],
+    enabled: !!selectedVaga,
+  });
 
-      // In a real app, this would make an API call to update the candidate
-      // await apiRequest("PUT", `/api/candidatos/${candidateId}`, { etapa: newStage });
+  // Move candidate mutation
+  const moveCandidateMutation = useMutation({
+    mutationFn: async ({ vagaId, candidatoId, etapa, comentarios, nota }: {
+      vagaId: string;
+      candidatoId: string;
+      etapa: string;
+      comentarios: string;
+      nota?: number;
+    }) => {
+      const response = await fetch(`/api/vagas/${vagaId}/candidatos/${candidatoId}/mover`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ etapa, comentarios, nota }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao mover candidato');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Candidato movido com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/vagas", selectedVaga, "pipeline"] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Erro ao mover candidato", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
 
-      toast({
-        title: "Candidato movido",
-        description: "Candidato movido com sucesso para a nova etapa",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao mover candidato",
-        variant: "destructive",
-      });
-    }
+  const handleMoveCandidate = (candidate: CandidateWithDetails) => {
+    setSelectedCandidate(candidate);
+    setMoveModalOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p>Carregando pipeline...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleMove = (etapa: string, comentarios: string, nota?: number) => {
+    if (!selectedCandidate) return;
 
-  if (!vaga) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p>Vaga não encontrada</p>
-          <Link href="/vagas">
-            <Button className="mt-4">Voltar para vagas</Button>
-          </Link>
-        </div>
-      </div>
-    );
+    moveCandidateMutation.mutate({
+      vagaId: selectedCandidate.vagaId,
+      candidatoId: selectedCandidate.candidatoId,
+      etapa,
+      comentarios,
+      nota,
+    });
+  };
+
+  if (!user) {
+    return <div>Carregando...</div>;
   }
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/vagas">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">{(vaga as any)?.titulo || 'Carregando...'}</h1>
-          <p className="text-gray-600">{(vaga as any)?.local || ''} • {(vaga as any)?.tipoContratacao || ''}</p>
+    <div className="flex h-screen">
+      <Sidebar />
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Users className="h-8 w-8" />
+                Pipeline de Candidatos
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Visualize e gerencie candidatos através das etapas do processo seletivo
+              </p>
+            </div>
+          </div>
+
+          {/* Job selector */}
+          <div className="mb-6">
+            <Label htmlFor="vaga-select">Selecionar Vaga</Label>
+            <Select value={selectedVaga} onValueChange={setSelectedVaga}>
+              <SelectTrigger className="w-[400px]">
+                <SelectValue placeholder="Escolha uma vaga para visualizar o pipeline" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.isArray(vagas) && vagas.map((vaga: any) => (
+                  <SelectItem key={vaga.id} value={vaga.id}>
+                    {vaga.titulo} ({vaga.status})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Pipeline */}
+          {selectedVaga && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+              {PIPELINE_STAGES.map((stage) => {
+                const stageCandidates = pipeline?.[stage.id] || [];
+                
+                return (
+                  <div key={stage.id} className="space-y-4">
+                    <div className={`${stage.color} p-3 rounded-lg text-center`}>
+                      <h3 className="font-semibold">{stage.title}</h3>
+                      <Badge variant="secondary" className="mt-1 bg-white/20 text-white">
+                        {stageCandidates.length}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-3 min-h-[400px]">
+                      {pipelineLoading ? (
+                        <div className="text-center text-gray-500 py-8">
+                          Carregando...
+                        </div>
+                      ) : stageCandidates.length > 0 ? (
+                        stageCandidates.map((candidate: CandidateWithDetails) => (
+                          <CandidateCard
+                            key={candidate.id}
+                            candidate={candidate}
+                            onMoveCandidate={handleMoveCandidate}
+                          />
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-500 py-8">
+                          <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Nenhum candidato</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!selectedVaga && (
+            <div className="text-center py-16">
+              <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Selecione uma vaga
+              </h3>
+              <p className="text-gray-600">
+                Escolha uma vaga acima para visualizar o pipeline de candidatos
+              </p>
+            </div>
+          )}
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar Candidato
-        </Button>
       </div>
 
-      {/* Pipeline Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {PIPELINE_STAGES.map(stage => {
-          const stageCandidates = candidates.filter(candidate => candidate.etapa === stage.id);
-          return (
-            <PipelineColumn
-              key={stage.id}
-              stage={stage}
-              candidates={stageCandidates}
-              onMoveCandidate={handleMoveCandidate}
-            />
-          );
-        })}
-      </div>
-
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{candidates.length}</div>
-            <p className="text-sm text-gray-600">Total de Candidatos</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
-              {candidates.filter(c => c.etapa === "aprovados").length}
-            </div>
-            <p className="text-sm text-gray-600">Aprovados</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">
-              {candidates.filter(c => c.etapa === "em_triagem" || c.etapa === "entrevista_agendada").length}
-            </div>
-            <p className="text-sm text-gray-600">Em Processo</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-600">
-              {candidates.filter(c => c.etapa === "reprovados").length}
-            </div>
-            <p className="text-sm text-gray-600">Reprovados</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Move Modal */}
+      <MoveModal
+        candidate={selectedCandidate}
+        isOpen={moveModalOpen}
+        onClose={() => setMoveModalOpen(false)}
+        onMove={handleMove}
+      />
     </div>
   );
 }
