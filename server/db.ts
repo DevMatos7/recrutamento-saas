@@ -8,6 +8,6 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Use the neon client directly for better reliability
+// Use the neon function for serverless compatibility  
 const sql = neon(process.env.DATABASE_URL);
 export const db = drizzle(sql, { schema });
