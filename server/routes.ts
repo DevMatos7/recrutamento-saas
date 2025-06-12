@@ -580,35 +580,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/vagas/:vagaId/candidatos/:candidatoId/mover", requireAuth, async (req, res, next) => {
     try {
-      // Only admin and recrutador can move candidates
-      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
-        return res.status(403).json({ message: "Acesso negado" });
-      }
-
       const { etapa, comentarios, nota } = req.body;
       const currentUser = (req as any).user;
       
-      // Validate etapa
-      const validEtapas = ["recebido", "triagem", "entrevista", "avaliacao", "aprovado", "reprovado"];
-      if (!validEtapas.includes(etapa)) {
-        return res.status(400).json({ message: "Etapa inválida" });
-      }
-
-      const vagaCandidato = await storage.moverCandidatoEtapa(
+      // Import the pipeline service
+      const { PipelineService, PipelineServiceError } = await import('./services/pipeline-service');
+      
+      const resultado = await PipelineService.moverCandidatoPipeline(
         req.params.vagaId,
         req.params.candidatoId,
         etapa,
-        comentarios,
+        currentUser,
         nota,
-        currentUser.id
+        comentarios
       );
       
-      if (!vagaCandidato) {
-        return res.status(404).json({ message: "Candidato não encontrado na vaga" });
-      }
-      
-      res.json(vagaCandidato);
+      res.json({
+        vagaCandidato: resultado.vagaCandidato,
+        historico: resultado.historico,
+        message: `Candidato movido para "${etapa}" com sucesso`
+      });
     } catch (error) {
+      if (error instanceof (await import('./services/pipeline-service')).PipelineServiceError) {
+        const statusMap: Record<string, number> = {
+          'PERMISSION_DENIED': 403,
+          'INVALID_STAGE': 400,
+          'INVALID_NOTE': 400,
+          'CANDIDATE_NOT_ENROLLED': 404,
+          'JOB_NOT_FOUND': 404,
+          'JOB_INACTIVE': 400,
+          'CANDIDATE_NOT_FOUND': 404,
+          'CANDIDATE_INACTIVE': 400,
+          'NO_MOVEMENT_NEEDED': 400,
+          'UPDATE_FAILED': 500
+        };
+        
+        const status = statusMap[error.code] || 400;
+        return res.status(status).json({ 
+          message: error.message,
+          code: error.code 
+        });
+      }
       next(error);
     }
   });
@@ -637,8 +649,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get candidate history across all jobs
   app.get("/api/candidatos/:id/historico", requireAuth, async (req, res, next) => {
     try {
-      const historico = await storage.getCandidatoHistorico(req.params.id);
+      const { PipelineService } = await import('./services/pipeline-service');
+      const historico = await PipelineService.obterHistoricoCompleto(req.params.id);
       res.json(historico);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get pipeline statistics for a job
+  app.get("/api/vagas/:vagaId/estatisticas", requireAuth, async (req, res, next) => {
+    try {
+      const { PipelineService } = await import('./services/pipeline-service');
+      const estatisticas = await PipelineService.obterEstatisticasPipeline(req.params.vagaId);
+      res.json(estatisticas);
     } catch (error) {
       next(error);
     }
