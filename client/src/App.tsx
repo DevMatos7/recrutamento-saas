@@ -11,7 +11,7 @@ import DepartamentosPage from "@/pages/departamentos";
 import EmpresasPage from "@/pages/empresas";
 import UsuariosPage from "@/pages/usuarios";
 import PipelinePage from "@/pages/pipeline-enhanced";
-import PipelineKanbanPage from "@/pages/pipeline-kanban";
+import PipelineVisualPage from "@/pages/pipeline-visual";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -26,7 +26,7 @@ function Router() {
       <ProtectedRoute path="/empresas" component={EmpresasPage} />
       <ProtectedRoute path="/usuarios" component={UsuariosPage} />
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
-      <ProtectedRoute path="/pipeline-kanban" component={PipelineKanbanPage} />
+      <ProtectedRoute path="/pipeline-visual" component={PipelineVisualPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

@@ -48,6 +48,12 @@ export function Sidebar() {
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
+      name: "Pipeline Visual",
+      href: "/pipeline-visual",
+      icon: Network,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
       name: "Departamentos",
       href: "/departamentos",
       icon: Network,
