@@ -28,10 +28,30 @@ export const usuarios = pgTable("usuarios", {
   dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
 });
 
+export const vagas = pgTable("vagas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descricao: text("descricao").notNull(),
+  requisitos: text("requisitos").notNull(),
+  local: varchar("local", { length: 255 }).notNull(),
+  salario: varchar("salario", { length: 100 }), // Optional salary range
+  beneficios: text("beneficios"),
+  tipoContratacao: varchar("tipo_contratacao", { length: 50 }).notNull(), // CLT, PJ, Estágio, Temporário, Freelancer
+  status: varchar("status", { length: 50 }).notNull().default("aberta"), // aberta, em_triagem, entrevistas, encerrada, cancelada
+  dataAbertura: timestamp("data_abertura").defaultNow().notNull(),
+  dataFechamento: timestamp("data_fechamento"),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  departamentoId: uuid("departamento_id").notNull().references(() => departamentos.id),
+  gestorId: uuid("gestor_id").notNull().references(() => usuarios.id),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
 // Relations
 export const empresasRelations = relations(empresas, ({ many }) => ({
   departamentos: many(departamentos),
   usuarios: many(usuarios),
+  vagas: many(vagas),
 }));
 
 export const departamentosRelations = relations(departamentos, ({ one, many }) => ({
@@ -40,9 +60,10 @@ export const departamentosRelations = relations(departamentos, ({ one, many }) =
     references: [empresas.id],
   }),
   usuarios: many(usuarios),
+  vagas: many(vagas),
 }));
 
-export const usuariosRelations = relations(usuarios, ({ one }) => ({
+export const usuariosRelations = relations(usuarios, ({ one, many }) => ({
   empresa: one(empresas, {
     fields: [usuarios.empresaId],
     references: [empresas.id],
@@ -50,6 +71,22 @@ export const usuariosRelations = relations(usuarios, ({ one }) => ({
   departamento: one(departamentos, {
     fields: [usuarios.departamentoId],
     references: [departamentos.id],
+  }),
+  vagasGestor: many(vagas),
+}));
+
+export const vagasRelations = relations(vagas, ({ one }) => ({
+  empresa: one(empresas, {
+    fields: [vagas.empresaId],
+    references: [empresas.id],
+  }),
+  departamento: one(departamentos, {
+    fields: [vagas.departamentoId],
+    references: [departamentos.id],
+  }),
+  gestor: one(usuarios, {
+    fields: [vagas.gestorId],
+    references: [usuarios.id],
   }),
 }));
 
@@ -72,6 +109,15 @@ export const insertUsuarioSchema = createInsertSchema(usuarios).omit({
   perfil: z.enum(["admin", "recrutador", "gestor", "candidato"]),
 });
 
+export const insertVagaSchema = createInsertSchema(vagas).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+}).extend({
+  tipoContratacao: z.enum(["CLT", "PJ", "Estágio", "Temporário", "Freelancer"]),
+  status: z.enum(["aberta", "em_triagem", "entrevistas", "encerrada", "cancelada"]).default("aberta"),
+});
+
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(1, "Senha é obrigatória"),
@@ -84,6 +130,8 @@ export type Departamento = typeof departamentos.$inferSelect;
 export type InsertDepartamento = z.infer<typeof insertDepartamentoSchema>;
 export type Usuario = typeof usuarios.$inferSelect;
 export type InsertUsuario = z.infer<typeof insertUsuarioSchema>;
+export type Vaga = typeof vagas.$inferSelect;
+export type InsertVaga = z.infer<typeof insertVagaSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 
 // Legacy compatibility for auth blueprint

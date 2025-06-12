@@ -1,0 +1,103 @@
+MCP – Módulo 01: Gestão de Vagas – GentePRO
+🎯 Objetivo
+Gerenciar todas as vagas abertas por empresa e departamento, controlando o status, responsáveis, etapas do funil (pipeline) e candidatos relacionados. Permitir que recrutadores publiquem, atualizem e acompanhem as vagas do início ao fim.
+
+👤 Atores e Perfis
+Perfil	Ação
+Admin	CRUD completo de vagas em qualquer empresa
+Recrutador	CRUD de vagas da sua empresa, gerencia pipeline e candidatos
+Gestor	Visualiza vagas do seu departamento, aprova ou move candidatos
+Candidato	Futuramente acessará via portal externo (não incluso nesta etapa)
+
+📚 Casos de Uso
+Caso	Descrição
+CU01	Criar nova vaga vinculada à empresa e departamento
+CU02	Editar os dados de uma vaga aberta
+CU03	Listar todas as vagas abertas (por empresa, perfil ou status)
+CU04	Mudar o status da vaga (ex: de aberta para encerrada)
+CU05	Gerenciar candidatos dentro do pipeline da vaga (em etapas visuais)
+CU06	Visualizar detalhes da vaga, como descrição, benefícios e requisitos
+CU07	Filtrar vagas por status, período, local ou gestor
+
+🔄 Fluxo Resumido do Usuário (Recrutador)
+Acessa o painel da empresa
+
+Clica em "Nova Vaga"
+
+Preenche os campos (descrição, tipo de contratação, gestor, etc.)
+
+Salva a vaga, que entra no status "Aberta"
+
+Acompanha o funil de candidatos (pipeline)
+
+Move candidatos pelas etapas
+
+Encerra a vaga manualmente ou após contratação
+
+🧱 Entidade: vaga
+Campo	Tipo	Descrição
+id	UUID	Identificador único
+titulo	string	Nome da vaga
+descricao	text	Descrição completa
+requisitos	text	Pré-requisitos desejados
+local	string	Local de trabalho
+salario	decimal	Faixa salarial (opcional)
+beneficios	text	Lista de benefícios
+tipo_contratacao	enum	CLT, PJ, estágio, etc.
+status	enum	aberta, em_triagem, entrevistas, encerrada
+data_abertura	datetime	Início da divulgação
+data_fechamento	datetime	(opcional)
+empresa_id	FK (UUID)	Empresa responsável
+departamento_id	FK (UUID)	Departamento solicitante
+gestor_id	FK (UUID)	Usuário responsável pela vaga
+data_criacao	datetime	Criado em
+data_atualizacao	datetime	Última atualização
+
+🔐 Regras e Permissões
+Regra	Aplicação
+Somente admin e recrutador podem criar/editar vagas	API e interface protegida
+Cada vaga está vinculada a uma empresa e departamento	Validação obrigatória
+Apenas vagas abertas aparecem no painel principal	Filtro por status
+Vagas não podem ser excluídas se tiverem candidatos	Restringir via backend
+
+🖥️ Interfaces
+Tela: Lista de Vagas
+Filtros: status, departamento, local
+
+Tabela com colunas: título, status, tipo, data_abertura, responsável
+
+Botões: editar, encerrar, acessar pipeline
+
+Tela: Criar/Editar Vaga
+Formulário completo com validações
+
+Campos organizados por seção: gerais, requisitos, adicionais
+
+Tela: Pipeline da Vaga (Kanban)
+Etapas configuráveis (recebidos, em triagem, entrevistas, etc.)
+
+Cards com informações do candidato
+
+Ações: mover de etapa, visualizar detalhes, reprovar/aprovar
+
+📈 Integrações Futuras
+Botão "Divulgar via WhatsApp"
+
+Botão "Enviar por e-mail"
+
+Exportação da vaga em PDF ou link público
+
+Conexão com LinkedIn e Vagas.com (etapa posterior)
+
+✅ PRONTO PARA O CÓDIGO?
+Com PRD e MCP prontos, o próximo passo agora é gerar o prompt técnico de desenvolvimento do Módulo 01 – Gestão de Vagas, com:
+
+Modelagem do banco
+
+CRUD com filtros
+
+Pipeline (Kanban)
+
+Rotas protegidas com JWT
+
+Telas em React + Tailwind

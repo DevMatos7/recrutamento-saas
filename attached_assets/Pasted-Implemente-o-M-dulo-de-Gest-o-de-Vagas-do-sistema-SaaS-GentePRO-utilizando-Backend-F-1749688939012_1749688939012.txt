@@ -1,0 +1,121 @@
+Implemente o **Módulo de Gestão de Vagas** do sistema SaaS **GentePRO**, utilizando:
+
+- Backend: FastAPI
+- Banco de dados: PostgreSQL
+- ORM: SQLAlchemy
+- Migrações: Alembic
+- Autenticação: JWT
+- Frontend: React + Tailwind CSS
+- Integração via REST API
+
+---
+
+### 📦 1. BACKEND – FASTAPI
+
+#### 🔸 Modelagem da Tabela `vaga`
+
+Crie a modelagem da entidade `vaga` com os seguintes campos:
+
+- id (UUID)
+- titulo (string)
+- descricao (text)
+- requisitos (text)
+- local (string)
+- salario (decimal, opcional)
+- beneficios (text)
+- tipo_contratacao (enum: 'CLT', 'PJ', 'Estágio', 'Temporário', 'Freelancer')
+- status (enum: 'aberta', 'em_triagem', 'entrevistas', 'encerrada', 'cancelada')
+- data_abertura (datetime)
+- data_fechamento (datetime, opcional)
+- empresa_id (UUID, FK para empresa)
+- departamento_id (UUID, FK para departamento)
+- gestor_id (UUID, FK para usuário)
+- data_criacao (datetime)
+- data_atualizacao (datetime)
+
+#### 🔸 Regras de Permissão
+
+- `admin` e `recrutador` podem criar, editar e encerrar vagas
+- `gestor` pode visualizar e comentar em vagas do seu departamento
+- `candidato` não acessa esse módulo (acesso futuro via portal externo)
+- Proteja todas as rotas com JWT e verificação de perfil
+
+#### 🔸 Endpoints a Implementar
+
+- `POST /vagas` → criar vaga
+- `GET /vagas` → listar vagas com filtros por status, local, departamento, data
+- `GET /vagas/{id}` → detalhes da vaga
+- `PUT /vagas/{id}` → editar vaga
+- `DELETE /vagas/{id}` → (opcional, somente se não houver candidatos)
+- `PATCH /vagas/{id}/encerrar` → encerrar vaga
+- `GET /vagas/{id}/pipeline` → retorna candidatos por etapa
+
+#### 🔸 Extras
+
+- Usar schemas com Pydantic para validação
+- Usar `Depends(get_current_user)` para identificar usuário logado
+- Adicionar lógica de `@admin_required`, `@recrutador_required`, etc.
+- Criar `vaga_service.py` para abstrair regras de negócio
+
+---
+
+### 💻 2. FRONTEND – REACT + TAILWIND
+
+#### 🔸 Página: Lista de Vagas
+
+- Tabela com colunas: título, tipo, status, gestor, data_abertura
+- Filtros laterais: status, departamento, local
+- Botão "Nova Vaga"
+- Ação em cada linha: editar | encerrar | acessar pipeline
+
+#### 🔸 Página: Criar/Editar Vaga
+
+- Formulário dividido em seções:
+  - Informações Gerais
+  - Requisitos e Benefícios
+  - Detalhes da Contratação
+- Validação em tempo real
+- Botão “Salvar” e “Cancelar”
+
+#### 🔸 Página: Pipeline da Vaga (Kanban)
+
+- Etapas:
+  - Recebidos
+  - Em Triagem
+  - Entrevista Agendada
+  - Em Avaliação
+  - Aprovados
+  - Reprovados
+- Cards de candidatos com:
+  - Nome, nota (futuro), botão “Ver perfil”
+- Ação de **drag & drop** entre colunas
+- Movimentação envia PATCH para backend
+
+---
+
+### 🎨 Visual e UX
+
+- Sidebar fixa com ícones: Dashboard, Vagas, Candidatos
+- Cabeçalho com nome do usuário e empresa
+- Layout responsivo
+- Estilo moderno, clean, inspirado na Gupy
+
+---
+
+### 🔌 Integração API
+
+- Utilizar axios no frontend para consumir endpoints REST
+- Incluir token JWT no header das requisições
+- Exibir erros e mensagens de sucesso amigáveis
+- Loader em ações assíncronas (ex: salvar, mover candidatos)
+
+---
+
+### ✅ Resultado Esperado
+
+- Vagas cadastradas com sucesso
+- Listagem funcional com filtros
+- Pipeline funcionando com movimentação visual
+- Acesso controlado por perfil e empresa
+- Layout pronto para expansão futura (testes, entrevistas, candidatos)
+
