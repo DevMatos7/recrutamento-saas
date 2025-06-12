@@ -1,0 +1,101 @@
+Implemente o **Módulo de Usuários** da plataforma GentePRO, um sistema SaaS multiempresa voltado para recrutamento e seleção. O backend é desenvolvido em FastAPI com PostgreSQL, utilizando autenticação JWT e controle de acesso por perfil.
+
+---
+
+### 🎯 OBJETIVO
+
+Gerenciar os usuários da plataforma, vinculando cada um a uma empresa e, opcionalmente, a um departamento. Os usuários terão diferentes perfis de acesso: `admin`, `recrutador`, `gestor`, `candidato`. O módulo deve permitir CRUD completo de usuários, login, autenticação segura com senha criptografada, e associação a permissões e empresas.
+
+---
+
+### 🧱 BACKEND – MODELO `Usuario`
+
+Crie o modelo `Usuario` com os seguintes campos:
+
+- `id`: UUID (PK)
+- `nome`: string
+- `email`: string (único por empresa)
+- `senha`: string (criptografada com bcrypt)
+- `perfil`: enum (`admin`, `recrutador`, `gestor`, `candidato`)
+- `empresa_id`: UUID (FK obrigatório)
+- `departamento_id`: UUID (FK opcional)
+- `ativo`: boolean
+- `data_criacao`: datetime
+- `data_atualizacao`: datetime
+
+---
+
+### 🔐 AUTENTICAÇÃO
+
+- Utilizar JWT para login e autenticação
+- Senha armazenada com hash (bcrypt)
+- Endpoints protegidos com `Depends(get_current_user)`
+- Verificação de permissões baseada no campo `perfil`
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `POST /auth/login` → Login de usuário, retorno de token JWT
+- `GET /auth/me` → Dados do usuário autenticado
+- `POST /usuarios` → Criar usuário (restrito ao perfil `admin`)
+- `GET /usuarios` → Listar usuários da empresa
+- `GET /usuarios/{id}` → Visualizar detalhes do usuário
+- `PUT /usuarios/{id}` → Editar usuário
+- `DELETE /usuarios/{id}` → Inativar usuário (soft delete)
+- `PATCH /usuarios/{id}/perfil` → Alterar perfil do usuário
+
+---
+
+### 👤 PERFIS E PERMISSÕES
+
+| Perfil       | Descrição                                               |
+|--------------|----------------------------------------------------------|
+| `admin`      | Acesso completo à empresa, gestão total de usuários      |
+| `recrutador` | Acesso às vagas, candidatos e pipeline                   |
+| `gestor`     | Visualiza e aprova candidatos do seu departamento        |
+| `candidato`  | Usará o portal externo (futuro)                          |
+
+---
+
+### 🧪 REGRAS DE NEGÓCIO
+
+- O e-mail do usuário deve ser único **por empresa**
+- Somente `admin` pode alterar perfil de outro usuário
+- Apenas `admin` pode listar todos os usuários da empresa
+- Um usuário só pode ver/editar seu próprio perfil, exceto se for `admin`
+- Ao excluir um usuário, apenas marcar como `ativo = False`
+
+---
+
+### 💻 FRONTEND – SUGESTÕES DE TELAS
+
+#### Tela: Lista de Usuários
+- Colunas: nome, e-mail, perfil, status, departamento
+- Filtros por perfil, departamento, status
+- Botão: "Novo Usuário"
+- Ações: editar, inativar
+
+#### Tela: Cadastro / Edição de Usuário
+- Campos: nome, e-mail, senha, perfil, departamento
+- Dropdown de perfil e departamento
+- Botões: Salvar, Cancelar
+
+---
+
+### ⚙️ EXTRAS TÉCNICOS
+
+- Usar UUID como chave primária
+- Criptografar senha no cadastro e atualização com `bcrypt`
+- Implementar serviço para login e verificação de hash
+- Implementar refresh de token JWT (opcional)
+
+---
+
+### ✅ RESULTADO ESPERADO
+
+- Usuários criados com perfis distintos
+- Login JWT funcional
+- Controle total de permissões
+- Relacionamento com empresa e departamento
+- Estrutura pronta para uso com frontend e nos demais módulos

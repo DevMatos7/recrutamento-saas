@@ -1,4 +1,4 @@
-import { pgTable, text, serial, uuid, timestamp, varchar, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -24,13 +24,14 @@ export const departamentos = pgTable("departamentos", {
 export const usuarios = pgTable("usuarios", {
   id: uuid("id").primaryKey().defaultRandom(),
   nome: varchar("nome", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull(),
   password: text("password").notNull(),
   perfil: varchar("perfil", { length: 50 }).notNull(), // admin, recrutador, gestor, candidato
   empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
   departamentoId: uuid("departamento_id").references(() => departamentos.id),
   ativo: serial("ativo").notNull(),
   dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow(),
 });
 
 export const vagas = pgTable("vagas", {
@@ -158,10 +159,12 @@ export const insertDepartamentoSchema = createInsertSchema(departamentos).omit({
 export const insertUsuarioSchema = createInsertSchema(usuarios).omit({
   id: true,
   dataCriacao: true,
+  dataAtualizacao: true,
   ativo: true,
 }).extend({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   perfil: z.enum(["admin", "recrutador", "gestor", "candidato"]),
+  email: z.string().email("Email inválido"),
 });
 
 export const insertVagaSchema = createInsertSchema(vagas).omit({
