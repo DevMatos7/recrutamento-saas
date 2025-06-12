@@ -100,7 +100,7 @@ export const usuariosRelations = relations(usuarios, ({ one, many }) => ({
   vagasGestor: many(vagas),
 }));
 
-export const vagasRelations = relations(vagas, ({ one }) => ({
+export const vagasRelations = relations(vagas, ({ one, many }) => ({
   empresa: one(empresas, {
     fields: [vagas.empresaId],
     references: [empresas.id],
@@ -112,6 +112,26 @@ export const vagasRelations = relations(vagas, ({ one }) => ({
   gestor: one(usuarios, {
     fields: [vagas.gestorId],
     references: [usuarios.id],
+  }),
+  vagaCandidatos: many(vagaCandidatos),
+}));
+
+export const candidatosRelations = relations(candidatos, ({ one, many }) => ({
+  empresa: one(empresas, {
+    fields: [candidatos.empresaId],
+    references: [empresas.id],
+  }),
+  vagaCandidatos: many(vagaCandidatos),
+}));
+
+export const vagaCandidatosRelations = relations(vagaCandidatos, ({ one }) => ({
+  vaga: one(vagas, {
+    fields: [vagaCandidatos.vagaId],
+    references: [vagas.id],
+  }),
+  candidato: one(candidatos, {
+    fields: [vagaCandidatos.candidatoId],
+    references: [candidatos.id],
   }),
 }));
 
@@ -157,6 +177,27 @@ export type Usuario = typeof usuarios.$inferSelect;
 export type InsertUsuario = z.infer<typeof insertUsuarioSchema>;
 export type Vaga = typeof vagas.$inferSelect;
 export type InsertVaga = z.infer<typeof insertVagaSchema>;
+
+export const insertCandidatoSchema = createInsertSchema(candidatos).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+}).extend({
+  status: z.enum(["ativo", "inativo"]).default("ativo"),
+  origem: z.enum(["manual", "portal_externo", "importado"]).default("manual"),
+});
+
+export const insertVagaCandidatoSchema = createInsertSchema(vagaCandidatos).omit({
+  id: true,
+  dataMovimentacao: true,
+}).extend({
+  etapa: z.enum(["recebido", "em_triagem", "entrevista_agendada", "avaliacao", "aprovado", "reprovado"]).default("recebido"),
+});
+
+export type Candidato = typeof candidatos.$inferSelect;
+export type InsertCandidato = z.infer<typeof insertCandidatoSchema>;
+export type VagaCandidato = typeof vagaCandidatos.$inferSelect;
+export type InsertVagaCandidato = z.infer<typeof insertVagaCandidatoSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 
 // Legacy compatibility for auth blueprint

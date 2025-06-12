@@ -3,6 +3,8 @@ import {
   departamentos, 
   usuarios, 
   vagas,
+  candidatos,
+  vagaCandidatos,
   type Empresa, 
   type InsertEmpresa,
   type Departamento, 
@@ -10,7 +12,11 @@ import {
   type Usuario, 
   type InsertUsuario,
   type Vaga,
-  type InsertVaga
+  type InsertVaga,
+  type Candidato,
+  type InsertCandidato,
+  type VagaCandidato,
+  type InsertVagaCandidato
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -55,6 +61,20 @@ export interface IStorage {
   createVaga(vaga: InsertVaga): Promise<Vaga>;
   updateVaga(id: string, vaga: Partial<InsertVaga>): Promise<Vaga | undefined>;
   deleteVaga(id: string): Promise<boolean>;
+  
+  // Candidate methods
+  getAllCandidatos(): Promise<Candidato[]>;
+  getCandidatosByEmpresa(empresaId: string): Promise<Candidato[]>;
+  getCandidato(id: string): Promise<Candidato | undefined>;
+  createCandidato(candidato: InsertCandidato): Promise<Candidato>;
+  updateCandidato(id: string, candidato: Partial<InsertCandidato>): Promise<Candidato | undefined>;
+  deleteCandidato(id: string): Promise<boolean>;
+  
+  // Vaga-Candidato relationship methods
+  getCandidatosByVaga(vagaId: string): Promise<VagaCandidato[]>;
+  getVagasByCanditato(candidatoId: string): Promise<VagaCandidato[]>;
+  inscreverCandidatoVaga(data: InsertVagaCandidato): Promise<VagaCandidato>;
+  moverCandidatoEtapa(vagaId: string, candidatoId: string, etapa: string, comentarios?: string): Promise<VagaCandidato | undefined>;
   
   sessionStore: any;
 }
