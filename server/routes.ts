@@ -568,19 +568,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/vagas/:vagaId/candidatos/:candidatoId/move", requireAuth, async (req, res, next) => {
+  // Get pipeline view for a specific job
+  app.get("/api/vagas/:vagaId/pipeline", requireAuth, async (req, res, next) => {
+    try {
+      const pipeline = await storage.getPipelineByVaga(req.params.vagaId);
+      res.json(pipeline);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/vagas/:vagaId/candidatos/:candidatoId/mover", requireAuth, async (req, res, next) => {
     try {
       // Only admin and recrutador can move candidates
       if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
         return res.status(403).json({ message: "Acesso negado" });
       }
 
-      const { etapa, comentarios } = req.body;
+      const { etapa, comentarios, nota } = req.body;
+      const currentUser = (req as any).user;
+      
+      // Validate etapa
+      const validEtapas = ["recebido", "triagem", "entrevista", "avaliacao", "aprovado", "reprovado"];
+      if (!validEtapas.includes(etapa)) {
+        return res.status(400).json({ message: "Etapa inválida" });
+      }
+
       const vagaCandidato = await storage.moverCandidatoEtapa(
         req.params.vagaId,
         req.params.candidatoId,
         etapa,
-        comentarios
+        comentarios,
+        nota,
+        currentUser.id
       );
       
       if (!vagaCandidato) {
@@ -609,6 +629,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.status(201).json(vagaCandidato);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get candidate history across all jobs
+  app.get("/api/candidatos/:id/historico", requireAuth, async (req, res, next) => {
+    try {
+      const historico = await storage.getCandidatoHistorico(req.params.id);
+      res.json(historico);
     } catch (error) {
       next(error);
     }
