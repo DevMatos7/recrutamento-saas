@@ -255,13 +255,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users endpoints
   app.get("/api/usuarios", requireAuth, async (req, res, next) => {
     try {
-      const { empresaId } = req.query;
-      const usuarios = empresaId 
-        ? await storage.getUsuariosByEmpresa(empresaId as string)
-        : await storage.getAllUsuarios();
+      const user = req.user!;
+      let usuarios;
+      
+      // Role-based access: only admin can see all users, others see only their company users
+      if (user.perfil === 'admin') {
+        const { empresaId } = req.query;
+        usuarios = empresaId 
+          ? await storage.getUsuariosByEmpresa(empresaId as string)
+          : await storage.getAllUsuarios();
+      } else {
+        // Non-admin users can only see users from their own company
+        usuarios = await storage.getUsuariosByEmpresa(user.empresaId);
+      }
       
       // Remove passwords from response
-      const usuariosSemSenha = usuarios.map(({ password, ...user }) => user);
+      const usuariosSemSenha = usuarios.map(({ password, ...userItem }) => userItem);
       res.json(usuariosSemSenha);
     } catch (error) {
       next(error);
@@ -270,10 +279,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/usuarios/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user!;
       const usuario = await storage.getUser(req.params.id);
+      
       if (!usuario) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
+      
+      // Permission check: admin can see any user, others only themselves or users from same company
+      if (currentUser.perfil !== 'admin' && 
+          currentUser.id !== req.params.id && 
+          currentUser.empresaId !== usuario.empresaId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
       const { password, ...usuarioSemSenha } = usuario;
       res.json(usuarioSemSenha);
     } catch (error) {
@@ -281,16 +300,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/usuarios/:id", requireAdmin, async (req, res, next) => {
+  app.put("/api/usuarios/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user!;
+      const targetUserId = req.params.id;
+      
+      // Permission check: admin can edit any user, others only themselves
+      if (currentUser.perfil !== 'admin' && currentUser.id !== targetUserId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
       const userData = insertUsuarioSchema.partial().parse(req.body);
+      
+      // Only admin can change perfil and empresaId
+      if (currentUser.perfil !== 'admin') {
+        delete userData.perfil;
+        delete userData.empresaId;
+      }
       
       // Hash password if provided
       if (userData.password) {
         userData.password = await hashPassword(userData.password);
       }
       
-      const usuario = await storage.updateUsuario(req.params.id, userData);
+      const usuario = await storage.updateUsuario(targetUserId, userData);
       if (!usuario) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
@@ -307,11 +340,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/usuarios/:id", requireAdmin, async (req, res, next) => {
     try {
-      const deleted = await storage.deleteUsuario(req.params.id);
-      if (!deleted) {
+      // Soft delete - set ativo = 0
+      const usuario = await storage.updateUsuario(req.params.id, { ativo: 0 });
+      if (!usuario) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Change user role - admin only
+  app.patch("/api/usuarios/:id/perfil", requireAdmin, async (req, res, next) => {
+    try {
+      const { perfil } = req.body;
+      
+      if (!["admin", "recrutador", "gestor", "candidato"].includes(perfil)) {
+        return res.status(400).json({ message: "Perfil inválido" });
+      }
+      
+      const usuario = await storage.updateUsuario(req.params.id, { perfil });
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const { password, ...usuarioSemSenha } = usuario;
+      res.json(usuarioSemSenha);
     } catch (error) {
       next(error);
     }
