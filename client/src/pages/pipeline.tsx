@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Users, ArrowRight, Mail, Phone, Star, Clock } from "lucide-react";
+import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Sidebar } from "@/components/layout/sidebar";
 
@@ -195,10 +195,17 @@ export default function PipelinePage() {
   const [selectedVaga, setSelectedVaga] = useState<string>("");
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithDetails | null>(null);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [addCandidateModalOpen, setAddCandidateModalOpen] = useState(false);
 
   // Fetch available jobs
   const { data: vagas, isLoading: vagasLoading } = useQuery({
     queryKey: ["/api/vagas"],
+    enabled: !!user,
+  });
+
+  // Fetch available candidates
+  const { data: candidatos } = useQuery({
+    queryKey: ["/api/candidatos"],
     enabled: !!user,
   });
 
@@ -239,6 +246,42 @@ export default function PipelinePage() {
         title: "Erro ao mover candidato", 
         description: error.message,
         variant: "destructive" 
+      });
+    },
+  });
+
+  // Add candidate to job mutation
+  const addCandidateMutation = useMutation({
+    mutationFn: async ({ vagaId, candidatoId, comentarios }: {
+      vagaId: string;
+      candidatoId: string;
+      comentarios?: string;
+    }) => {
+      const response = await fetch(`/api/vagas/${vagaId}/candidatos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidatoId, etapa: 'recebido', comentarios }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao adicionar candidato');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/vagas", selectedVaga, "pipeline"] });
+      setAddCandidateModalOpen(false);
+      toast({
+        title: "Candidato adicionado à vaga com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao adicionar candidato",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
