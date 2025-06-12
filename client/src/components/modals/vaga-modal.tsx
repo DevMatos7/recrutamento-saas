@@ -195,7 +195,14 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     <FormItem>
                       <FormLabel>Faixa Salarial (Opcional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: R$ 5.000 - R$ 8.000" {...field} />
+                        <Input 
+                          placeholder="Ex: R$ 5.000 - R$ 8.000" 
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
+                          onChange={field.onChange}
+                          value={field.value ?? ""} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -359,7 +366,11 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                       <Textarea
                         placeholder="Liste os benefícios oferecidos pela empresa..."
                         className="min-h-[100px]"
-                        {...field}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        onChange={field.onChange}
+                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
