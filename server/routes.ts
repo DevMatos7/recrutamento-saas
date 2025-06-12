@@ -114,6 +114,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/empresas/:id", requireAdmin, async (req, res, next) => {
     try {
+      // Check if company has users, departments, or jobs associated
+      const empresa = await storage.getEmpresa(req.params.id);
+      if (!empresa) {
+        return res.status(404).json({ message: "Empresa não encontrada" });
+      }
+
+      // Check for users in this company
+      const usuarios = await storage.getUsuariosByEmpresa(req.params.id);
+      if (usuarios.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir empresa com usuários vinculados" 
+        });
+      }
+
+      // Check for departments in this company
+      const departamentos = await storage.getDepartamentosByEmpresa(req.params.id);
+      if (departamentos.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir empresa com departamentos vinculados" 
+        });
+      }
+
+      // Check for jobs in this company
+      const vagas = await storage.getVagasByEmpresa(req.params.id);
+      if (vagas.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir empresa com vagas vinculadas" 
+        });
+      }
+
+      // Check for candidates in this company
+      const candidatos = await storage.getCandidatosByEmpresa(req.params.id);
+      if (candidatos.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir empresa com candidatos vinculados" 
+        });
+      }
+
       const deleted = await storage.deleteEmpresa(req.params.id);
       if (!deleted) {
         return res.status(404).json({ message: "Empresa não encontrada" });

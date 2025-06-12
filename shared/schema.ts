@@ -6,8 +6,13 @@ import { z } from "zod";
 export const empresas = pgTable("empresas", {
   id: uuid("id").primaryKey().defaultRandom(),
   nome: varchar("nome", { length: 255 }).notNull(),
-  cnpj: varchar("cnpj", { length: 18 }).notNull().unique(),
+  cnpj: varchar("cnpj", { length: 18 }).unique(),
+  email: varchar("email", { length: 255 }),
+  telefone: varchar("telefone", { length: 50 }),
+  site: varchar("site", { length: 500 }),
+  status: varchar("status", { length: 20 }).notNull().default("ativa"), // ativa, inativa
   dataCreacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
 });
 
 export const departamentos = pgTable("departamentos", {
@@ -139,6 +144,11 @@ export const vagaCandidatosRelations = relations(vagaCandidatos, ({ one }) => ({
 export const insertEmpresaSchema = createInsertSchema(empresas).omit({
   id: true,
   dataCreacao: true,
+  dataAtualizacao: true,
+}).extend({
+  status: z.enum(["ativa", "inativa"]).default("ativa"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  site: z.string().url("URL inválida").optional().or(z.literal("")),
 });
 
 export const insertDepartamentoSchema = createInsertSchema(departamentos).omit({
