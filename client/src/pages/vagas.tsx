@@ -8,10 +8,34 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Eye, Square } from "lucide-react";
-import { VagaModal } from "@/components/modals/vaga-modal";
+import { Sidebar } from "@/components/layout/sidebar";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type Vaga } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+
+// Simple Job Modal Component
+function VagaModal({ isOpen, onClose, editingVaga }: { isOpen: boolean; onClose: () => void; editingVaga?: Vaga | null }) {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+        <h2 className="text-lg font-semibold mb-4">
+          {editingVaga ? "Editar Vaga" : "Nova Vaga"}
+        </h2>
+        <p className="text-gray-600 mb-4">
+          Formulário de vaga em desenvolvimento...
+        </p>
+        <button
+          onClick={onClose}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function VagasPage() {
   const { user } = useAuth();
@@ -138,156 +162,166 @@ export default function VagasPage() {
   const canManageVagas = user && ["admin", "recrutador"].includes(user.perfil);
 
   if (isLoading) {
-    return <div className="p-6">Carregando vagas...</div>;
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1 bg-gray-50 p-6">Carregando vagas...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestão de Vagas</h1>
-          <p className="text-gray-600 mt-1">Gerencie todas as vagas da sua empresa</p>
-        </div>
-        {canManageVagas && (
-          <Button onClick={handleNewVaga} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Vaga
-          </Button>
-        )}
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4 items-center">
-            <div className="flex-1">
-              <Input
-                placeholder="Buscar por título ou local..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 bg-gray-50">
+        <div className="space-y-6 p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Gestão de Vagas</h1>
+              <p className="text-gray-600 mt-1">Gerencie todas as vagas da sua empresa</p>
             </div>
-            <div className="w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Status</SelectItem>
-                  <SelectItem value="aberta">Aberta</SelectItem>
-                  <SelectItem value="em_triagem">Em Triagem</SelectItem>
-                  <SelectItem value="entrevistas">Entrevistas</SelectItem>
-                  <SelectItem value="encerrada">Encerrada</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {canManageVagas && (
+              <Button onClick={handleNewVaga} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Nova Vaga
+              </Button>
+            )}
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Vagas Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Vagas ({filteredVagas.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Local</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Gestor</TableHead>
-                <TableHead>Data Abertura</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredVagas.map((vaga: any) => (
-                <TableRow key={vaga.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{vaga.titulo}</div>
-                      <div className="text-sm text-gray-500">
-                        {departamentoMap[vaga.departamentoId]?.nome || '-'}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{vaga.local}</TableCell>
-                  <TableCell>{vaga.tipoContratacao}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(vaga.status)}>
-                      {getStatusLabel(vaga.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {usuarioMap[vaga.gestorId]?.nome || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(vaga.dataAbertura).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditVaga(vaga)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {canManageVagas && vaga.status === "aberta" && (
-                        <>
+          {/* Filters */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Buscar por título ou local..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="w-48">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Status</SelectItem>
+                      <SelectItem value="aberta">Aberta</SelectItem>
+                      <SelectItem value="em_triagem">Em Triagem</SelectItem>
+                      <SelectItem value="entrevistas">Entrevistas</SelectItem>
+                      <SelectItem value="encerrada">Encerrada</SelectItem>
+                      <SelectItem value="cancelada">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Vagas Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Lista de Vagas ({filteredVagas.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Local</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Gestor</TableHead>
+                    <TableHead>Data Abertura</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredVagas.map((vaga: any) => (
+                    <TableRow key={vaga.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{vaga.titulo}</div>
+                          <div className="text-sm text-gray-500">
+                            {departamentoMap[vaga.departamentoId]?.nome || '-'}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{vaga.local}</TableCell>
+                      <TableCell>{vaga.tipoContratacao}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(vaga.status)}>
+                          {getStatusLabel(vaga.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {usuarioMap[vaga.gestorId]?.nome || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(vaga.dataAbertura).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditVaga(vaga)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEncerrarVaga(vaga.id)}
-                          >
-                            <Square className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                      {user?.perfil === "admin" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteVaga(vaga.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredVagas.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                    Nenhuma vaga encontrada
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                          {canManageVagas && vaga.status === "aberta" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditVaga(vaga)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEncerrarVaga(vaga.id)}
+                              >
+                                <Square className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          {user?.perfil === "admin" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteVaga(vaga.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredVagas.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        Nenhuma vaga encontrada
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-      <VagaModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingVaga(null);
-        }}
-        editingVaga={editingVaga}
-      />
+          <VagaModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingVaga(null);
+            }}
+            editingVaga={editingVaga}
+          />
+        </div>
+      </div>
     </div>
   );
 }
