@@ -1,0 +1,132 @@
+📄 PRD – Módulo 01: Gestão de Vagas – GentePRO
+🧭 Visão Geral
+O módulo de Gestão de Vagas é o núcleo do sistema GentePRO. Ele permite o gerenciamento completo do ciclo de vida de uma vaga de emprego, desde a sua abertura até o encerramento após a admissão do candidato selecionado. O módulo é inspirado em plataformas como Gupy e Solides, oferecendo recursos avançados, como pipeline Kanban, triagem automatizada, testes, entrevistas e integrações com WhatsApp e e-mail.
+
+🎯 Objetivos do Módulo
+Permitir o cadastro, edição e exclusão de vagas por empresa e departamento.
+
+Permitir a publicação e divulgação de vagas externas (futuro).
+
+Organizar candidatos por etapa do funil (Kanban).
+
+Automatizar ações com candidatos (e-mail, WhatsApp).
+
+Conectar as vagas ao processo de triagem, entrevistas e admissão digital.
+
+Oferecer visualizações analíticas sobre o processo seletivo.
+
+Garantir controle de acesso por perfil (admin, recrutador, gestor).
+
+👤 Usuários Envolvidos
+Administrador: Pode criar, visualizar, editar e excluir vagas de qualquer empresa.
+
+Recrutador: Pode gerenciar vagas da própria empresa, editar etapas do processo, movimentar candidatos e realizar comunicações.
+
+Gestor: Pode visualizar as vagas do seu departamento e aprovar/acompanhar candidatos.
+
+Candidato: Acessa as vagas publicadas (no portal externo) e se candidata (módulo externo – futuro).
+
+🧱 Funcionalidades do Módulo
+📌 Cadastro de Vagas
+Campos:
+
+título da vaga
+
+descrição da vaga
+
+requisitos
+
+local de trabalho
+
+salário (opcional)
+
+benefícios
+
+tipo de contratação (CLT, PJ, estágio etc.)
+
+status da vaga (aberta, em_triagem, em_entrevistas, encerrada, cancelada)
+
+data de abertura e encerramento
+
+empresa_id
+
+departamento_id
+
+gestor responsável
+
+🛠 Gestão do Pipeline
+Etapas visuais no estilo Kanban:
+
+Recebidos
+
+Em Triagem
+
+Entrevista Agendada
+
+Em Avaliação
+
+Aprovados
+
+Reprovados
+
+Movimentação de candidatos por drag & drop
+
+Registro automático da movimentação no histórico do candidato
+
+📤 Divulgação da Vaga
+Compartilhamento por link
+
+Botão "Enviar pelo WhatsApp" (API)
+
+Disparo de e-mail com link da vaga
+
+🧪 Triagem Automatizada (Futuro)
+Aplicação de testes DISC e técnicos
+
+Priorização automática por critérios pré-definidos
+
+📅 Entrevistas
+Agendamento com data, horário, entrevistador
+
+Notificação automática ao candidato
+
+📊 Dashboards e Indicadores
+Tempo médio de fechamento de vagas
+
+Etapas com maior evasão
+
+Vagas abertas por empresa/departamento
+
+🧩 Integrações Futuras (já previstas na arquitetura)
+WhatsApp Business API (envio de mensagens automáticas)
+
+SMTP para envio de e-mails automatizados
+
+Portal externo de vagas para candidatos
+
+Aplicação de testes técnicos e DISC
+
+⚠️ Regras de Negócio
+Apenas usuários com perfil admin ou recrutador podem cadastrar e editar vagas.
+
+Vagas são sempre vinculadas a uma empresa e, preferencialmente, a um departamento.
+
+Uma vaga pode ser encerrada manualmente ou após admissão.
+
+É necessário ao menos um responsável (gestor ou recrutador) por vaga.
+
+📂 Entregáveis Técnicos
+Estrutura de banco de dados com entidade vaga
+
+CRUD com filtros (status, local, departamento, período)
+
+Pipeline Kanban funcional
+
+Tela de listagem com busca e filtros
+
+Tela de criação/edição de vaga com validações
+
+Controle de permissões por perfil
+
+Visual responsivo com layout moderno (inspirado na Gupy)
+
