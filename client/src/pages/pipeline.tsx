@@ -204,7 +204,7 @@ export default function PipelinePage() {
   });
 
   // Fetch available candidates
-  const { data: candidatos } = useQuery({
+  const { data: candidatos } = useQuery<any[]>({
     queryKey: ["/api/candidatos"],
     enabled: !!user,
   });
@@ -328,18 +328,30 @@ export default function PipelinePage() {
           {/* Job selector */}
           <div className="mb-6">
             <Label htmlFor="vaga-select">Selecionar Vaga</Label>
-            <Select value={selectedVaga} onValueChange={setSelectedVaga}>
-              <SelectTrigger className="w-[400px]">
-                <SelectValue placeholder="Escolha uma vaga para visualizar o pipeline" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.isArray(vagas) && vagas.map((vaga: any) => (
-                  <SelectItem key={vaga.id} value={vaga.id}>
-                    {vaga.titulo} ({vaga.status})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-4 items-end">
+              <Select value={selectedVaga} onValueChange={setSelectedVaga}>
+                <SelectTrigger className="w-[400px]">
+                  <SelectValue placeholder="Escolha uma vaga para visualizar o pipeline" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(vagas) && vagas.map((vaga: any) => (
+                    <SelectItem key={vaga.id} value={vaga.id}>
+                      {vaga.titulo} ({vaga.status})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {selectedVaga && (
+                <Button 
+                  onClick={() => setAddCandidateModalOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar Candidato
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Pipeline */}
@@ -347,7 +359,6 @@ export default function PipelinePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
               {PIPELINE_STAGES.map((stage) => {
                 const stageCandidates = (pipeline && pipeline[stage.id]) ? pipeline[stage.id] : [];
-                console.log(`Stage ${stage.id}:`, stageCandidates);
                 
                 return (
                   <div key={stage.id} className="space-y-4">
@@ -405,6 +416,74 @@ export default function PipelinePage() {
         onClose={() => setMoveModalOpen(false)}
         onMove={handleMove}
       />
+
+      {/* Add Candidate Modal */}
+      <Dialog open={addCandidateModalOpen} onOpenChange={setAddCandidateModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Adicionar Candidato à Vaga</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            const candidatoId = formData.get('candidatoId') as string;
+            const comentarios = formData.get('comentarios') as string;
+            
+            if (candidatoId && selectedVaga) {
+              addCandidateMutation.mutate({
+                vagaId: selectedVaga,
+                candidatoId,
+                comentarios: comentarios || undefined,
+              });
+            }
+          }} className="space-y-4">
+            <div>
+              <Label htmlFor="candidato">Candidato</Label>
+              <Select name="candidatoId" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um candidato..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(candidatos) && candidatos.filter((candidato: any) => {
+                    // Filter out candidates already in this job
+                    const existingIds = Object.values(pipeline || {}).flat().map((c: any) => c.candidato?.id);
+                    return !existingIds.includes(candidato.id);
+                  }).map((candidato: any) => (
+                    <SelectItem key={candidato.id} value={candidato.id}>
+                      {candidato.nome} - {candidato.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="comentarios">Comentários (opcional)</Label>
+              <Textarea
+                name="comentarios"
+                placeholder="Adicione observações sobre a candidatura..."
+                className="resize-none"
+              />
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAddCandidateModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={addCandidateMutation.isPending}
+              >
+                {addCandidateMutation.isPending ? "Adicionando..." : "Adicionar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
