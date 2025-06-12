@@ -1,0 +1,85 @@
+Implemente o **Módulo de Empresas** do sistema GentePRO, um sistema SaaS multiempresa de recrutamento e seleção. O backend é feito em FastAPI com banco PostgreSQL e autenticação via JWT.
+
+---
+
+### 🎯 OBJETIVO
+
+Permitir o cadastro, edição e exclusão de empresas dentro da plataforma. Cada empresa poderá ter seus próprios departamentos, usuários, vagas, candidatos e processos seletivos independentes. Este é o ponto de entrada do sistema.
+
+---
+
+### 🧱 BACKEND – FASTAPI + SQLALCHEMY
+
+#### 🔸 Tabela `empresas`
+
+Crie o modelo `Empresa` com os seguintes campos:
+
+- `id`: UUID (PK)
+- `nome`: string (obrigatório)
+- `cnpj`: string (opcional, com validação de formato)
+- `email`: string (opcional)
+- `telefone`: string (opcional)
+- `site`: string (opcional)
+- `status`: enum (`ativa`, `inativa`)
+- `data_criacao`: datetime
+- `data_atualizacao`: datetime
+
+---
+
+### 🔐 PERMISSÕES E SEGURANÇA
+
+- Somente usuários com perfil `admin` podem criar, editar ou excluir empresas
+- Todos os usuários devem estar vinculados a uma única empresa
+- As demais entidades (vagas, candidatos, etc.) sempre devem respeitar esse vínculo
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `POST /empresas` → criar nova empresa
+- `GET /empresas` → listar empresas (admin geral)
+- `GET /empresas/{id}` → detalhes de uma empresa
+- `PUT /empresas/{id}` → editar dados da empresa
+- `DELETE /empresas/{id}` → excluir (apenas se não houver usuários, vagas ou departamentos vinculados)
+
+---
+
+### 🧪 VALIDAÇÕES E REGRAS DE NEGÓCIO
+
+- Não permitir empresas com o mesmo CNPJ
+- Empresa só pode ser excluída se estiver inativa e sem dados vinculados
+- Admins de empresa só podem editar a própria empresa
+- Validar campos opcionais com formatação correta (CNPJ, e-mail, site)
+
+---
+
+### 💻 FRONTEND – SUGESTÃO DE TELAS
+
+#### Tela: Lista de Empresas (para superadmin)
+- Campos: nome, CNPJ, status
+- Filtros: nome, status
+- Ações: editar, excluir, ativar/desativar
+
+#### Tela: Cadastro/Edição de Empresa
+- Campos: nome, CNPJ, e-mail, telefone, site
+- Botões: Salvar, Cancelar
+- Validações client-side
+
+---
+
+### ⚙️ EXTRAS TÉCNICOS
+
+- Usar UUID como chave primária
+- Separar model, schema, router e service no backend
+- Código modular, organizado, com tratamento de erros
+- JWT obrigatório em todas as rotas, com checagem de perfil `admin`
+- `data_criacao` e `data_atualizacao` automáticos
+
+---
+
+### ✅ PRONTO PARA INTEGRAR
+
+- Este módulo servirá de base para:
+  - Vinculação de usuários à empresa
+  - Cadastro de departamentos, vagas e candidatos
+  - Separação de dados entre empresas (multi-tenant)
