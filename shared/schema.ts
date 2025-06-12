@@ -71,11 +71,15 @@ export const vagaCandidatos = pgTable("vaga_candidatos", {
   id: uuid("id").primaryKey().defaultRandom(),
   vagaId: uuid("vaga_id").notNull().references(() => vagas.id),
   candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
-  etapa: varchar("etapa", { length: 50 }).notNull().default("recebido"), // recebido, em_triagem, entrevista_agendada, avaliacao, aprovado, reprovado
-  nota: text("nota"),
+  etapa: varchar("etapa", { length: 50 }).notNull().default("recebido"), // recebido, triagem, entrevista, avaliacao, aprovado, reprovado
+  nota: decimal("nota", { precision: 3, scale: 1 }), // 0.0 a 10.0
   comentarios: text("comentarios"),
   dataMovimentacao: timestamp("data_movimentacao").defaultNow().notNull(),
-});
+  dataInscricao: timestamp("data_inscricao").defaultNow().notNull(),
+  responsavelId: uuid("responsavel_id").references(() => usuarios.id),
+}, (table) => ({
+  uniqueVagaCandidato: uniqueIndex("unique_vaga_candidato").on(table.vagaId, table.candidatoId),
+}));
 
 // Relations
 export const empresasRelations = relations(empresas, ({ many }) => ({
@@ -138,6 +142,10 @@ export const vagaCandidatosRelations = relations(vagaCandidatos, ({ one }) => ({
   candidato: one(candidatos, {
     fields: [vagaCandidatos.candidatoId],
     references: [candidatos.id],
+  }),
+  responsavel: one(usuarios, {
+    fields: [vagaCandidatos.responsavelId],
+    references: [usuarios.id],
   }),
 }));
 
