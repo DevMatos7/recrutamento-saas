@@ -1,0 +1,74 @@
+Implemente o **Módulo de Departamentos** da plataforma GentePRO, um sistema SaaS multiempresa voltado para recrutamento e seleção. O sistema utiliza FastAPI como backend, PostgreSQL como banco de dados e autenticação JWT com perfis.
+
+---
+
+### 🎯 OBJETIVO
+
+Gerenciar os departamentos de cada empresa cadastrada, permitindo que administradores criem, editem, consultem e excluam departamentos, e que usuários do perfil `gestor` estejam vinculados a eles.
+
+---
+
+### 📦 BACKEND – FASTAPI
+
+#### 🔸 Tabela `departamentos`
+
+Crie o modelo `Departamento` com os seguintes campos:
+
+- `id`: UUID (PK)
+- `nome`: string (obrigatório)
+- `empresa_id`: UUID (FK para tabela `empresas`)
+- `data_criacao`: datetime
+- `data_atualizacao`: datetime
+
+Relacionamento: um departamento pertence a uma única empresa, mas uma empresa pode ter vários departamentos.
+
+---
+
+### 🧩 Permissões
+
+- Apenas usuários com perfil `admin` podem criar, editar ou excluir departamentos
+- `recrutador` e `gestor` podem visualizar apenas os departamentos da sua empresa
+- Todas as rotas devem ser protegidas com autenticação JWT
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `POST /departamentos` → criar novo departamento
+- `GET /departamentos` → listar todos os departamentos da empresa do usuário logado
+- `GET /departamentos/{id}` → visualizar um departamento específico
+- `PUT /departamentos/{id}` → editar nome do departamento
+- `DELETE /departamentos/{id}` → excluir (somente se não houver vínculo com usuários ou vagas)
+
+---
+
+### 🧪 VALIDAÇÕES
+
+- Não permitir nomes duplicados dentro da mesma empresa
+- Validar se o `empresa_id` corresponde à empresa do usuário logado (exceto se for admin geral)
+- Ao excluir, validar se não existem vagas ou usuários vinculados
+
+---
+
+### 💻 FRONTEND (se for implementado nesta etapa)
+
+#### Tela: Lista de Departamentos
+- Tabela com nome do departamento, empresa (se admin geral)
+- Botão "Novo Departamento"
+- Ações por linha: editar, excluir
+
+#### Tela: Cadastro/Edição
+- Campo: Nome do departamento
+- Dropdown de empresa (somente para admin)
+- Botões: Salvar / Cancelar
+
+---
+
+### 📌 CONSIDERAÇÕES FINAIS
+
+- Usar UUID como chave primária
+- Incluir campos `data_criacao` e `data_atualizacao`
+- Separar model, schema, router e service
+- Código comentado, modular e alinhado com padrões REST
+- Proteção de todas as rotas com JWT e verificação de perfil
+
