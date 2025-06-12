@@ -38,7 +38,7 @@ export const vagas = pgTable("vagas", {
   id: uuid("id").primaryKey().defaultRandom(),
   titulo: varchar("titulo", { length: 255 }).notNull(),
   descricao: text("descricao").notNull(),
-  requisitos: text("requisitos").notNull(),
+  requisitos: text("requisitos"),
   local: varchar("local", { length: 255 }).notNull(),
   salario: varchar("salario", { length: 100 }), // Optional salary range
   beneficios: text("beneficios"),
