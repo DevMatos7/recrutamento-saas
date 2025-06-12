@@ -199,8 +199,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUsuario(id: string): Promise<boolean> {
-    const result = await db.delete(usuarios).where(eq(usuarios.id, id));
-    return result.rowCount! > 0;
+    // Soft delete - set ativo = 0
+    const [updated] = await db
+      .update(usuarios)
+      .set({ ativo: 0 })
+      .where(eq(usuarios.id, id))
+      .returning();
+    return !!updated;
   }
 
   // Job methods
