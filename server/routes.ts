@@ -363,6 +363,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Candidates management routes
+  app.get("/api/candidatos", requireAuth, async (req, res, next) => {
+    try {
+      const { empresaId } = req.query;
+      let candidatos;
+      
+      if (empresaId) {
+        candidatos = await storage.getCandidatosByEmpresa(empresaId as string);
+      } else {
+        candidatos = await storage.getAllCandidatos();
+      }
+      
+      res.json(candidatos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/candidatos/:id", requireAuth, async (req, res, next) => {
+    try {
+      const candidato = await storage.getCandidato(req.params.id);
+      if (!candidato) {
+        return res.status(404).json({ message: "Candidato não encontrado" });
+      }
+      res.json(candidato);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/candidatos", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can create candidates
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const candidato = await storage.createCandidato(req.body);
+      res.status(201).json(candidato);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/candidatos/:id", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can update candidates
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const candidato = await storage.updateCandidato(req.params.id, req.body);
+      if (!candidato) {
+        return res.status(404).json({ message: "Candidato não encontrado" });
+      }
+      res.json(candidato);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/candidatos/:id", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin can delete candidates
+      if ((req as any).user.perfil !== "admin") {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const deleted = await storage.deleteCandidato(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Candidato não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Stats endpoint
   app.get("/api/stats", requireAuth, async (req, res, next) => {
     try {

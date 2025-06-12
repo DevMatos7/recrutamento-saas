@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import Dashboard from "@/pages/dashboard";
 import VagasPage from "@/pages/vagas";
+import CandidatosPage from "@/pages/candidatos";
 import PipelinePage from "@/pages/pipeline";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
@@ -16,6 +17,7 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/vagas" component={VagasPage} />
+      <ProtectedRoute path="/candidatos" component={CandidatosPage} />
       <ProtectedRoute path="/pipeline/:id" component={PipelinePage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />

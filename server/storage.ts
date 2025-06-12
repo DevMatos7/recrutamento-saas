@@ -239,6 +239,67 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(vagas).where(eq(vagas.id, id));
     return result.rowCount! > 0;
   }
+
+  // Candidate methods
+  async getAllCandidatos(): Promise<Candidato[]> {
+    return await db.select().from(candidatos).orderBy(desc(candidatos.dataCriacao));
+  }
+
+  async getCandidatosByEmpresa(empresaId: string): Promise<Candidato[]> {
+    return await db.select().from(candidatos).where(eq(candidatos.empresaId, empresaId)).orderBy(desc(candidatos.dataCriacao));
+  }
+
+  async getCandidato(id: string): Promise<Candidato | undefined> {
+    const [candidato] = await db.select().from(candidatos).where(eq(candidatos.id, id));
+    return candidato || undefined;
+  }
+
+  async createCandidato(candidato: InsertCandidato): Promise<Candidato> {
+    const [newCandidato] = await db.insert(candidatos).values(candidato).returning();
+    return newCandidato;
+  }
+
+  async updateCandidato(id: string, candidato: Partial<InsertCandidato>): Promise<Candidato | undefined> {
+    const [updated] = await db
+      .update(candidatos)
+      .set({ ...candidato, dataAtualizacao: new Date() })
+      .where(eq(candidatos.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteCandidato(id: string): Promise<boolean> {
+    try {
+      const [deleted] = await db.delete(candidatos).where(eq(candidatos.id, id)).returning();
+      return !!deleted;
+    } catch (error) {
+      console.error("Error deleting candidato:", error);
+      return false;
+    }
+  }
+
+  // Vaga-Candidato relationship methods
+  async getCandidatosByVaga(vagaId: string): Promise<VagaCandidato[]> {
+    return await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.vagaId, vagaId)).orderBy(desc(vagaCandidatos.dataMovimentacao));
+  }
+
+  async getVagasByCanditato(candidatoId: string): Promise<VagaCandidato[]> {
+    return await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.candidatoId, candidatoId)).orderBy(desc(vagaCandidatos.dataMovimentacao));
+  }
+
+  async inscreverCandidatoVaga(data: InsertVagaCandidato): Promise<VagaCandidato> {
+    const [inscricao] = await db.insert(vagaCandidatos).values(data).returning();
+    return inscricao;
+  }
+
+  async moverCandidatoEtapa(vagaId: string, candidatoId: string, etapa: string, comentarios?: string): Promise<VagaCandidato | undefined> {
+    const [updated] = await db
+      .update(vagaCandidatos)
+      .set({ etapa, comentarios, dataMovimentacao: new Date() })
+      .where(eq(vagaCandidatos.vagaId, vagaId))
+      .returning();
+    return updated || undefined;
+  }
 }
 
 export const storage = new DatabaseStorage();
