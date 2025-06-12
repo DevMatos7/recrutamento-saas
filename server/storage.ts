@@ -21,10 +21,9 @@ import {
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import MemoryStore from "memorystore";
 
-const PostgresSessionStore = connectPg(session);
+const MemStore = MemoryStore(session);
 
 export interface IStorage {
   // Auth methods (required by blueprint)
