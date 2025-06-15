@@ -368,6 +368,7 @@ export default function PipelinePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
               {PIPELINE_STAGES.map((stage) => {
                 const stageCandidates = (pipeline && pipeline[stage.id]) ? pipeline[stage.id] : [];
+                console.log(`Debug - Stage: ${stage.id}, Candidates:`, stageCandidates, 'Pipeline data:', pipeline);
                 
                 return (
                   <div key={stage.id} className="space-y-4">
