@@ -217,8 +217,8 @@ export default function PipelinePage() {
   });
 
   // Fetch pipeline data for selected job
-  const { data: pipeline, isLoading: pipelineLoading } = useQuery<any>({
-    queryKey: ["/api/vagas", selectedVaga, "pipeline"],
+  const { data: pipeline, isLoading: pipelineLoading, error: pipelineError } = useQuery<any>({
+    queryKey: [`/api/vagas/${selectedVaga}/pipeline`],
     enabled: !!selectedVaga,
   });
 
@@ -246,7 +246,7 @@ export default function PipelinePage() {
     },
     onSuccess: () => {
       toast({ title: "Candidato movido com sucesso!" });
-      queryClient.invalidateQueries({ queryKey: ["/api/vagas", selectedVaga, "pipeline"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/vagas/${selectedVaga}/pipeline`] });
       setMoveModalOpen(false);
       setSelectedCandidate(null);
     },
@@ -280,7 +280,7 @@ export default function PipelinePage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/vagas", selectedVaga, "pipeline"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/vagas/${selectedVaga}/pipeline`] });
       setAddCandidateModalOpen(false);
       toast({
         title: "Candidato adicionado à vaga com sucesso!",
@@ -367,8 +367,10 @@ export default function PipelinePage() {
           {selectedVaga && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
               {PIPELINE_STAGES.map((stage) => {
-                const stageCandidates = (pipeline && pipeline[stage.id]) ? pipeline[stage.id] : [];
-                console.log(`Debug - Stage: ${stage.id}, Candidates:`, stageCandidates, 'Pipeline data:', pipeline);
+                console.log('Pipeline full data:', pipeline);
+                console.log('Pipeline type:', typeof pipeline, Array.isArray(pipeline));
+                const stageCandidates = (pipeline && typeof pipeline === 'object' && !Array.isArray(pipeline) && pipeline[stage.id]) ? pipeline[stage.id] : [];
+                console.log(`Stage ${stage.id}:`, stageCandidates);
                 
                 return (
                   <div key={stage.id} className="space-y-4">
