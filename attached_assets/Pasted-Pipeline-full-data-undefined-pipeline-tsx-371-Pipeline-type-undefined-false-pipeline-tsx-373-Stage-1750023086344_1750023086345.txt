@@ -1,0 +1,280 @@
+Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage triagem: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage entrevista: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: (3) [{…}, {…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: (3) [{…}, {…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+dialog.tsx:542  Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anônimo) @ dialog.tsx:542
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anônimo) @ react-dom.development.js:25690
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: (3) [{…}, {…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: (3) [{…}, {…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(3), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(1), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(1), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(1), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(1), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(1), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(1), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage triagem: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage entrevista: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: undefined
+pipeline.tsx:371 Pipeline type: undefined false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+dialog.tsx:542  Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anônimo) @ dialog.tsx:542
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anônimo) @ react-dom.development.js:25690
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(2), triagem: Array(0), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage recebido: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage triagem: (2) [{…}, {…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage entrevista: [{…}]
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage avaliacao: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage aprovado: []
+pipeline.tsx:370 Pipeline full data: {recebido: Array(0), triagem: Array(2), entrevista: Array(1), avaliacao: Array(0), aprovado: Array(0), …}
+pipeline.tsx:371 Pipeline type: object false
+pipeline.tsx:373 Stage reprovado: []
