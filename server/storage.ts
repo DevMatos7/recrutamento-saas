@@ -318,6 +318,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async inscreverCandidatoVaga(data: InsertVagaCandidato): Promise<VagaCandidato> {
+    // Check if candidate is already enrolled in this job
+    const existingInscricao = await db
+      .select()
+      .from(vagaCandidatos)
+      .where(and(
+        eq(vagaCandidatos.vagaId, data.vagaId),
+        eq(vagaCandidatos.candidatoId, data.candidatoId)
+      ))
+      .limit(1);
+
+    if (existingInscricao.length > 0) {
+      throw new Error('Candidato já está inscrito nesta vaga');
+    }
+
     const [inscricao] = await db.insert(vagaCandidatos).values({
       ...data,
       dataInscricao: new Date(),
