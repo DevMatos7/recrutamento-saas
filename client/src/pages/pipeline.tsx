@@ -501,22 +501,40 @@ export default function PipelinePage() {
           }} className="space-y-4">
             <div>
               <Label htmlFor="candidato">Candidato</Label>
-              <Select name="candidatoId" required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um candidato..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.isArray(candidatos) && candidatos.filter((candidato: any) => {
-                    // Filter out candidates already in this job
-                    const existingIds = Object.values(pipeline || {}).flat().map((c: any) => c.candidato?.id);
-                    return !existingIds.includes(candidato.id);
-                  }).map((candidato: any) => (
-                    <SelectItem key={candidato.id} value={candidato.id}>
-                      {candidato.nome} - {candidato.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(() => {
+                if (!Array.isArray(candidatos)) return null;
+                
+                const availableCandidatos = candidatos.filter((candidato: any) => {
+                  // Filter out candidates already in this job
+                  if (!pipeline || typeof pipeline !== 'object') return true;
+                  
+                  const existingIds = Object.values(pipeline).flat().map((c: any) => c.candidato?.id);
+                  return !existingIds.includes(candidato.id);
+                });
+
+                if (availableCandidatos.length === 0) {
+                  return (
+                    <div className="p-3 text-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                      Todos os candidatos já estão inscritos nesta vaga
+                    </div>
+                  );
+                }
+
+                return (
+                  <Select name="candidatoId" required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um candidato..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCandidatos.map((candidato: any) => (
+                        <SelectItem key={candidato.id} value={candidato.id}>
+                          {candidato.nome} - {candidato.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
             </div>
             
             <div>
@@ -538,7 +556,15 @@ export default function PipelinePage() {
               </Button>
               <Button
                 type="submit"
-                disabled={addCandidateMutation.isPending}
+                disabled={addCandidateMutation.isPending || (() => {
+                  if (!Array.isArray(candidatos)) return true;
+                  const availableCandidatos = candidatos.filter((candidato: any) => {
+                    if (!pipeline || typeof pipeline !== 'object') return true;
+                    const existingIds = Object.values(pipeline).flat().map((c: any) => c.candidato?.id);
+                    return !existingIds.includes(candidato.id);
+                  });
+                  return availableCandidatos.length === 0;
+                })()}
               >
                 {addCandidateMutation.isPending ? "Adicionando..." : "Adicionar"}
               </Button>
