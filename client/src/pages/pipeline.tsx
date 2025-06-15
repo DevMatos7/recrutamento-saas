@@ -247,6 +247,8 @@ export default function PipelinePage() {
     onSuccess: () => {
       toast({ title: "Candidato movido com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["/api/vagas", selectedVaga, "pipeline"] });
+      setMoveModalOpen(false);
+      setSelectedCandidate(null);
     },
     onError: (error: Error) => {
       toast({ 
