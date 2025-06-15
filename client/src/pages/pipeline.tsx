@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus } from "lucide-react";
+import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Sidebar } from "@/components/layout/sidebar";
 
@@ -45,10 +45,12 @@ interface CandidateWithDetails {
 
 function CandidateCard({ 
   candidate, 
-  onMoveCandidate 
+  onMoveCandidate,
+  onRemoveCandidate
 }: { 
   candidate: CandidateWithDetails; 
   onMoveCandidate: (candidate: CandidateWithDetails) => void;
+  onRemoveCandidate: (candidate: CandidateWithDetails) => void;
 }) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
@@ -88,15 +90,25 @@ function CandidateCard({
           </div>
         )}
 
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="w-full"
-          onClick={() => onMoveCandidate(candidate)}
-        >
-          <ArrowRight className="h-3 w-3 mr-1" />
-          Mover Etapa
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex-1"
+            onClick={() => onMoveCandidate(candidate)}
+          >
+            <ArrowRight className="h-3 w-3 mr-1" />
+            Mover
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onRemoveCandidate(candidate)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -295,6 +307,37 @@ export default function PipelinePage() {
     },
   });
 
+  // Remove candidate from job mutation
+  const removeCandidateMutation = useMutation({
+    mutationFn: async ({ vagaId, candidatoId }: {
+      vagaId: string;
+      candidatoId: string;
+    }) => {
+      const response = await fetch(`/api/vagas/${vagaId}/candidatos/${candidatoId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao remover candidato');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Candidato removido da vaga com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: [`/api/vagas/${selectedVaga}/pipeline`] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Erro ao remover candidato", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleMoveCandidate = (candidate: CandidateWithDetails) => {
     setSelectedCandidate(candidate);
     setMoveModalOpen(true);
@@ -310,6 +353,15 @@ export default function PipelinePage() {
       comentarios: comentarios || "",
       nota,
     });
+  };
+
+  const handleRemoveCandidate = (candidate: CandidateWithDetails) => {
+    if (confirm(`Tem certeza que deseja remover ${candidate.candidato.nome} desta vaga?`)) {
+      removeCandidateMutation.mutate({
+        vagaId: candidate.vagaId,
+        candidatoId: candidate.candidatoId,
+      });
+    }
   };
 
   if (!user) {
@@ -389,6 +441,7 @@ export default function PipelinePage() {
                             key={candidate.id}
                             candidate={candidate}
                             onMoveCandidate={handleMoveCandidate}
+                            onRemoveCandidate={handleRemoveCandidate}
                           />
                         ))
                       ) : (

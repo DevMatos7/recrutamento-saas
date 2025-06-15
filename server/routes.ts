@@ -646,6 +646,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove candidate from job pipeline
+  app.delete("/api/vagas/:vagaId/candidatos/:candidatoId", requireAuth, async (req, res, next) => {
+    try {
+      // Only admin and recrutador can remove candidates from jobs
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { db } = await import('./db');
+      const { vagaCandidatos } = await import('@shared/schema');
+      const { and, eq } = await import('drizzle-orm');
+
+      const deleted = await db
+        .delete(vagaCandidatos)
+        .where(and(
+          eq(vagaCandidatos.vagaId, req.params.vagaId),
+          eq(vagaCandidatos.candidatoId, req.params.candidatoId)
+        ))
+        .returning();
+
+      if (deleted.length === 0) {
+        return res.status(404).json({ message: "Candidato não encontrado nesta vaga" });
+      }
+
+      res.json({ message: "Candidato removido da vaga com sucesso" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get candidate history across all jobs
   app.get("/api/candidatos/:id/historico", requireAuth, async (req, res, next) => {
     try {
