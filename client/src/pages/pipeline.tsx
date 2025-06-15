@@ -118,18 +118,25 @@ function MoveModal({
   const [nota, setNota] = useState("");
 
   const handleSubmit = () => {
-    if (!etapa) return;
+    if (!etapa) {
+      alert("Por favor, selecione uma etapa");
+      return;
+    }
     onMove(etapa, comentarios, nota ? parseFloat(nota) : undefined);
     onClose();
+  };
+
+  const handleClose = () => {
     setEtapa("");
     setComentarios("");
     setNota("");
+    onClose();
   };
 
   if (!candidate) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Mover: {candidate.candidato.nome}</DialogTitle>
@@ -178,7 +185,7 @@ function MoveModal({
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button variant="outline" onClick={handleClose}>Cancelar</Button>
             <Button onClick={handleSubmit} disabled={!etapa}>Mover</Button>
           </div>
         </div>
@@ -292,13 +299,13 @@ export default function PipelinePage() {
   };
 
   const handleMove = (etapa: string, comentarios: string, nota?: number) => {
-    if (!selectedCandidate) return;
+    if (!selectedCandidate || !etapa) return;
 
     moveCandidateMutation.mutate({
       vagaId: selectedCandidate.vagaId,
       candidatoId: selectedCandidate.candidatoId,
       etapa,
-      comentarios,
+      comentarios: comentarios || "",
       nota,
     });
   };
