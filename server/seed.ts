@@ -1,6 +1,7 @@
 import { storage } from "./storage";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { seedTests } from "./seed-tests.js";
 
 const scryptAsync = promisify(scrypt);
 
@@ -52,6 +53,9 @@ export async function seedDatabase() {
         empresaId: empresa.id,
         departamentoId: departamento.id,
       });
+
+      // Seed test data
+      await seedTests();
 
       console.log("Seed data created successfully!");
       console.log("Master user: admin@gentepro.com / 123456");

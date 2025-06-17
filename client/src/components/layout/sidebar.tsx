@@ -11,7 +11,8 @@ import {
   Network,
   Settings,
   LogOut,
-  GitBranch
+  GitBranch,
+  Brain
 } from "lucide-react";
 
 export function Sidebar() {
@@ -45,6 +46,12 @@ export function Sidebar() {
       name: "Pipeline",
       href: "/pipeline",
       icon: GitBranch,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Testes DISC",
+      href: "/testes",
+      icon: Brain,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
