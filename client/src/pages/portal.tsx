@@ -135,6 +135,20 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="flex justify-between items-center mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                setAuthMode('login');
+                // Reset para mostrar vagas públicas
+                window.location.reload();
+              }}
+              className="text-gray-500"
+            >
+              ← Voltar às Vagas
+            </Button>
+          </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
             Portal do Candidato
           </CardTitle>
@@ -570,7 +584,12 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   // Show different views based on authentication state
   if (!isAuthenticated) {
-    return jobs ? <PublicJobsView /> : <AuthForms />;
+    // Se authMode está definido (login ou register), mostrar formulários
+    if (authMode === 'login' || authMode === 'register') {
+      return <AuthForms />;
+    }
+    // Caso contrário, mostrar vagas públicas
+    return <PublicJobsView />;
   }
 
   return <AuthenticatedDashboard />;
