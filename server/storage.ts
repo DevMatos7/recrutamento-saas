@@ -113,6 +113,16 @@ export interface IStorage {
   getEntrevistasByCandidato(candidatoId: string): Promise<any[]>;
   getEntrevistasByEntrevistador(entrevistadorId: string): Promise<any[]>;
   
+  // Communication methods
+  getAllComunicacoes(): Promise<Comunicacao[]>;
+  getComunicacao(id: string): Promise<Comunicacao | undefined>;
+  createComunicacao(comunicacao: InsertComunicacao): Promise<Comunicacao>;
+  updateComunicacao(id: string, comunicacao: Partial<InsertComunicacao>): Promise<Comunicacao | undefined>;
+  deleteComunicacao(id: string): Promise<boolean>;
+  getComunicacoesByCanditato(candidatoId: string): Promise<any[]>;
+  getComunicacoesByStatus(status: string): Promise<any[]>;
+  getComunicacoesPendentes(): Promise<any[]>;
+  
   sessionStore: any;
 }
 
