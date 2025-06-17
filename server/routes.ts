@@ -1573,6 +1573,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
       const candidateId = req.candidateId;
+      if (!candidateId) {
+        return res.status(401).json({ message: "Candidato não autenticado" });
+      }
       const interviews = await candidatePortalService.getScheduledInterviews(candidateId);
       
       res.json(interviews);
@@ -1586,6 +1589,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
       const candidateId = req.candidateId;
+      if (!candidateId) {
+        return res.status(401).json({ message: "Candidato não autenticado" });
+      }
       const notifications = await candidatePortalService.getCandidateNotifications(candidateId);
       
       res.json(notifications);
