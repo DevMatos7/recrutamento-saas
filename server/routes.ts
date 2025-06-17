@@ -1257,6 +1257,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics routes
+  app.get("/api/analytics/dashboard", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const dashboardData = await storage.getDashboardGeral(user.empresaId);
+      res.json(dashboardData);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/vagas/:vagaId", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { vagaId } = req.params;
+      const analiseVaga = await storage.getAnaliseVaga(vagaId, user.empresaId);
+      res.json(analiseVaga);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/departamentos/:departamentoId", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { departamentoId } = req.params;
+      const analiseDepartamento = await storage.getAnaliseDepartamento(departamentoId, user.empresaId);
+      res.json(analiseDepartamento);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/testes/:vagaId", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { vagaId } = req.params;
+      const analiseTestes = await storage.getAnaliseTestesVaga(vagaId, user.empresaId);
+      res.json(analiseTestes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/origens", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const analiseOrigens = await storage.getAnaliseOrigens(user.empresaId);
+      res.json(analiseOrigens);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/tempos", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const temposPorEtapa = await storage.getTemposPorEtapa(user.empresaId);
+      res.json(temposPorEtapa);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

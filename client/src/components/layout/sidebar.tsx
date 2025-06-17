@@ -14,7 +14,8 @@ import {
   GitBranch,
   Brain,
   Calendar,
-  MessageSquare
+  MessageSquare,
+  BarChart3
 } from "lucide-react";
 
 export function Sidebar() {
