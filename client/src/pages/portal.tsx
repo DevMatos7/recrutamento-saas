@@ -41,8 +41,10 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   // Authentication mutations
   const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string }) => 
-      apiRequest("/api/candidate-portal/login", { method: "POST", body: data }),
+    mutationFn: async (data: { email: string; password: string }) => {
+      const res = await apiRequest("POST", "/api/candidate-portal/login", data);
+      return await res.json();
+    },
     onSuccess: (data) => {
       onLogin(data.candidate);
       toast({ title: "Login realizado com sucesso!" });
@@ -57,8 +59,10 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: any) => 
-      apiRequest("/api/candidate-portal/register", { method: "POST", body: data }),
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/candidate-portal/register", data);
+      return await res.json();
+    },
     onSuccess: () => {
       toast({ title: "Cadastro realizado com sucesso! Faça login para continuar." });
       setAuthMode('login');
@@ -73,7 +77,10 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   });
 
   const logoutMutation = useMutation({
-    mutationFn: () => apiRequest("/api/candidate-portal/logout", { method: "POST" }),
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/candidate-portal/logout");
+      return await res.json();
+    },
     onSuccess: () => {
       onLogout();
       toast({ title: "Logout realizado com sucesso!" });
@@ -82,43 +89,45 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   // Portal data queries
   const { data: jobs, isLoading: jobsLoading } = useQuery({
-    queryKey: ["/portal/vagas"],
+    queryKey: ["/api/candidate-portal/vagas"],
     enabled: !isAuthenticated
   });
 
   const { data: dashboard } = useQuery({
-    queryKey: ["/portal/dashboard"],
+    queryKey: ["/api/candidate-portal/dashboard"],
     enabled: isAuthenticated
   });
 
   const { data: myApplications } = useQuery({
-    queryKey: ["/portal/minhas-candidaturas"],
+    queryKey: ["/api/candidate-portal/profile"],
     enabled: isAuthenticated
   });
 
   const { data: pendingTests } = useQuery({
-    queryKey: ["/portal/testes"],
+    queryKey: ["/api/candidate-portal/tests"],
     enabled: isAuthenticated
   });
 
   const { data: interviews } = useQuery({
-    queryKey: ["/portal/entrevistas"],
+    queryKey: ["/api/candidate-portal/interviews"],
     enabled: isAuthenticated
   });
 
   const { data: notifications } = useQuery({
-    queryKey: ["/portal/notificacoes"],
+    queryKey: ["/api/candidate-portal/notifications"],
     enabled: isAuthenticated
   });
 
   // Application mutation
   const applyMutation = useMutation({
-    mutationFn: (vagaId: string) => 
-      apiRequest("/portal/candidaturas", { method: "POST", body: { vagaId } }),
+    mutationFn: async (vagaId: string) => {
+      const res = await apiRequest("POST", "/api/candidate-portal/apply", { vagaId });
+      return await res.json();
+    },
     onSuccess: () => {
       toast({ title: "Candidatura realizada com sucesso!" });
-      queryClient.invalidateQueries({ queryKey: ["/portal/minhas-candidaturas"] });
-      queryClient.invalidateQueries({ queryKey: ["/portal/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidate-portal/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidate-portal/dashboard"] });
       setSelectedJob(null);
     },
     onError: (error: any) => {
@@ -362,7 +371,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {dashboard?.candidaturas?.reduce((acc: number, c: any) => acc + c.total, 0) || 0}
+                    {(dashboard as any)?.candidaturas?.reduce((acc: number, c: any) => acc + c.total, 0) || 0}
                   </div>
                 </CardContent>
               </Card>
