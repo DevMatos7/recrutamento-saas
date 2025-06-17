@@ -42,7 +42,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   // Authentication mutations
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => 
-      apiRequest("/portal/auth/login", { method: "POST", body: data }),
+      apiRequest("/api/candidate-portal/login", { method: "POST", body: data }),
     onSuccess: (data) => {
       onLogin(data.candidate);
       toast({ title: "Login realizado com sucesso!" });
@@ -58,7 +58,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   const registerMutation = useMutation({
     mutationFn: async (data: any) => 
-      apiRequest("/portal/auth/register", { method: "POST", body: data }),
+      apiRequest("/api/candidate-portal/register", { method: "POST", body: data }),
     onSuccess: () => {
       toast({ title: "Cadastro realizado com sucesso! Faça login para continuar." });
       setAuthMode('login');
@@ -73,7 +73,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   });
 
   const logoutMutation = useMutation({
-    mutationFn: () => apiRequest("/portal/auth/logout", { method: "POST" }),
+    mutationFn: () => apiRequest("/api/candidate-portal/logout", { method: "POST" }),
     onSuccess: () => {
       onLogout();
       toast({ title: "Logout realizado com sucesso!" });
@@ -285,7 +285,13 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                             <p className="text-sm text-gray-600 mb-2">
                               Para se candidatar, faça login ou crie uma conta.
                             </p>
-                            <Button onClick={() => setAuthMode('register')} className="w-full">
+                            <Button 
+                              onClick={() => {
+                                setAuthMode('register');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }} 
+                              className="w-full"
+                            >
                               Criar Conta e Candidatar-se
                             </Button>
                           </div>

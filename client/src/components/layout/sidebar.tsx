@@ -15,7 +15,8 @@ import {
   Brain,
   Calendar,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  Globe
 } from "lucide-react";
 
 export function Sidebar() {
@@ -93,6 +94,13 @@ export function Sidebar() {
       icon: Building2,
       show: ["admin"].includes(user?.perfil || ""),
     },
+    {
+      name: "Portal do Candidato",
+      href: "/portal",
+      icon: Globe,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+      target: "_blank",
+    },
   ];
 
   return (
@@ -108,6 +116,21 @@ export function Sidebar() {
           .filter(item => item.show)
           .map((item) => {
             const isActive = location === item.href;
+            
+            if (item.target === "_blank") {
+              return (
+                <a key={item.name} href={item.href} target="_blank" rel="noopener noreferrer">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3"
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.name}
+                  </Button>
+                </a>
+              );
+            }
+            
             return (
               <Link key={item.name} href={item.href}>
                 <Button
