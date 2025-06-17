@@ -1345,6 +1345,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Candidate Portal routes
+  app.post("/portal/auth/register", async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const { nome, email, telefone, password, empresaId } = req.body;
+
+      if (!nome || !email || !password || !empresaId) {
+        return res.status(400).json({ 
+          message: "Campos obrigatórios: nome, email, password, empresaId" 
+        });
+      }
+
+      const candidate = await candidatePortalService.registerCandidate({
+        nome,
+        email,
+        telefone,
+        password,
+        empresaId
+      });
+
+      res.status(201).json({
+        message: "Candidato registrado com sucesso",
+        candidate: {
+          id: candidate.id,
+          nome: candidate.nome,
+          email: candidate.email
+        }
+      });
+    } catch (error: any) {
+      if (error.message === 'Email já cadastrado') {
+        return res.status(409).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  app.post("/portal/auth/login", async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ 
+          message: "Email e senha são obrigatórios" 
+        });
+      }
+
+      const candidate = await candidatePortalService.loginCandidate(email, password);
+
+      // Set session for candidate
+      req.session.candidateId = candidate.id;
+      req.session.candidateEmail = candidate.email;
+
+      res.json({
+        message: "Login realizado com sucesso",
+        candidate: {
+          id: candidate.id,
+          nome: candidate.nome,
+          email: candidate.email
+        }
+      });
+    } catch (error: any) {
+      if (error.message === 'Credenciais inválidas' || error.message === 'Conta inativa') {
+        return res.status(401).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  app.post("/portal/auth/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ message: "Logout realizado com sucesso" });
+    });
+  });
+
+  // Middleware para verificar autenticação do candidato
+  const requireCandidateAuth = (req: any, res: any, next: any) => {
+    if (!req.session.candidateId) {
+      return res.status(401).json({ message: "Acesso não autorizado" });
+    }
+    req.candidateId = req.session.candidateId;
+    next();
+  };
+
+  app.get("/portal/vagas", async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const { empresaId } = req.query;
+      const jobs = await candidatePortalService.getOpenJobs(empresaId as string);
+      
+      res.json(jobs);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/portal/vagas/:id", async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const { id } = req.params;
+      const job = await candidatePortalService.getJobDetails(id);
+      
+      res.json(job);
+    } catch (error: any) {
+      if (error.message === 'Vaga não encontrada ou não está aberta') {
+        return res.status(404).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  app.post("/portal/candidaturas", requireCandidateAuth, async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const { vagaId } = req.body;
+      const candidateId = req.candidateId;
+
+      if (!vagaId) {
+        return res.status(400).json({ message: "ID da vaga é obrigatório" });
+      }
+
+      const application = await candidatePortalService.applyToJob(candidateId, vagaId);
+      
+      res.status(201).json({
+        message: "Candidatura realizada com sucesso",
+        application
+      });
+    } catch (error: any) {
+      if (error.message === 'Vaga não encontrada ou não está aberta' || 
+          error.message === 'Você já se candidatou a esta vaga') {
+        return res.status(400).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  app.get("/portal/minhas-candidaturas", requireCandidateAuth, async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const candidateId = req.candidateId;
+      const applications = await candidatePortalService.getCandidateApplications(candidateId);
+      
+      res.json(applications);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/portal/dashboard", requireCandidateAuth, async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const candidateId = req.candidateId;
+      const dashboard = await candidatePortalService.getCandidateDashboard(candidateId);
+      
+      res.json(dashboard);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/portal/testes", requireCandidateAuth, async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const candidateId = req.candidateId;
+      const tests = await candidatePortalService.getPendingTests(candidateId);
+      
+      res.json(tests);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/portal/testes/:id/responder", requireCandidateAuth, async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const { id } = req.params;
+      const { respostas } = req.body;
+      const candidateId = req.candidateId;
+
+      if (!respostas) {
+        return res.status(400).json({ message: "Respostas são obrigatórias" });
+      }
+
+      const result = await candidatePortalService.submitTestResponse(candidateId, id, respostas);
+      
+      res.json({
+        message: "Respostas enviadas com sucesso",
+        result
+      });
+    } catch (error: any) {
+      if (error.message === 'Teste não encontrado ou já respondido') {
+        return res.status(400).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  app.get("/portal/entrevistas", requireCandidateAuth, async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const candidateId = req.candidateId;
+      const interviews = await candidatePortalService.getScheduledInterviews(candidateId);
+      
+      res.json(interviews);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/portal/notificacoes", requireCandidateAuth, async (req, res, next) => {
+    try {
+      const { candidatePortalService } = await import('./services/candidate-portal-service');
+      
+      const candidateId = req.candidateId;
+      const notifications = await candidatePortalService.getCandidateNotifications(candidateId);
+      
+      res.json(notifications);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

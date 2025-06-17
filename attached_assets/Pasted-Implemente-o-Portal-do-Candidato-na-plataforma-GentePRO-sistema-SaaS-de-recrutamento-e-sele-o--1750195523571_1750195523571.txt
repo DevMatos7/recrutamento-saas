@@ -1,0 +1,132 @@
+Implemente o **Portal do Candidato** na plataforma GentePRO, sistema SaaS de recrutamento e seleção multiempresa, com backend em FastAPI, banco PostgreSQL e frontend em React + Tailwind.
+
+O portal será a interface pública acessível para os candidatos **se registrarem, visualizarem vagas, se candidatarem, realizarem testes, acompanharem o status no processo e receberem notificações**.
+
+---
+
+### 🎯 OBJETIVO DO MÓDULO
+
+Permitir que os candidatos:
+
+- Criem e gerenciem seus perfis
+- Acessem e filtrem vagas abertas
+- Se candidatem e acompanhem o andamento da seleção
+- Respondam testes (DISC, técnicos)
+- Visualizem entrevistas agendadas
+- Recebam notificações (mensagens)
+- Possuam um histórico centralizado
+
+---
+
+### 🧱 MODELOS RELACIONADOS
+
+Reaproveitar e conectar:
+
+- `candidatos`
+- `vagas`
+- `candidaturas`
+- `testes_resultados`
+- `entrevistas`
+- `comunicacoes`
+
+Criar tabela extra (opcional):
+#### `log_acesso_candidato`
+- `id`: UUID
+- `candidato_id`: FK
+- `data_login`: datetime
+- `ip`: string
+- `user_agent`: string
+
+---
+
+### 🔐 AUTENTICAÇÃO E SEGURANÇA
+
+- Cadastro via e-mail e CPF ou celular (no MVP, só e-mail e senha)
+- Senha criptografada (bcrypt)
+- Recuperação de senha via token temporário
+- Acesso limitado apenas aos dados do próprio candidato
+
+---
+
+### 🔌 ENDPOINTS (FastAPI)
+
+#### 🔹 Auth Candidato
+
+- `POST /portal/auth/register` → criar conta
+- `POST /portal/auth/login` → login do candidato
+- `POST /portal/auth/reset-senha` → recuperação (futuro)
+
+#### 🔹 Vagas e Candidaturas
+
+- `GET /portal/vagas` → listar vagas abertas (com filtros)
+- `GET /portal/vagas/{id}` → detalhes da vaga
+- `POST /portal/candidaturas` → aplicar-se a uma vaga
+- `GET /portal/minhas-candidaturas` → histórico do candidato
+
+#### 🔹 Testes e Entrevistas
+
+- `GET /portal/testes` → testes pendentes para o candidato
+- `POST /portal/testes/{id}/responder` → enviar respostas
+- `GET /portal/entrevistas` → entrevistas agendadas
+
+#### 🔹 Comunicação
+
+- `GET /portal/notificacoes` → mensagens recebidas
+
+---
+
+### 💻 TELAS SUGERIDAS (Frontend React + Tailwind)
+
+#### Página Inicial Pública
+- Apresentação institucional + botão "Ver Vagas"
+
+#### Cadastro/Login
+- Tela amigável, segura, com validação
+
+#### Dashboard do Candidato
+- Resumo das candidaturas
+- Testes pendentes
+- Entrevistas agendadas
+- Mensagens recentes
+
+#### Tela de Vagas
+- Lista com filtros (local, tipo, departamento)
+- Botão "Candidatar-se"
+
+#### Tela de Teste
+- Renderização de questões (DISC, técnico)
+- Envio de respostas com confirmação
+
+#### Tela de Mensagens
+- Histórico de comunicações
+
+---
+
+### 🧪 FUNCIONALIDADES E REGRAS
+
+- Impedir múltiplas candidaturas para a mesma vaga
+- Validar prazo para resposta de testes e entrevistas
+- Exibir mensagens com datas e remetente
+- Garantir segurança e privacidade dos dados
+- Deixar o layout responsivo para uso mobile
+
+---
+
+### ⚙️ CONSIDERAÇÕES TÉCNICAS
+
+- Criar um `router_portal.py` exclusivo para essa área
+- Usar token JWT separado (escopo: candidato)
+- Aplicar validação de senha com bcrypt
+- Padronizar respostas JSON para frontend
+- Separar lógica de autenticação do portal da administrativa
+- Acesso sem autenticação apenas às vagas abertas
+
+---
+
+### ✅ RESULTADO ESPERADO
+
+- Candidato se cadastra, acessa e interage com o processo seletivo
+- Visualiza todas as suas candidaturas e status
+- Realiza testes atribuídos e visualiza mensagens
+- Interface intuitiva e segura para candidatos externos
+
