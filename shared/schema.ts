@@ -125,6 +125,23 @@ export const entrevistas = pgTable("entrevistas", {
     .on(table.vagaId, table.candidatoId),
 }));
 
+// Comunicações
+export const comunicacoes = pgTable("comunicacoes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id, { onDelete: "cascade" }),
+  tipo: varchar("tipo", { length: 20 }).notNull(), // whatsapp, email
+  canal: varchar("canal", { length: 20 }).notNull(), // inscricao, pipeline, entrevista, teste, outros
+  assunto: varchar("assunto", { length: 255 }),
+  mensagem: text("mensagem").notNull(),
+  statusEnvio: varchar("status_envio", { length: 20 }).notNull().default("pendente"), // pendente, enviado, erro
+  dataAgendada: timestamp("data_agendada"),
+  dataEnvio: timestamp("data_envio"),
+  erro: text("erro"),
+  enviadoPor: uuid("enviado_por").references(() => usuarios.id),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().notNull(),
+});
+
 // Relations
 export const empresasRelations = relations(empresas, ({ many }) => ({
   departamentos: many(departamentos),
@@ -225,6 +242,18 @@ export const entrevistasRelations = relations(entrevistas, ({ one }) => ({
   }),
   entrevistador: one(usuarios, {
     fields: [entrevistas.entrevistadorId],
+    references: [usuarios.id],
+  }),
+}));
+
+// Comunicações Relations
+export const comunicacoesRelations = relations(comunicacoes, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [comunicacoes.candidatoId],
+    references: [candidatos.id],
+  }),
+  enviadoPor: one(usuarios, {
+    fields: [comunicacoes.enviadoPor],
     references: [usuarios.id],
   }),
 }));
@@ -341,6 +370,22 @@ export const insertEntrevistaSchema = createInsertSchema(entrevistas).omit({
 
 export type Entrevista = typeof entrevistas.$inferSelect;
 export type InsertEntrevista = z.infer<typeof insertEntrevistaSchema>;
+
+// Comunicações schemas
+export const insertComunicacaoSchema = createInsertSchema(comunicacoes).omit({
+  id: true,
+  criadoEm: true,
+  atualizadoEm: true,
+  dataEnvio: true,
+}).extend({
+  tipo: z.enum(["whatsapp", "email"]),
+  canal: z.enum(["inscricao", "pipeline", "entrevista", "teste", "outros"]),
+  statusEnvio: z.enum(["pendente", "enviado", "erro"]).default("pendente"),
+  dataAgendada: z.string().transform((str) => str ? new Date(str) : undefined).optional(),
+});
+
+export type Comunicacao = typeof comunicacoes.$inferSelect;
+export type InsertComunicacao = z.infer<typeof insertComunicacaoSchema>;
 
 // Legacy compatibility for auth blueprint
 export const users = usuarios;

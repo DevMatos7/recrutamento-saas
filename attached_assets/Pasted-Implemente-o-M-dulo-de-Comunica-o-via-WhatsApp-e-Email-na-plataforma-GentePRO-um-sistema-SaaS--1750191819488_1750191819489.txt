@@ -1,0 +1,116 @@
+Implemente o **Módulo de Comunicação via WhatsApp e Email** na plataforma GentePRO, um sistema SaaS multiempresa de recrutamento e seleção. O backend é em FastAPI, com banco PostgreSQL, JWT, e estrutura modular. Este módulo será responsável por gerenciar os disparos de mensagens automáticas relacionadas a eventos do processo seletivo.
+
+---
+
+### 🎯 OBJETIVO DO MÓDULO
+
+Permitir o envio automatizado e personalizado de mensagens para os candidatos através de **WhatsApp** e/ou **e-mail**, com base em eventos como:
+
+- Inscrição em vaga
+- Movimentação no pipeline
+- Agendamento de entrevista
+- Aplicação de testes
+- Resultado de processo
+
+---
+
+### 🧱 ESTRUTURA DO BANCO
+
+#### 🔸 Tabela `comunicacoes`
+
+- `id`: UUID (PK)
+- `candidato_id`: FK → `candidatos`
+- `tipo`: enum (`whatsapp`, `email`)
+- `canal`: enum (`inscricao`, `pipeline`, `entrevista`, `teste`, `outros`)
+- `assunto`: string
+- `mensagem`: text (template)
+- `status_envio`: enum (`pendente`, `enviado`, `erro`)
+- `data_agendada`: datetime
+- `data_envio`: datetime (null se não enviado ainda)
+- `erro`: string (opcional)
+- `enviado_por`: UUID → FK usuário que acionou ou sistema
+
+---
+
+### 🔐 PERMISSÕES
+
+- `admin` e `recrutador`: podem visualizar e enviar comunicações
+- `gestor`: somente visualização de mensagens enviadas em suas vagas
+- `candidato`: recebe mensagens (não envia)
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `POST /comunicacoes/enviar`  
+  → Envia uma mensagem para um candidato (manual ou automatizada)
+
+- `GET /comunicacoes`  
+  → Lista mensagens enviadas com filtros por candidato, vaga, status
+
+- `GET /comunicacoes/{id}`  
+  → Detalhe de uma comunicação
+
+- `POST /comunicacoes/webhook/email`  
+  → Receber retorno de entrega (futuro)
+
+- `POST /comunicacoes/webhook/whatsapp`  
+  → Webhook para delivery status via WhatsApp API (futuro)
+
+---
+
+### 🔗 INTEGRAÇÕES EXTERNAS
+
+- **E-mail**: via SMTP ou serviços como SendGrid/Mailgun (usar SMTP genérico no MVP)
+- **WhatsApp**: integração com API de parceiros (ex: Z-API, Twilio, Gupshup, Facebook Cloud API)
+
+> Para testes no Replit, simular envio com `print()` ou `logger`, armazenando `status_envio = enviado`
+
+---
+
+### 💡 EXEMPLOS DE USO
+
+1. **Pipeline**
+   - Ao mover candidato de "triagem" para "entrevista", enviar WhatsApp com:  
+     _“Olá {{nome}}, sua entrevista está agendada para dia XX às XXh.”_
+
+2. **Testes**
+   - Ao aplicar um teste, disparar e-mail com link de acesso
+
+3. **Entrevistas**
+   - Confirmação por e-mail 24h antes da entrevista (MVP: disparo manual)
+
+---
+
+### 🧪 REGRAS E FUNCIONALIDADES
+
+- Utilizar templates com variáveis: `{{nome}}`, `{{vaga}}`, `{{data_entrevista}}`
+- Armazenar cada envio no histórico
+- Reencaminhar mensagens com erro (via PATCH)
+- Enviar imediatamente ou por `data_agendada`
+- Mostrar falha no painel em caso de erro
+
+---
+
+### 💻 FRONTEND – SUGESTÕES DE TELAS
+
+#### Tela: Histórico de Comunicações
+- Colunas: destinatário, canal, status, data envio
+- Filtros: candidato, vaga, tipo, status
+- Ações: visualizar, reenviar
+
+#### Tela: Nova Comunicação (manual)
+- Selecionar candidato, canal, modelo de mensagem
+- Pré-visualização com variáveis resolvidas
+- Botão: “Enviar agora” ou “Agendar”
+
+---
+
+### ⚙️ CONSIDERAÇÕES TÉCNICAS
+
+- Utilizar UUID como chave primária
+- Criar utilitários separados para envio por e-mail e WhatsApp
+- Modularizar templates e substituir variáveis dinamicamente
+- Criar `communication_service.py` com função genérica:
+```python
+def enviar_comunicacao(tipo: Literal["whatsapp", "email"], candidato: Candidato, mensagem: str, assunto: Optional[str])
