@@ -85,6 +85,21 @@ export interface IStorage {
   getPipelineByVaga(vagaId: string): Promise<any>;
   getCandidatoHistorico(candidatoId: string): Promise<any[]>;
   
+  // Tests methods
+  getAllTestes(): Promise<Teste[]>;
+  getTeste(id: string): Promise<Teste | undefined>;
+  createTeste(teste: InsertTeste): Promise<Teste>;
+  updateTeste(id: string, teste: Partial<InsertTeste>): Promise<Teste | undefined>;
+  deleteTeste(id: string): Promise<boolean>;
+  
+  // Test results methods
+  getTesteResultado(id: string): Promise<TesteResultado | undefined>;
+  createTesteResultado(resultado: InsertTesteResultado): Promise<TesteResultado>;
+  updateTesteResultado(id: string, resultado: Partial<InsertTesteResultado>): Promise<TesteResultado | undefined>;
+  getResultadosByVaga(vagaId: string): Promise<any[]>;
+  getResultadosByCandidato(candidatoId: string): Promise<any[]>;
+  getTestesPendentes(candidatoId: string): Promise<any[]>;
+  
   sessionStore: any;
 }
 
@@ -405,6 +420,99 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(usuarios, eq(vagaCandidatos.responsavelId, usuarios.id))
     .where(eq(vagaCandidatos.candidatoId, candidatoId))
     .orderBy(desc(vagaCandidatos.dataMovimentacao));
+  }
+
+  // Tests methods
+  async getAllTestes(): Promise<Teste[]> {
+    return await db.select().from(testes).where(eq(testes.ativo, true)).orderBy(desc(testes.dataCriacao));
+  }
+
+  async getTeste(id: string): Promise<Teste | undefined> {
+    const [teste] = await db.select().from(testes).where(and(eq(testes.id, id), eq(testes.ativo, true)));
+    return teste || undefined;
+  }
+
+  async createTeste(teste: InsertTeste): Promise<Teste> {
+    const [novoTeste] = await db.insert(testes).values({
+      ...teste,
+      dataCriacao: new Date(),
+      dataAtualizacao: new Date()
+    }).returning();
+    return novoTeste;
+  }
+
+  async updateTeste(id: string, teste: Partial<InsertTeste>): Promise<Teste | undefined> {
+    const [testeAtualizado] = await db.update(testes)
+      .set({ ...teste, dataAtualizacao: new Date() })
+      .where(eq(testes.id, id))
+      .returning();
+    return testeAtualizado || undefined;
+  }
+
+  async deleteTeste(id: string): Promise<boolean> {
+    const [testeDesativado] = await db.update(testes)
+      .set({ ativo: false, dataAtualizacao: new Date() })
+      .where(eq(testes.id, id))
+      .returning();
+    return !!testeDesativado;
+  }
+
+  // Test results methods
+  async getTesteResultado(id: string): Promise<TesteResultado | undefined> {
+    const [resultado] = await db.select().from(testesResultados).where(eq(testesResultados.id, id));
+    return resultado || undefined;
+  }
+
+  async createTesteResultado(resultado: InsertTesteResultado): Promise<TesteResultado> {
+    const [novoResultado] = await db.insert(testesResultados).values({
+      ...resultado,
+      dataEnvio: new Date()
+    }).returning();
+    return novoResultado;
+  }
+
+  async updateTesteResultado(id: string, resultado: Partial<InsertTesteResultado>): Promise<TesteResultado | undefined> {
+    const [resultadoAtualizado] = await db.update(testesResultados)
+      .set(resultado)
+      .where(eq(testesResultados.id, id))
+      .returning();
+    return resultadoAtualizado || undefined;
+  }
+
+  async getResultadosByVaga(vagaId: string): Promise<any[]> {
+    return await db.query.testesResultados.findMany({
+      where: eq(testesResultados.vagaId, vagaId),
+      with: {
+        teste: true,
+        candidato: true
+      },
+      orderBy: (testesResultados, { desc }) => [desc(testesResultados.dataEnvio)]
+    });
+  }
+
+  async getResultadosByCandidato(candidatoId: string): Promise<any[]> {
+    return await db.query.testesResultados.findMany({
+      where: eq(testesResultados.candidatoId, candidatoId),
+      with: {
+        teste: true,
+        vaga: true
+      },
+      orderBy: (testesResultados, { desc }) => [desc(testesResultados.dataEnvio)]
+    });
+  }
+
+  async getTestesPendentes(candidatoId: string): Promise<any[]> {
+    return await db.query.testesResultados.findMany({
+      where: and(
+        eq(testesResultados.candidatoId, candidatoId),
+        eq(testesResultados.status, 'pendente')
+      ),
+      with: {
+        teste: true,
+        vaga: true
+      },
+      orderBy: (testesResultados, { desc }) => [desc(testesResultados.dataEnvio)]
+    });
   }
 }
 
