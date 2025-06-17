@@ -5,6 +5,8 @@ import {
   vagas,
   candidatos,
   vagaCandidatos,
+  testes,
+  testesResultados,
   type Empresa, 
   type InsertEmpresa,
   type Departamento, 
@@ -16,7 +18,11 @@ import {
   type Candidato,
   type InsertCandidato,
   type VagaCandidato,
-  type InsertVagaCandidato
+  type InsertVagaCandidato,
+  type Teste,
+  type InsertTeste,
+  type TesteResultado,
+  type InsertTesteResultado
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";

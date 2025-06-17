@@ -1,4 +1,4 @@
-import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniqueIndex, json } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -81,6 +81,33 @@ export const vagaCandidatos = pgTable("vaga_candidatos", {
   uniqueVagaCandidato: uniqueIndex("unique_vaga_candidato").on(table.vagaId, table.candidatoId),
 }));
 
+// Testes DISC e Técnicos
+export const testes = pgTable("testes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tipo: varchar("tipo", { length: 20 }).notNull(), // 'DISC' ou 'tecnico'
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  questoes: json("questoes").notNull(), // Array de questões com alternativas
+  ativo: boolean("ativo").notNull().default(true),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+export const testesResultados = pgTable("testes_resultados", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testeId: uuid("teste_id").notNull().references(() => testes.id),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
+  vagaId: uuid("vaga_id").notNull().references(() => vagas.id),
+  respostas: json("respostas"), // Array de respostas do candidato
+  resultado: text("resultado"), // Ex: "Perfil D - Executor" para DISC
+  pontuacao: decimal("pontuacao", { precision: 5, scale: 2 }), // Para testes técnicos
+  status: varchar("status", { length: 20 }).notNull().default("pendente"), // pendente, respondido, corrigido
+  dataEnvio: timestamp("data_envio").defaultNow().notNull(),
+  dataResposta: timestamp("data_resposta"),
+}, (table) => ({
+  uniqueTesteCandidate: uniqueIndex("unique_teste_candidato").on(table.testeId, table.candidatoId, table.vagaId),
+}));
+
 // Relations
 export const empresasRelations = relations(empresas, ({ many }) => ({
   departamentos: many(departamentos),
@@ -146,6 +173,26 @@ export const vagaCandidatosRelations = relations(vagaCandidatos, ({ one }) => ({
   responsavel: one(usuarios, {
     fields: [vagaCandidatos.responsavelId],
     references: [usuarios.id],
+  }),
+}));
+
+// Testes Relations
+export const testesRelations = relations(testes, ({ many }) => ({
+  resultados: many(testesResultados),
+}));
+
+export const testesResultadosRelations = relations(testesResultados, ({ one }) => ({
+  teste: one(testes, {
+    fields: [testesResultados.testeId],
+    references: [testes.id],
+  }),
+  candidato: one(candidatos, {
+    fields: [testesResultados.candidatoId],
+    references: [candidatos.id],
+  }),
+  vaga: one(vagas, {
+    fields: [testesResultados.vagaId],
+    references: [vagas.id],
   }),
 }));
 
@@ -220,6 +267,34 @@ export type InsertCandidato = z.infer<typeof insertCandidatoSchema>;
 export type VagaCandidato = typeof vagaCandidatos.$inferSelect;
 export type InsertVagaCandidato = z.infer<typeof insertVagaCandidatoSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
+
+// Testes schemas
+export const insertTesteSchema = createInsertSchema(testes).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+}).extend({
+  tipo: z.enum(["DISC", "tecnico"]),
+  questoes: z.array(z.object({
+    enunciado: z.string(),
+    alternativas: z.array(z.string()).min(2),
+    respostaCorreta: z.number().optional(), // Para testes técnicos
+  })),
+});
+
+export const insertTesteResultadoSchema = createInsertSchema(testesResultados).omit({
+  id: true,
+  dataEnvio: true,
+  dataResposta: true,
+}).extend({
+  status: z.enum(["pendente", "respondido", "corrigido"]).default("pendente"),
+  respostas: z.array(z.number()).optional(), // Índices das alternativas escolhidas
+});
+
+export type Teste = typeof testes.$inferSelect;
+export type InsertTeste = z.infer<typeof insertTesteSchema>;
+export type TesteResultado = typeof testesResultados.$inferSelect;
+export type InsertTesteResultado = z.infer<typeof insertTesteResultadoSchema>;
 
 // Legacy compatibility for auth blueprint
 export const users = usuarios;
