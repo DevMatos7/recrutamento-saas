@@ -12,6 +12,7 @@ import EmpresasPage from "@/pages/empresas";
 import UsuariosPage from "@/pages/usuarios";
 import PipelinePage from "@/pages/pipeline";
 import TestesPage from "@/pages/testes";
+import EntrevistasPage from "@/pages/entrevistas";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -27,6 +28,7 @@ function Router() {
       <ProtectedRoute path="/usuarios" component={UsuariosPage} />
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
       <ProtectedRoute path="/testes" component={TestesPage} />
+      <ProtectedRoute path="/entrevistas" component={EntrevistasPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
