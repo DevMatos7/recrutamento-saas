@@ -1,0 +1,133 @@
+3select.tsx:1241  Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at select.tsx:1241:13
+    at renderWithHooks (react-dom.development.js:15486:18)
+    at updateForwardRef (react-dom.development.js:19245:20)
+    at beginWork (react-dom.development.js:21675:16)
+    at HTMLUnknownElement.callCallback2 (react-dom.development.js:4164:14)
+    at Object.invokeGuardedCallbackDev (react-dom.development.js:4213:16)
+    at invokeGuardedCallback (react-dom.development.js:4277:31)
+    at beginWork$1 (react-dom.development.js:27490:7)
+    at performUnitOfWork (react-dom.development.js:26596:12)
+    at workLoopSync (react-dom.development.js:26505:5)
+(anônimo) @ select.tsx:1241
+renderWithHooks @ react-dom.development.js:15486
+updateForwardRef @ react-dom.development.js:19245
+beginWork @ react-dom.development.js:21675
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+beginWork$1 @ react-dom.development.js:27490
+performUnitOfWork @ react-dom.development.js:26596
+workLoopSync @ react-dom.development.js:26505
+renderRootSync @ react-dom.development.js:26473
+performSyncWorkOnRoot @ react-dom.development.js:26124
+flushSyncCallbacks @ react-dom.development.js:12042
+(anônimo) @ react-dom.development.js:25690
+3select.tsx:1241  Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at select.tsx:1241:13
+    at renderWithHooks (react-dom.development.js:15486:18)
+    at updateForwardRef (react-dom.development.js:19245:20)
+    at beginWork (react-dom.development.js:21675:16)
+    at HTMLUnknownElement.callCallback2 (react-dom.development.js:4164:14)
+    at Object.invokeGuardedCallbackDev (react-dom.development.js:4213:16)
+    at invokeGuardedCallback (react-dom.development.js:4277:31)
+    at beginWork$1 (react-dom.development.js:27490:7)
+    at performUnitOfWork (react-dom.development.js:26596:12)
+    at workLoopSync (react-dom.development.js:26505:5)
+(anônimo) @ select.tsx:1241
+renderWithHooks @ react-dom.development.js:15486
+updateForwardRef @ react-dom.development.js:19245
+beginWork @ react-dom.development.js:21675
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+beginWork$1 @ react-dom.development.js:27490
+performUnitOfWork @ react-dom.development.js:26596
+workLoopSync @ react-dom.development.js:26505
+renderRootSync @ react-dom.development.js:26473
+recoverFromConcurrentError @ react-dom.development.js:25889
+performSyncWorkOnRoot @ react-dom.development.js:26135
+flushSyncCallbacks @ react-dom.development.js:12042
+(anônimo) @ react-dom.development.js:25690
+3react-dom.development.js:18704  The above error occurred in the <SelectItem> component:
+
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=69ad0015:853:7
+    at _c11 (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/components/ui/select.tsx:208:13)
+    at div
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BOL2CCOG.js?v=69ad0015:42:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVLBUYTV.js?v=69ad0015:79:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVLBUYTV.js?v=69ad0015:56:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-V4TB3EZ5.js?v=69ad0015:39:15
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=69ad0015:764:13
+    at div
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVLBUYTV.js?v=69ad0015:79:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVLBUYTV.js?v=69ad0015:56:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-V4TB3EZ5.js?v=69ad0015:39:15
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=69ad0015:48:15)
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=69ad0015:307:58
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVLBUYTV.js?v=69ad0015:79:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-EVLBUYTV.js?v=69ad0015:56:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BOL2CCOG.js?v=69ad0015:42:13
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BOSJNSOH.js?v=69ad0015:258:22
+    at SelectPortal
+    at _c7 (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/components/ui/select.tsx:123:12)
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=69ad0015:48:15)
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=69ad0015:48:15)
+    at CollectionProvider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-V4TB3EZ5.js?v=69ad0015:29:13)
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=69ad0015:48:15)
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=69ad0015:48:15)
+    at Popper (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LYRNC3O4.js?v=69ad0015:1953:11)
+    at Select (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-select.js?v=69ad0015:95:5)
+    at div
+    at div
+    at _c9 (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BOL2CCOG.js?v=69ad0015:42:13
+    at Presence (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BKU5K62D.js?v=69ad0015:24:11)
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=69ad0015:383:13
+    at _c5 (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/components/ui/tabs.tsx:72:12)
+    at div
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-BOL2CCOG.js?v=69ad0015:42:13
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=69ad0015:48:15)
+    at https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=69ad0015:261:7
+    at div
+    at div
+    at div
+    at ComunicacoesPage (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/pages/comunicacoes.tsx:63:20)
+    at ProtectedRoute (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=69ad0015:379:17)
+    at Router
+    at AuthProvider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at Provider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-M3NVYRND.js?v=69ad0015:48:15)
+    at TooltipProvider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=69ad0015:58:5)
+    at QueryClientProvider (https://812a1012-4a9f-4024-b099-e9241c84dbe5-00-1dfh5cr531twx.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=69ad0015:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ react-dom.development.js:18704
+update.callback @ react-dom.development.js:18737
+callCallback @ react-dom.development.js:15036
+commitUpdateQueue @ react-dom.development.js:15057
+commitLayoutEffectOnFiber @ react-dom.development.js:23430
+commitLayoutMountEffects_complete @ react-dom.development.js:24727
+commitLayoutEffects_begin @ react-dom.development.js:24713
+commitLayoutEffects @ react-dom.development.js:24651
+commitRootImpl @ react-dom.development.js:26862
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anônimo) @ react-dom.development.js:25690
+react-dom.development.js:12056  Uncaught Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.
+    at select.tsx:1241:13
+    at renderWithHooks (react-dom.development.js:15486:18)
+    at updateForwardRef (react-dom.development.js:19245:20)
+    at beginWork (react-dom.development.js:21675:16)
+    at beginWork$1 (react-dom.development.js:27465:14)
+    at performUnitOfWork (react-dom.development.js:26596:12)
+    at workLoopSync (react-dom.development.js:26505:5)
+    at renderRootSync (react-dom.development.js:26473:7)
+    at recoverFromConcurrentError (react-dom.development.js:25889:20)
+    at performSyncWorkOnRoot (react-dom.development.js:26135:20)
