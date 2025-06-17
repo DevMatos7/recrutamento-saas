@@ -46,7 +46,52 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   // Multi-step registration form component
   const CurriculumRegistrationForm = () => {
     const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+      nome: string;
+      email: string;
+      telefone: string;
+      password: string;
+      cpf: string;
+      dataNascimento: string;
+      endereco: string;
+      cidade: string;
+      estado: string;
+      cep: string;
+      cargo: string;
+      resumoProfissional: string;
+      experienciaProfissional: Array<{
+        empresa: string;
+        cargo: string;
+        dataInicio: string;
+        dataFim: string;
+        descricao: string;
+        atual: boolean;
+      }>;
+      educacao: Array<{
+        instituicao: string;
+        curso: string;
+        nivel: string;
+        dataInicio: string;
+        dataConclusao: string;
+        status: string;
+      }>;
+      habilidades: string[];
+      idiomas: Array<{
+        idioma: string;
+        nivel: string;
+      }>;
+      certificacoes: Array<{
+        nome: string;
+        instituicao: string;
+        dataEmissao: string;
+        dataVencimento: string;
+      }>;
+      linkedin: string;
+      portfolio: string;
+      pretensoSalarial: string;
+      disponibilidade: string;
+      modalidadeTrabalho: string;
+    }>({
       // Basic info
       nome: "",
       email: "",
@@ -94,14 +139,14 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       }));
     };
 
-    const removeExperience = (index) => {
+    const removeExperience = (index: number) => {
       setFormData(prev => ({
         ...prev,
         experienciaProfissional: prev.experienciaProfissional.filter((_, i) => i !== index)
       }));
     };
 
-    const updateExperience = (index, field, value) => {
+    const updateExperience = (index: number, field: string, value: any) => {
       setFormData(prev => ({
         ...prev,
         experienciaProfissional: prev.experienciaProfissional.map((exp, i) => 
@@ -124,14 +169,14 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       }));
     };
 
-    const removeEducation = (index) => {
+    const removeEducation = (index: number) => {
       setFormData(prev => ({
         ...prev,
         educacao: prev.educacao.filter((_, i) => i !== index)
       }));
     };
 
-    const updateEducation = (index, field, value) => {
+    const updateEducation = (index: number, field: string, value: any) => {
       setFormData(prev => ({
         ...prev,
         educacao: prev.educacao.map((edu, i) => 
@@ -140,7 +185,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       }));
     };
 
-    const addSkill = (skill) => {
+    const addSkill = (skill: string) => {
       if (skill && !formData.habilidades.includes(skill)) {
         setFormData(prev => ({
           ...prev,
@@ -149,7 +194,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       }
     };
 
-    const removeSkill = (skill) => {
+    const removeSkill = (skill: string) => {
       setFormData(prev => ({
         ...prev,
         habilidades: prev.habilidades.filter(s => s !== skill)
@@ -163,14 +208,14 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       }));
     };
 
-    const removeLanguage = (index) => {
+    const removeLanguage = (index: number) => {
       setFormData(prev => ({
         ...prev,
         idiomas: prev.idiomas.filter((_, i) => i !== index)
       }));
     };
 
-    const updateLanguage = (index, field, value) => {
+    const updateLanguage = (index: number, field: string, value: any) => {
       setFormData(prev => ({
         ...prev,
         idiomas: prev.idiomas.map((lang, i) => 
@@ -191,14 +236,14 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       }));
     };
 
-    const removeCertification = (index) => {
+    const removeCertification = (index: number) => {
       setFormData(prev => ({
         ...prev,
         certificacoes: prev.certificacoes.filter((_, i) => i !== index)
       }));
     };
 
-    const updateCertification = (index, field, value) => {
+    const updateCertification = (index: number, field: string, value: any) => {
       setFormData(prev => ({
         ...prev,
         certificacoes: prev.certificacoes.map((cert, i) => 
@@ -225,7 +270,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     };
 
     const steps = [
-      { id: 1, title: "Dados Básicos", icon: User },
+      { id: 1, title: "Dados Básicos", icon: Building2 },
       { id: 2, title: "Experiência", icon: Briefcase },
       { id: 3, title: "Educação", icon: GraduationCap },
       { id: 4, title: "Competências", icon: Award },
@@ -568,8 +613,9 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                     placeholder="Digite uma habilidade e pressione Enter"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
-                        addSkill(e.target.value);
-                        e.target.value = '';
+                        const target = e.target as HTMLInputElement;
+                        addSkill(target.value);
+                        target.value = '';
                       }
                     }}
                   />
