@@ -1070,6 +1070,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Communication routes
+  app.get("/api/comunicacoes", requireAuth, async (req, res, next) => {
+    try {
+      const { candidato, status, tipo, canal } = req.query;
+      
+      let comunicacoes;
+      if (candidato) {
+        comunicacoes = await storage.getComunicacoesByCanditato(candidato as string);
+      } else if (status) {
+        comunicacoes = await storage.getComunicacoesByStatus(status as string);
+      } else {
+        comunicacoes = await storage.getAllComunicacoes();
+      }
+      
+      // Apply additional filters
+      if (tipo || canal) {
+        comunicacoes = comunicacoes.filter((comm: any) => {
+          return (!tipo || comm.tipo === tipo) && (!canal || comm.canal === canal);
+        });
+      }
+      
+      res.json(comunicacoes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/comunicacoes/:id", requireAuth, async (req, res, next) => {
+    try {
+      const comunicacao = await storage.getComunicacao(req.params.id);
+      if (!comunicacao) {
+        return res.status(404).json({ message: "Comunicação não encontrada" });
+      }
+      res.json(comunicacao);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/comunicacoes/enviar", requireAuth, async (req, res, next) => {
+    try {
+      const { communicationService } = await import('./services/communication-service');
+      
+      const {
+        candidatoId,
+        tipo,
+        canal,
+        assunto,
+        mensagem,
+        dataAgendada,
+        variables
+      } = req.body;
+
+      // Validation
+      if (!candidatoId || !tipo || !canal || !mensagem) {
+        return res.status(400).json({ 
+          message: "Campos obrigatórios: candidatoId, tipo, canal, mensagem" 
+        });
+      }
+
+      if (!["whatsapp", "email"].includes(tipo)) {
+        return res.status(400).json({ message: "Tipo deve ser 'whatsapp' ou 'email'" });
+      }
+
+      if (!["inscricao", "pipeline", "entrevista", "teste", "outros"].includes(canal)) {
+        return res.status(400).json({ 
+          message: "Canal deve ser 'inscricao', 'pipeline', 'entrevista', 'teste' ou 'outros'" 
+        });
+      }
+
+      const result = await communicationService.enviarEArmazenar({
+        candidatoId,
+        tipo,
+        canal,
+        assunto,
+        mensagem,
+        enviadoPor: (req as any).user?.id,
+        dataAgendada: dataAgendada ? new Date(dataAgendada) : undefined,
+        variables
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+
+      res.status(201).json({
+        message: "Comunicação enviada com sucesso",
+        comunicacao: result.comunicacao
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/comunicacoes/:id/reenviar", requireAuth, async (req, res, next) => {
+    try {
+      const { communicationService } = await import('./services/communication-service');
+      
+      const comunicacao = await storage.getComunicacao(req.params.id);
+      if (!comunicacao) {
+        return res.status(404).json({ message: "Comunicação não encontrada" });
+      }
+
+      if (comunicacao.statusEnvio === 'enviado') {
+        return res.status(400).json({ message: "Esta comunicação já foi enviada" });
+      }
+
+      const candidato = await storage.getCandidato(comunicacao.candidatoId);
+      if (!candidato) {
+        return res.status(404).json({ message: "Candidato não encontrado" });
+      }
+
+      const result = await communicationService.enviarComunicacao(
+        comunicacao.tipo as 'whatsapp' | 'email',
+        candidato,
+        comunicacao.mensagem,
+        comunicacao.assunto || undefined
+      );
+
+      await storage.updateComunicacao(comunicacao.id, {
+        statusEnvio: result.success ? 'enviado' : 'erro',
+        erro: result.error,
+        dataEnvio: result.success ? new Date() : undefined
+      });
+
+      res.json({
+        message: result.success ? "Comunicação reenviada com sucesso" : "Erro ao reenviar comunicação",
+        success: result.success,
+        error: result.error
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/comunicacoes/templates", requireAuth, async (req, res, next) => {
+    try {
+      const { CommunicationService } = await import('./services/communication-service');
+      const templates = CommunicationService.getTemplates();
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/comunicacoes/:id", requireAuth, async (req, res, next) => {
+    try {
+      const success = await storage.deleteComunicacao(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Comunicação não encontrada" });
+      }
+      res.json({ message: "Comunicação removida com sucesso" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -376,7 +376,6 @@ export const insertComunicacaoSchema = createInsertSchema(comunicacoes).omit({
   id: true,
   criadoEm: true,
   atualizadoEm: true,
-  dataEnvio: true,
 }).extend({
   tipo: z.enum(["whatsapp", "email"]),
   canal: z.enum(["inscricao", "pipeline", "entrevista", "teste", "outros"]),
