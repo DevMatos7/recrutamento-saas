@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { Sidebar } from "@/components/layout/sidebar";
 import type { Teste, InsertTeste } from "@shared/schema";
 
 const testeFormSchema = z.object({
@@ -219,28 +220,35 @@ export default function TestesPage() {
   const canManageTests = ["admin"].includes(user.perfil);
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Testes DISC e Técnicos</h1>
-          <p className="text-muted-foreground">
-            Gerencie testes comportamentais e técnicos para avaliação de candidatos
-          </p>
-        </div>
-        
-        {canManageTests && (
-          <div className="flex gap-2">
-            <Button onClick={handleCreateDISC} variant="outline">
-              <Brain className="w-4 h-4 mr-2" />
-              Criar Teste DISC
-            </Button>
-            <Button onClick={handleCreateTecnico}>
-              <FileText className="w-4 h-4 mr-2" />
-              Criar Teste Técnico
-            </Button>
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-white shadow-sm border-b p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Testes DISC e Técnicos</h1>
+              <p className="text-muted-foreground">
+                Gerencie testes comportamentais e técnicos para avaliação de candidatos
+              </p>
+            </div>
+            
+            {canManageTests && (
+              <div className="flex gap-2">
+                <Button onClick={handleCreateDISC} variant="outline">
+                  <Brain className="w-4 h-4 mr-2" />
+                  Criar Teste DISC
+                </Button>
+                <Button onClick={handleCreateTecnico}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Criar Teste Técnico
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-6">
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -315,6 +323,9 @@ export default function TestesPage() {
           ))}
         </div>
       )}
+
+        </div>
+      </div>
 
       {/* Create/Edit Test Modal */}
       <Dialog open={createModalOpen || !!editingTeste} onOpenChange={(open) => {
