@@ -48,24 +48,6 @@ const defaultDISCQuestions = [
       "Oferece apoio e mantém a calma",
       "Analisa a situação metodicamente"
     ]
-  },
-  {
-    enunciado: "Seu estilo de comunicação é:",
-    alternativas: [
-      "Direto e objetivo",
-      "Entusiástico e persuasivo",
-      "Paciente e empático",
-      "Preciso e detalhado"
-    ]
-  },
-  {
-    enunciado: "Você prefere ambientes de trabalho:",
-    alternativas: [
-      "Dinâmicos com desafios constantes",
-      "Sociais com interação frequente",
-      "Estáveis e previsíveis",
-      "Organizados e estruturados"
-    ]
   }
 ];
 
@@ -75,8 +57,7 @@ export default function TestesPage() {
   const queryClient = useQueryClient();
   
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editingTeste, setEditingTeste] = useState<Teste | null>(null);
-  const [questaoAtual, setQuestaoAtual] = useState(0);
+  const [editingTeste, setEditingTeste] = useState<any | null>(null);
 
   const form = useForm<TesteFormData>({
     resolver: zodResolver(testeFormSchema),
@@ -84,7 +65,13 @@ export default function TestesPage() {
       tipo: "DISC",
       titulo: "",
       descricao: "",
-      questoes: [{ enunciado: "", alternativas: ["", ""], respostaCorreta: undefined }]
+      questoes: [
+        {
+          enunciado: "",
+          alternativas: ["", ""],
+          respostaCorreta: undefined
+        }
+      ]
     }
   });
 
@@ -146,7 +133,7 @@ export default function TestesPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/testes"] });
       toast({
         title: "Sucesso",
-        description: "Teste desativado com sucesso!",
+        description: "Teste removido com sucesso!",
       });
     },
     onError: (error: Error) => {
@@ -166,7 +153,7 @@ export default function TestesPage() {
     form.reset({
       tipo: "DISC",
       titulo: "Teste DISC - Perfil Comportamental",
-      descricao: "Avalia o perfil comportamental do candidato baseado na metodologia DISC",
+      descricao: "Avaliação do perfil comportamental baseado na metodologia DISC",
       questoes: defaultDISCQuestions
     });
     setCreateModalOpen(true);
@@ -175,9 +162,15 @@ export default function TestesPage() {
   const handleCreateTecnico = () => {
     form.reset({
       tipo: "tecnico",
-      titulo: "",
-      descricao: "",
-      questoes: [{ enunciado: "", alternativas: ["", ""], respostaCorreta: 0 }]
+      titulo: "Teste Técnico",
+      descricao: "Avaliação de conhecimentos técnicos específicos",
+      questoes: [
+        {
+          enunciado: "",
+          alternativas: ["", ""],
+          respostaCorreta: 0
+        }
+      ]
     });
     setCreateModalOpen(true);
   };
@@ -186,14 +179,19 @@ export default function TestesPage() {
     const currentQuestoes = form.getValues("questoes");
     form.setValue("questoes", [
       ...currentQuestoes,
-      { enunciado: "", alternativas: ["", ""], respostaCorreta: undefined }
+      {
+        enunciado: "",
+        alternativas: ["", ""],
+        respostaCorreta: form.getValues("tipo") === "tecnico" ? 0 : undefined
+      }
     ]);
   };
 
   const removeQuestao = (index: number) => {
     const currentQuestoes = form.getValues("questoes");
     if (currentQuestoes.length > 1) {
-      form.setValue("questoes", currentQuestoes.filter((_, i) => i !== index));
+      currentQuestoes.splice(index, 1);
+      form.setValue("questoes", currentQuestoes);
     }
   };
 
@@ -249,81 +247,105 @@ export default function TestesPage() {
         </div>
 
         <div className="flex-1 overflow-auto p-6">
-
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-3 bg-muted rounded w-full mb-2"></div>
-                <div className="h-3 bg-muted rounded w-2/3"></div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-3 bg-muted rounded w-full mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-2/3"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : Array.isArray(testes) && testes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {testes.map((teste: any) => (
+                <Card key={teste.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">{teste.titulo}</CardTitle>
+                        <CardDescription className="mt-1">
+                          {teste.descricao || "Sem descrição"}
+                        </CardDescription>
+                      </div>
+                      <Badge 
+                        variant={teste.tipo === "DISC" ? "default" : "secondary"}
+                        className="ml-2"
+                      >
+                        {teste.tipo}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        <span>{teste.questoes?.length || 0} questões</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        <span>0 resultados</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-4">
+                      {canManageTests && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingTeste(teste)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteTesteMutation.mutate(teste.id)}
+                            disabled={deleteTesteMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                      <Button size="sm" variant="secondary" className="ml-auto">
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Ver Resultados
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum teste cadastrado</h3>
+                <p className="text-muted-foreground mb-4">
+                  Comece criando seu primeiro teste DISC ou técnico
+                </p>
+                {canManageTests && (
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={handleCreateDISC} variant="outline">
+                      <Brain className="w-4 h-4 mr-2" />
+                      Criar Teste DISC
+                    </Button>
+                    <Button onClick={handleCreateTecnico}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Criar Teste Técnico
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.isArray(testes) && testes.map((teste: Teste) => (
-            <Card key={teste.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{teste.titulo}</CardTitle>
-                    <CardDescription className="mt-1">{teste.descricao}</CardDescription>
-                  </div>
-                  <Badge variant={teste.tipo === "DISC" ? "default" : "secondary"}>
-                    {teste.tipo === "DISC" ? "DISC" : "Técnico"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center gap-1">
-                    <FileText className="w-4 h-4" />
-                    {Array.isArray(teste.questoes) ? teste.questoes.length : 0} questões
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    0 aplicações
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  {canManageTests && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingTeste(teste)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteTesteMutation.mutate(teste.id)}
-                        disabled={deleteTesteMutation.isPending}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </>
-                  )}
-                  <Button size="sm" variant="secondary" className="ml-auto">
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Ver Resultados
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
+          )}
         </div>
       </div>
 
@@ -353,7 +375,7 @@ export default function TestesPage() {
                   name="tipo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo do Teste</FormLabel>
+                      <FormLabel>Tipo de Teste</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
@@ -390,10 +412,10 @@ export default function TestesPage() {
                 name="descricao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descrição</FormLabel>
+                    <FormLabel>Descrição (opcional)</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Descreva o objetivo do teste"
+                      <Textarea
+                        placeholder="Descreva o objetivo e contexto do teste"
                         className="resize-none"
                         {...field}
                       />
@@ -404,7 +426,7 @@ export default function TestesPage() {
               />
 
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Questões</h3>
                   <Button type="button" onClick={addQuestao} variant="outline" size="sm">
                     <Plus className="w-4 h-4 mr-2" />
@@ -414,104 +436,103 @@ export default function TestesPage() {
 
                 {form.watch("questoes").map((questao, questaoIndex) => (
                   <Card key={questaoIndex} className="p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-medium">Questão {questaoIndex + 1}</h4>
-                      {form.watch("questoes").length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeQuestao(questaoIndex)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name={`questoes.${questaoIndex}.enunciado`}
-                      render={({ field }) => (
-                        <FormItem className="mb-4">
-                          <FormLabel>Enunciado</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Digite a pergunta"
-                              className="resize-none"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <FormLabel>Alternativas</FormLabel>
-                        <Button
-                          type="button"
-                          onClick={() => addAlternativa(questaoIndex)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Adicionar
-                        </Button>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Questão {questaoIndex + 1}</h4>
+                        {form.watch("questoes").length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeQuestao(questaoIndex)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
 
-                      {questao.alternativas.map((_, altIndex) => (
-                        <div key={altIndex} className="flex gap-2 items-center">
-                          <span className="w-8 text-center font-medium">
-                            {String.fromCharCode(65 + altIndex)}
-                          </span>
-                          <FormField
-                            control={form.control}
-                            name={`questoes.${questaoIndex}.alternativas.${altIndex}`}
-                            render={({ field }) => (
-                              <FormItem className="flex-1">
-                                <FormControl>
-                                  <Input
-                                    placeholder={`Alternativa ${String.fromCharCode(65 + altIndex)}`}
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
+                      <FormField
+                        control={form.control}
+                        name={`questoes.${questaoIndex}.enunciado`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Enunciado</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Digite a pergunta..."
+                                className="resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Alternativas</FormLabel>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addAlternativa(questaoIndex)}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Adicionar
+                          </Button>
+                        </div>
+
+                        {questao.alternativas.map((_, altIndex) => (
+                          <div key={altIndex} className="flex gap-2 items-center">
+                            {form.watch("tipo") === "tecnico" && (
+                              <FormField
+                                control={form.control}
+                                name={`questoes.${questaoIndex}.respostaCorreta`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <input
+                                        type="radio"
+                                        checked={field.value === altIndex}
+                                        onChange={() => field.onChange(altIndex)}
+                                        className="mt-2"
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
                             )}
-                          />
-                          {form.watch("tipo") === "tecnico" && (
+                            
                             <FormField
                               control={form.control}
-                              name={`questoes.${questaoIndex}.respostaCorreta`}
+                              name={`questoes.${questaoIndex}.alternativas.${altIndex}`}
                               render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="flex-1">
                                   <FormControl>
-                                    <Button
-                                      type="button"
-                                      variant={field.value === altIndex ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={() => field.onChange(altIndex)}
-                                    >
-                                      Correta
-                                    </Button>
+                                    <Input
+                                      placeholder={`Alternativa ${altIndex + 1}`}
+                                      {...field}
+                                    />
                                   </FormControl>
+                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
-                          )}
-                          {questao.alternativas.length > 2 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeAlternativa(questaoIndex, altIndex)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
+
+                            {questao.alternativas.length > 2 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeAlternativa(questaoIndex, altIndex)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </Card>
                 ))}
