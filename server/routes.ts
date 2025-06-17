@@ -2,8 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema } from "@shared/schema";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema } from "@shared/schema";
 import { TesteService } from "./services/teste-service.js";
+import { EntrevistaService } from "./services/entrevista-service.js";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -895,6 +896,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const resultados = await TesteService.obterResultadosPorVaga(req.params.id, (req as any).user);
       res.json(resultados);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // =================== ENTREVISTAS ===================
+
+  // Get all interviews with filters
+  app.get("/api/entrevistas", requireAuth, async (req, res, next) => {
+    try {
+      const filtros = {
+        vagaId: req.query.vagaId as string,
+        candidatoId: req.query.candidatoId as string,
+        entrevistadorId: req.query.entrevistadorId as string,
+        status: req.query.status as string,
+        dataInicio: req.query.dataInicio ? new Date(req.query.dataInicio as string) : undefined,
+        dataFim: req.query.dataFim ? new Date(req.query.dataFim as string) : undefined,
+      };
+
+      const entrevistas = await EntrevistaService.listarEntrevistas(filtros, (req as any).user);
+      res.json(entrevistas);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Get specific interview
+  app.get("/api/entrevistas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const entrevista = await EntrevistaService.obterEntrevista(req.params.id, (req as any).user);
+      if (!entrevista) {
+        return res.status(404).json({ message: "Entrevista não encontrada" });
+      }
+      res.json(entrevista);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Schedule new interview
+  app.post("/api/entrevistas", requireAuth, async (req, res, next) => {
+    try {
+      const entrevistaData = insertEntrevistaSchema.parse(req.body);
+      const novaEntrevista = await EntrevistaService.agendarEntrevista(entrevistaData, (req as any).user);
+      res.status(201).json(novaEntrevista);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error instanceof Error && (error.message.includes("já possui") || error.message.includes("não encontrad") || error.message.includes("deve ser futura"))) {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Update interview
+  app.put("/api/entrevistas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const entrevistaData = insertEntrevistaSchema.partial().parse(req.body);
+      const entrevistaAtualizada = await EntrevistaService.atualizarEntrevista(req.params.id, entrevistaData, (req as any).user);
+      if (!entrevistaAtualizada) {
+        return res.status(404).json({ message: "Entrevista não encontrada" });
+      }
+      res.json(entrevistaAtualizada);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error instanceof Error && (error.message.includes("não é possível") || error.message.includes("deve ser futura"))) {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Update interview status
+  app.patch("/api/entrevistas/:id/status", requireAuth, async (req, res, next) => {
+    try {
+      const { status, observacoes } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status é obrigatório" });
+      }
+
+      const entrevistaAtualizada = await EntrevistaService.atualizarStatus(
+        req.params.id, 
+        status, 
+        observacoes, 
+        (req as any).user
+      );
+      
+      if (!entrevistaAtualizada) {
+        return res.status(404).json({ message: "Entrevista não encontrada" });
+      }
+      
+      res.json(entrevistaAtualizada);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error instanceof Error && error.message.includes("inválido")) {
+        return res.status(400).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Delete interview
+  app.delete("/api/entrevistas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const sucesso = await EntrevistaService.removerEntrevista(req.params.id, (req as any).user);
+      if (!sucesso) {
+        return res.status(404).json({ message: "Entrevista não encontrada" });
+      }
+      res.json({ message: "Entrevista removida com sucesso" });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error instanceof Error && error.message.includes("não é possível")) {
+        return res.status(400).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Get upcoming interviews for user
+  app.get("/api/entrevistas/usuario/:id/proximas", requireAuth, async (req, res, next) => {
+    try {
+      const proximasEntrevistas = await EntrevistaService.obterProximasEntrevistas(req.params.id, (req as any).user);
+      res.json(proximasEntrevistas);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Get interview statistics
+  app.get("/api/entrevistas/estatisticas", requireAuth, async (req, res, next) => {
+    try {
+      const estatisticas = await EntrevistaService.obterEstatisticas((req as any).user);
+      res.json(estatisticas);
     } catch (error) {
       if (error instanceof Error && error.message.includes("permissão")) {
         return res.status(403).json({ message: error.message });

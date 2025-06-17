@@ -103,6 +103,16 @@ export interface IStorage {
   getResultadosByCandidato(candidatoId: string): Promise<any[]>;
   getTestesPendentes(candidatoId: string): Promise<any[]>;
   
+  // Interview methods
+  getAllEntrevistas(): Promise<Entrevista[]>;
+  getEntrevista(id: string): Promise<Entrevista | undefined>;
+  createEntrevista(entrevista: InsertEntrevista): Promise<Entrevista>;
+  updateEntrevista(id: string, entrevista: Partial<InsertEntrevista>): Promise<Entrevista | undefined>;
+  deleteEntrevista(id: string): Promise<boolean>;
+  getEntrevistasByVaga(vagaId: string): Promise<any[]>;
+  getEntrevistasByCandidato(candidatoId: string): Promise<any[]>;
+  getEntrevistasByEntrevistador(entrevistadorId: string): Promise<any[]>;
+  
   sessionStore: any;
 }
 
@@ -515,6 +525,75 @@ export class DatabaseStorage implements IStorage {
         vaga: true
       },
       orderBy: (testesResultados, { desc }) => [desc(testesResultados.dataEnvio)]
+    });
+  }
+
+  // Interview methods
+  async getAllEntrevistas(): Promise<Entrevista[]> {
+    return await db.select().from(entrevistas).orderBy(desc(entrevistas.dataHora));
+  }
+
+  async getEntrevista(id: string): Promise<Entrevista | undefined> {
+    const [entrevista] = await db.select().from(entrevistas).where(eq(entrevistas.id, id));
+    return entrevista || undefined;
+  }
+
+  async createEntrevista(entrevista: InsertEntrevista): Promise<Entrevista> {
+    const [novaEntrevista] = await db.insert(entrevistas).values({
+      ...entrevista,
+      dataCriacao: new Date(),
+      dataAtualizacao: new Date()
+    }).returning();
+    return novaEntrevista;
+  }
+
+  async updateEntrevista(id: string, entrevista: Partial<InsertEntrevista>): Promise<Entrevista | undefined> {
+    const [entrevistaAtualizada] = await db.update(entrevistas)
+      .set({ ...entrevista, dataAtualizacao: new Date() })
+      .where(eq(entrevistas.id, id))
+      .returning();
+    return entrevistaAtualizada || undefined;
+  }
+
+  async deleteEntrevista(id: string): Promise<boolean> {
+    const result = await db.delete(entrevistas).where(eq(entrevistas.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getEntrevistasByVaga(vagaId: string): Promise<any[]> {
+    return await db.query.entrevistas.findMany({
+      where: eq(entrevistas.vagaId, vagaId),
+      with: {
+        candidato: true,
+        entrevistador: {
+          columns: { id: true, nome: true, email: true, perfil: true }
+        }
+      },
+      orderBy: (entrevistas, { desc }) => [desc(entrevistas.dataHora)]
+    });
+  }
+
+  async getEntrevistasByCandidato(candidatoId: string): Promise<any[]> {
+    return await db.query.entrevistas.findMany({
+      where: eq(entrevistas.candidatoId, candidatoId),
+      with: {
+        vaga: { columns: { id: true, titulo: true, status: true } },
+        entrevistador: {
+          columns: { id: true, nome: true, email: true, perfil: true }
+        }
+      },
+      orderBy: (entrevistas, { desc }) => [desc(entrevistas.dataHora)]
+    });
+  }
+
+  async getEntrevistasByEntrevistador(entrevistadorId: string): Promise<any[]> {
+    return await db.query.entrevistas.findMany({
+      where: eq(entrevistas.entrevistadorId, entrevistadorId),
+      with: {
+        candidato: true,
+        vaga: { columns: { id: true, titulo: true, status: true } }
+      },
+      orderBy: (entrevistas, { desc }) => [desc(entrevistas.dataHora)]
     });
   }
 }

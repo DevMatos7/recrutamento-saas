@@ -12,7 +12,8 @@ import {
   Settings,
   LogOut,
   GitBranch,
-  Brain
+  Brain,
+  Calendar
 } from "lucide-react";
 
 export function Sidebar() {
@@ -52,6 +53,12 @@ export function Sidebar() {
       name: "Testes DISC",
       href: "/testes",
       icon: Brain,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Entrevistas",
+      href: "/entrevistas",
+      icon: Calendar,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
