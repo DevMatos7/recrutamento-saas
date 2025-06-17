@@ -484,7 +484,7 @@ export default function ComunicacoesPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {comunicacoes?.filter((c: any) => c.statusEnvio === 'erro').length || 0}
+                      {Array.isArray(comunicacoes) ? comunicacoes.filter((c: any) => c.statusEnvio === 'erro').length : 0}
                     </div>
                   </CardContent>
                 </Card>
@@ -602,7 +602,7 @@ export default function ComunicacoesPage() {
                 <div className="space-y-2">
                   <FormLabel>Templates Pré-definidos</FormLabel>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {Object.entries(templates).map(([key, template]) => (
+                    {templates && Object.entries(templates as Record<string, any>).map(([key, template]) => (
                       <Button
                         key={key}
                         type="button"
