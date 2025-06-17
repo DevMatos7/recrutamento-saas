@@ -1397,8 +1397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const candidate = await candidatePortalService.loginCandidate(email, password);
 
       // Set session for candidate
-      req.session.candidateId = candidate.id;
-      req.session.candidateEmail = candidate.email;
+      (req.session as any).candidateId = candidate.id;
+      (req.session as any).candidateEmail = candidate.email;
 
       res.json({
         message: "Login realizado com sucesso",
@@ -1471,6 +1471,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID da vaga é obrigatório" });
       }
 
+      if (!candidateId) {
+        return res.status(401).json({ message: "Candidato não autenticado" });
+      }
+
       const application = await candidatePortalService.applyToJob(candidateId, vagaId);
       
       res.status(201).json({
@@ -1491,6 +1495,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
       const candidateId = req.candidateId;
+      if (!candidateId) {
+        return res.status(401).json({ message: "Candidato não autenticado" });
+      }
       const applications = await candidatePortalService.getCandidateApplications(candidateId);
       
       res.json(applications);
@@ -1504,6 +1511,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
       const candidateId = req.candidateId;
+      if (!candidateId) {
+        return res.status(401).json({ message: "Candidato não autenticado" });
+      }
       const dashboard = await candidatePortalService.getCandidateDashboard(candidateId);
       
       res.json(dashboard);
@@ -1517,6 +1527,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
       const candidateId = req.candidateId;
+      if (!candidateId) {
+        return res.status(401).json({ message: "Candidato não autenticado" });
+      }
       const tests = await candidatePortalService.getPendingTests(candidateId);
       
       res.json(tests);
@@ -1532,6 +1545,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { respostas } = req.body;
       const candidateId = req.candidateId;
+
+      if (!candidateId) {
+        return res.status(401).json({ message: "Candidato não autenticado" });
+      }
 
       if (!respostas) {
         return res.status(400).json({ message: "Respostas são obrigatórias" });
