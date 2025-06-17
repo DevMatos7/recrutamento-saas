@@ -1097,6 +1097,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/comunicacoes/templates", requireAuth, async (req, res, next) => {
+    try {
+      const fallbackTemplates = {
+        inscricao: {
+          whatsapp: "Olá {{nome}}! Sua candidatura para a vaga {{vaga}} foi recebida com sucesso.",
+          email: {
+            assunto: "Candidatura recebida - {{vaga}}",
+            mensagem: "Olá {{nome}},\n\nSua candidatura foi recebida com sucesso.\n\nAtenciosamente,\nEquipe {{empresa}}"
+          }
+        },
+        pipeline: {
+          whatsapp: "Olá {{nome}}! Sua candidatura para {{vaga}} avançou para a próxima etapa.",
+          email: {
+            assunto: "Atualização do processo seletivo - {{vaga}}",
+            mensagem: "Olá {{nome}},\n\nSua candidatura avançou para a próxima etapa.\n\nAtenciosamente,\nEquipe {{empresa}}"
+          }
+        },
+        entrevista: {
+          whatsapp: "Olá {{nome}}! Sua entrevista está agendada para {{data_entrevista}}.",
+          email: {
+            assunto: "Entrevista agendada - {{vaga}}",
+            mensagem: "Olá {{nome}},\n\nSua entrevista foi agendada para {{data_entrevista}}.\n\nAtenciosamente,\nEquipe {{empresa}}"
+          }
+        },
+        teste: {
+          whatsapp: "Olá {{nome}}! Foi disponibilizado um teste. Acesse: {{link_teste}}",
+          email: {
+            assunto: "Teste disponível - {{vaga}}",
+            mensagem: "Olá {{nome}},\n\nFoi disponibilizado um teste: {{link_teste}}\n\nAtenciosamente,\nEquipe {{empresa}}"
+          }
+        }
+      };
+      res.json(fallbackTemplates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/comunicacoes/:id", requireAuth, async (req, res, next) => {
     try {
       const comunicacao = await storage.getComunicacao(req.params.id);
@@ -1205,15 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/comunicacoes/templates", requireAuth, async (req, res, next) => {
-    try {
-      const { CommunicationService } = await import('./services/communication-service');
-      const templates = CommunicationService.getTemplates();
-      res.json(templates);
-    } catch (error) {
-      next(error);
-    }
-  });
+
 
   app.delete("/api/comunicacoes/:id", requireAuth, async (req, res, next) => {
     try {

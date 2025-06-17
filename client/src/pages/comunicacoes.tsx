@@ -183,7 +183,7 @@ export default function ComunicacoesPage() {
   });
 
   const onSubmit = (data: ComunicacaoFormData) => {
-    const candidato = candidatos?.find((c: any) => c.id === data.candidatoId);
+    const candidato = Array.isArray(candidatos) ? candidatos.find((c: any) => c.id === data.candidatoId) : null;
     
     const variables = candidato ? {
       nome: candidato.nome,
@@ -232,11 +232,11 @@ export default function ComunicacoesPage() {
     return <div>Carregando...</div>;
   }
 
-  const filteredComunicacoes = comunicacoes?.filter((comm: any) => {
+  const filteredComunicacoes = Array.isArray(comunicacoes) ? comunicacoes.filter((comm: any) => {
     return (!filters.status || comm.statusEnvio === filters.status) &&
            (!filters.tipo || comm.tipo === filters.tipo) &&
            (!filters.canal || comm.canal === filters.canal);
-  }) || [];
+  }) : [];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -456,7 +456,7 @@ export default function ComunicacoesPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {comunicacoes?.filter((c: any) => c.statusEnvio === 'enviado').length || 0}
+                      {Array.isArray(comunicacoes) ? comunicacoes.filter((c: any) => c.statusEnvio === 'enviado').length : 0}
                     </div>
                   </CardContent>
                 </Card>
@@ -470,7 +470,7 @@ export default function ComunicacoesPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {comunicacoes?.filter((c: any) => c.statusEnvio === 'pendente').length || 0}
+                      {Array.isArray(comunicacoes) ? comunicacoes.filter((c: any) => c.statusEnvio === 'pendente').length : 0}
                     </div>
                   </CardContent>
                 </Card>
@@ -656,7 +656,7 @@ export default function ComunicacoesPage() {
 
               <div className="text-sm text-muted-foreground">
                 <p><strong>Variáveis disponíveis:</strong></p>
-                <p>{{nome}}, {{email}}, {{telefone}}, {{vaga}}, {{empresa}}, {{data_entrevista}}, {{link_teste}}</p>
+                <p>{`{{nome}}, {{email}}, {{telefone}}, {{vaga}}, {{empresa}}, {{data_entrevista}}, {{link_teste}}`}</p>
               </div>
 
               <DialogFooter>
