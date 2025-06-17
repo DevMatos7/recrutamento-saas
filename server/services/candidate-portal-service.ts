@@ -72,7 +72,7 @@ export class CandidatePortalService {
         throw new Error('Credenciais inválidas');
       }
 
-      const isValidPassword = await bcrypt.compare(password, candidate[0].password);
+      const isValidPassword = await bcrypt.compare(password, candidate[0].password || '');
       if (!isValidPassword) {
         throw new Error('Credenciais inválidas');
       }
@@ -91,7 +91,11 @@ export class CandidatePortalService {
   // Listar vagas abertas para candidatura
   async getOpenJobs(empresaId?: string) {
     try {
-      let query = db
+      const whereCondition = empresaId 
+        ? and(eq(vagas.status, 'aberta'), eq(vagas.empresaId, empresaId))
+        : eq(vagas.status, 'aberta');
+
+      const jobs = await db
         .select({
           id: vagas.id,
           titulo: vagas.titulo,
@@ -108,13 +112,8 @@ export class CandidatePortalService {
         .from(vagas)
         .innerJoin(empresas, eq(vagas.empresaId, empresas.id))
         .innerJoin(departamentos, eq(vagas.departamentoId, departamentos.id))
-        .where(eq(vagas.status, 'aberta'));
-
-      if (empresaId) {
-        query = query.where(eq(vagas.empresaId, empresaId));
-      }
-
-      const jobs = await query.orderBy(desc(vagas.dataAbertura));
+        .where(whereCondition)
+        .orderBy(desc(vagas.dataAbertura));
       return jobs;
     } catch (error) {
       console.error('Erro ao buscar vagas abertas:', error);
@@ -189,7 +188,7 @@ export class CandidatePortalService {
       const application = await db
         .insert(vagaCandidatos)
         .values({
-          candidatoId,
+          candidatoId: candidateId,
           vagaId: jobId,
           etapa: 'recebido'
         })
