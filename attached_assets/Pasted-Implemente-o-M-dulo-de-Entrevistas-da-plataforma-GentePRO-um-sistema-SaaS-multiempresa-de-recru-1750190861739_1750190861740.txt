@@ -1,0 +1,97 @@
+Implemente o **Módulo de Entrevistas** da plataforma GentePRO, um sistema SaaS multiempresa de recrutamento e seleção. O backend é em FastAPI, com banco de dados PostgreSQL, autenticação via JWT e estrutura modular com perfis de acesso (admin, recrutador, gestor).
+
+---
+
+### 🎯 OBJETIVO DO MÓDULO
+
+Gerenciar o agendamento, visualização e histórico de entrevistas entre candidatos e recrutadores/gestores dentro de um processo seletivo vinculado a uma vaga.
+
+---
+
+### 🧱 BACKEND – ESTRUTURA DO BANCO
+
+#### 🔸 Modelo `entrevistas`
+
+Campos da tabela:
+- `id`: UUID (PK)
+- `vaga_id`: FK → ID da vaga
+- `candidato_id`: FK → ID do candidato
+- `entrevistador_id`: FK → usuário (recrutador ou gestor)
+- `data_hora`: datetime
+- `local`: string (opcional – ex: "Google Meet", "Sala 1", etc.)
+- `status`: enum (`agendada`, `realizada`, `cancelada`, `faltou`)
+- `observacoes`: text (opcional)
+- `data_criacao`: datetime
+- `data_atualizacao`: datetime
+
+---
+
+### 🔐 PERMISSÕES
+
+- `recrutador`: pode agendar, editar e registrar entrevistas da empresa
+- `gestor`: pode visualizar e realizar entrevistas em sua área
+- `admin`: acesso total
+- `candidato`: não interage diretamente (futuro portal externo)
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `POST /entrevistas` → agendar nova entrevista
+- `GET /entrevistas` → listar entrevistas com filtros (vaga, entrevistador, candidato, status)
+- `GET /entrevistas/{id}` → ver detalhes da entrevista
+- `PUT /entrevistas/{id}` → editar data, local ou entrevistador
+- `PATCH /entrevistas/{id}/status` → marcar como realizada, cancelada ou faltou
+- `DELETE /entrevistas/{id}` → remover entrevista (somente se ainda não realizada)
+
+---
+
+### 🧪 REGRAS DE NEGÓCIO
+
+- Um candidato só pode ter **uma entrevista ativa por vaga**
+- Apenas usuários da empresa da vaga podem agendar
+- Não permitir editar entrevistas já realizadas ou com status `cancelada`
+- A data/hora deve ser futura ao agendar
+- Permitir registrar resultado e observações pós-entrevista
+
+---
+
+### 💻 FRONTEND – SUGESTÃO DE TELAS
+
+#### Tela: Agenda de Entrevistas
+- Filtros por data, vaga, entrevistador, status
+- Colunas: candidato, vaga, data/hora, status, ações
+- Botão “Agendar nova entrevista”
+
+#### Tela: Agendamento / Edição
+- Campos: vaga, candidato, entrevistador, data/hora, local
+- Validações: obrigatoriedade, horário futuro, vínculo empresa
+- Botões: Salvar, Cancelar
+
+#### Tela: Detalhe / Pós-entrevista
+- Exibir dados principais
+- Campo de observações
+- Botão para alterar status
+
+---
+
+### ⚙️ CONSIDERAÇÕES TÉCNICAS
+
+- Usar UUID como chave primária
+- Utilizar enums para status e validação com Pydantic
+- Relacionar com tabelas: `vagas`, `candidatos`, `usuarios`
+- Criar rotas protegidas por JWT e verificação de perfil
+- Organizar o código com:
+  - `entrevista_model.py`
+  - `entrevista_schema.py`
+  - `entrevista_service.py`
+  - `entrevista_router.py`
+
+---
+
+### ✅ RESULTADO ESPERADO
+
+- Entrevistas agendadas com sucesso
+- Visualização de agenda segmentada por usuário ou vaga
+- Possibilidade de editar ou cancelar entrevistas ativamente
+- Integração futura com WhatsApp ou e-mail para envio de convite automático
