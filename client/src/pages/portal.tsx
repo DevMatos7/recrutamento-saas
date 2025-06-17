@@ -99,7 +99,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   });
 
   const { data: myApplications } = useQuery({
-    queryKey: ["/api/candidate-portal/profile"],
+    queryKey: ["/api/candidate-portal/dashboard"],
     enabled: isAuthenticated
   });
 
