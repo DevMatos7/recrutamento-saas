@@ -41,6 +41,8 @@ GentePRO is a full-stack Human Resources management system built with React, Exp
 - **Jobs (vagas)**: Job postings with detailed requirements
 - **Candidates (candidatos)**: Candidate profiles and information
 - **Pipeline (vagaCandidatos)**: Recruitment pipeline tracking
+- **Tests (testes)**: DISC behavioral and technical assessment tests
+- **Test Results (testesResultados)**: Candidate test responses and evaluations
 
 ### Frontend Architecture
 - Component-based architecture with reusable UI components
@@ -103,7 +105,36 @@ GentePRO is a full-stack Human Resources management system built with React, Exp
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **June 17, 2025**: Implemented DISC and Technical Tests Module
+  - Added comprehensive test management system with DISC behavioral assessments and technical evaluations
+  - Created test creation interface with question builder and answer validation
+  - Implemented automatic DISC profile calculation (Dominante, Influente, Estável, Consciente)
+  - Added technical test scoring with correct answer validation
+  - Integrated test assignment functionality with role-based permissions
+  - Enhanced database schema with tests and test results tables
+  - Added sample DISC and technical tests for JavaScript and Python
+  - Created dedicated tests management page with admin/recruiter access controls
+
+## Key Features
+
+### DISC and Technical Tests Module
+- **Test Creation**: Admin users can create DISC behavioral tests and technical assessments
+- **Question Builder**: Interactive interface for creating questions with multiple choice answers
+- **Automatic Scoring**: DISC profile calculation and technical test percentage scoring  
+- **Role-Based Access**: Admins create tests, recruiters assign them, all authorized users view results
+- **Test Assignment**: Integration with candidate pipeline for seamless test distribution
+- **Result Analysis**: Comprehensive test result tracking and candidate evaluation
+
+### Selection Pipeline Module
+- **Kanban Interface**: Visual candidate management through 6 pipeline stages
+- **Stage Management**: Recebidos, Triagem, Entrevista, Avaliação, Aprovado, Reprovado
+- **Movement Validation**: Permission-based candidate progression with audit trails
+- **Duplicate Prevention**: System prevents duplicate candidate enrollment in same job
+- **Comments and Scoring**: Detailed feedback and evaluation tracking for each movement
+
 ## Changelog
 
-Changelog:
-- June 15, 2025. Initial setup
+- June 15, 2025: Initial setup
+- June 17, 2025: DISC and Technical Tests Module implementation
