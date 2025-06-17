@@ -642,12 +642,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateComunicacao(id: string, comunicacao: Partial<InsertComunicacao>): Promise<Comunicacao | undefined> {
+  async updateComunicacao(id: string, comunicacao: any): Promise<Comunicacao | undefined> {
     await db.update(comunicacoes)
       .set({ 
         ...comunicacao, 
-        atualizadoEm: new Date(),
-        ...(comunicacao.statusEnvio === 'enviado' && { dataEnvio: new Date() })
+        atualizadoEm: new Date()
       })
       .where(eq(comunicacoes.id, id));
     

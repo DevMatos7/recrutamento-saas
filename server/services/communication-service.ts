@@ -19,7 +19,7 @@ export class CommunicationService {
 
   constructor() {
     // Initialize email transporter with environment variables
-    this.emailTransporter = nodemailer.createTransporter({
+    this.emailTransporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'localhost',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
@@ -202,7 +202,7 @@ export class CommunicationService {
         await storage.updateComunicacao(comunicacao.id, {
           statusEnvio: result.success ? 'enviado' : 'erro',
           erro: result.error,
-          dataEnvio: result.success ? new Date() : undefined
+          ...(result.success && { dataEnvio: new Date() })
         });
 
         return { 
@@ -238,7 +238,7 @@ export class CommunicationService {
         await storage.updateComunicacao(comunicacao.id, {
           statusEnvio: result.success ? 'enviado' : 'erro',
           erro: result.error,
-          dataEnvio: result.success ? new Date() : undefined
+          ...(result.success && { dataEnvio: new Date() })
         });
       }
     } catch (error) {
