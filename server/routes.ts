@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema } from "@shared/schema";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema } from "@shared/schema";
+import { TesteService } from "./services/teste-service.js";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -721,6 +722,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usuariosHoje: usuariosHoje.length,
       });
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // =================== TESTES DISC E TÉCNICOS ===================
+
+  // Get all tests
+  app.get("/api/testes", requireAuth, async (req, res, next) => {
+    try {
+      const testes = await TesteService.listarTestes((req as any).user);
+      res.json(testes);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Get specific test
+  app.get("/api/testes/:id", requireAuth, async (req, res, next) => {
+    try {
+      const teste = await TesteService.obterTeste(req.params.id, (req as any).user);
+      if (!teste) {
+        return res.status(404).json({ message: "Teste não encontrado" });
+      }
+      res.json(teste);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Create new test (admin only)
+  app.post("/api/testes", requireAuth, async (req, res, next) => {
+    try {
+      const testeData = insertTesteSchema.parse(req.body);
+      const novoTeste = await TesteService.criarTeste(testeData, (req as any).user);
+      res.status(201).json(novoTeste);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Update test (admin only)
+  app.put("/api/testes/:id", requireAuth, async (req, res, next) => {
+    try {
+      const testeData = insertTesteSchema.partial().parse(req.body);
+      const testeAtualizado = await TesteService.atualizarTeste(req.params.id, testeData, (req as any).user);
+      if (!testeAtualizado) {
+        return res.status(404).json({ message: "Teste não encontrado" });
+      }
+      res.json(testeAtualizado);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Deactivate test (admin only)
+  app.delete("/api/testes/:id", requireAuth, async (req, res, next) => {
+    try {
+      const sucesso = await TesteService.desativarTeste(req.params.id, (req as any).user);
+      if (!sucesso) {
+        return res.status(404).json({ message: "Teste não encontrado" });
+      }
+      res.json({ message: "Teste desativado com sucesso" });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Assign test to candidate for specific job
+  app.post("/api/testes/aplicar", requireAuth, async (req, res, next) => {
+    try {
+      const { testeId, candidatoId, vagaId } = req.body;
+      
+      if (!testeId || !candidatoId || !vagaId) {
+        return res.status(400).json({ 
+          message: "testeId, candidatoId e vagaId são obrigatórios" 
+        });
+      }
+
+      const resultado = await TesteService.atribuirTeste(
+        testeId, 
+        candidatoId, 
+        vagaId, 
+        (req as any).user
+      );
+      
+      res.status(201).json(resultado);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error instanceof Error && (error.message.includes("já foi atribuído") || error.message.includes("não encontrad"))) {
+        return res.status(400).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Submit test responses
+  app.post("/api/testes/responder", async (req, res, next) => {
+    try {
+      const { resultadoId, respostas } = req.body;
+      
+      if (!resultadoId || !Array.isArray(respostas)) {
+        return res.status(400).json({ 
+          message: "resultadoId e respostas (array) são obrigatórios" 
+        });
+      }
+
+      const resultado = await TesteService.responderTeste(resultadoId, respostas);
+      res.json(resultado);
+    } catch (error) {
+      if (error instanceof Error && (error.message.includes("não encontrado") || error.message.includes("já foi respondido"))) {
+        return res.status(400).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Get tests assigned to candidate
+  app.get("/api/candidatos/:id/testes", async (req, res, next) => {
+    try {
+      const testes = await TesteService.obterTestesCandidato(req.params.id);
+      res.json(testes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get candidate test history
+  app.get("/api/candidatos/:id/historico-testes", requireAuth, async (req, res, next) => {
+    try {
+      const historico = await TesteService.obterHistoricoTestes(req.params.id, (req as any).user);
+      res.json(historico);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Get test results for specific job
+  app.get("/api/vagas/:id/resultados-testes", requireAuth, async (req, res, next) => {
+    try {
+      const resultados = await TesteService.obterResultadosPorVaga(req.params.id, (req as any).user);
+      res.json(resultados);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("permissão")) {
+        return res.status(403).json({ message: error.message });
+      }
       next(error);
     }
   });
