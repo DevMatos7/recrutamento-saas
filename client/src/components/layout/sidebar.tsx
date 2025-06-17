@@ -13,7 +13,8 @@ import {
   LogOut,
   GitBranch,
   Brain,
-  Calendar
+  Calendar,
+  MessageSquare
 } from "lucide-react";
 
 export function Sidebar() {
@@ -60,6 +61,12 @@ export function Sidebar() {
       href: "/entrevistas",
       icon: Calendar,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Comunicações",
+      href: "/comunicacoes",
+      icon: MessageSquare,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
     {
       name: "Departamentos",

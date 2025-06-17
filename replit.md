@@ -44,6 +44,7 @@ GentePRO is a full-stack Human Resources management system built with React, Exp
 - **Tests (testes)**: DISC behavioral and technical assessment tests
 - **Test Results (testesResultados)**: Candidate test responses and evaluations
 - **Interviews (entrevistas)**: Interview scheduling and management system
+- **Communications (comunicacoes)**: WhatsApp and Email automated messaging system
 
 ### Frontend Architecture
 - Component-based architecture with reusable UI components
@@ -128,6 +129,16 @@ Preferred communication style: Simple, everyday language.
   - Added interview calendar view with status updates and observations
   - Integrated interview management with candidate pipeline workflow
 
+- **June 17, 2025**: Implemented WhatsApp and Email Communications Module
+  - Added automated messaging system for candidate communication via WhatsApp and Email
+  - Created communication service with template variable processing and SMTP integration
+  - Implemented comprehensive communication tracking with status management (pending, sent, error)
+  - Added predefined message templates for inscriptions, pipeline updates, interviews, and tests
+  - Enhanced database schema with communications table and delivery tracking
+  - Created communications management interface with filtering and template selection
+  - Integrated nodemailer for email delivery and simulated WhatsApp API integration
+  - Added role-based permissions for communication management and sending
+
 ## Key Features
 
 ### DISC and Technical Tests Module
@@ -146,6 +157,16 @@ Preferred communication style: Simple, everyday language.
 - **Business Rules**: Prevents duplicate active interviews and validates future scheduling
 - **Observations**: Post-interview notes and feedback tracking system
 
+### WhatsApp and Email Communications Module
+- **Automated Messaging**: Send WhatsApp and Email communications based on recruitment events
+- **Template System**: Predefined message templates with variable substitution ({{nome}}, {{vaga}}, etc.)
+- **Multi-Channel Support**: Email via SMTP and WhatsApp via API integration (simulated in development)
+- **Communication Tracking**: Complete history with status tracking (pending, sent, error)
+- **Scheduled Messaging**: Support for immediate and scheduled message delivery
+- **Role-Based Access**: Admins and recruiters can send, managers can view communications
+- **Message Templates**: Pre-built templates for inscriptions, pipeline updates, interviews, and tests
+- **Delivery Management**: Automatic retry for failed messages and comprehensive error tracking
+
 ### Selection Pipeline Module
 - **Kanban Interface**: Visual candidate management through 6 pipeline stages
 - **Stage Management**: Recebidos, Triagem, Entrevista, Avaliação, Aprovado, Reprovado
@@ -158,3 +179,4 @@ Preferred communication style: Simple, everyday language.
 - June 15, 2025: Initial setup
 - June 17, 2025: DISC and Technical Tests Module implementation
 - June 17, 2025: Interview Management Module implementation
+- June 17, 2025: WhatsApp and Email Communications Module implementation
