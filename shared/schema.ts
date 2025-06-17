@@ -1,4 +1,4 @@
-import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniqueIndex, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniqueIndex, json, date } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -59,8 +59,34 @@ export const candidatos = pgTable("candidatos", {
   email: varchar("email", { length: 255 }).notNull(),
   telefone: varchar("telefone", { length: 50 }).notNull(),
   password: text("password"), // For candidate portal login
+  
+  // Informações pessoais
+  cpf: varchar("cpf", { length: 14 }),
+  dataNascimento: date("data_nascimento"),
+  endereco: varchar("endereco", { length: 500 }),
+  cidade: varchar("cidade", { length: 100 }),
+  estado: varchar("estado", { length: 2 }),
+  cep: varchar("cep", { length: 10 }),
+  
+  // Informações profissionais
+  cargo: varchar("cargo", { length: 255 }),
+  resumoProfissional: text("resumo_profissional"),
+  experienciaProfissional: json("experiencia_profissional"), // Array de experiências
+  educacao: json("educacao"), // Array de formações
+  habilidades: json("habilidades"), // Array de habilidades/competências
+  idiomas: json("idiomas"), // Array de idiomas
+  certificacoes: json("certificacoes"), // Array de certificações
+  
+  // Links e arquivos
   curriculoUrl: varchar("curriculo_url", { length: 500 }),
   linkedin: varchar("linkedin", { length: 255 }),
+  portfolio: varchar("portfolio", { length: 255 }),
+  
+  // Preferências profissionais
+  pretensoSalarial: varchar("pretensao_salarial", { length: 50 }),
+  disponibilidade: varchar("disponibilidade", { length: 50 }), // imediata, 30_dias, etc
+  modalidadeTrabalho: varchar("modalidade_trabalho", { length: 50 }), // presencial, remoto, hibrido
+  
   status: varchar("status", { length: 20 }).notNull().default("ativo"), // ativo, inativo
   origem: varchar("origem", { length: 20 }).notNull().default("manual"), // manual, portal_externo, importado
   empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
@@ -314,8 +340,57 @@ export const insertCandidatoSchema = createInsertSchema(candidatos).omit({
   dataCriacao: true,
   dataAtualizacao: true,
 }).extend({
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  email: z.string().email("Email inválido"),
+  telefone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  
+  // Campos opcionais de currículo
+  cpf: z.string().optional(),
+  dataNascimento: z.string().optional(),
+  endereco: z.string().optional(),
+  cidade: z.string().optional(),
+  estado: z.string().max(2).optional(),
+  cep: z.string().optional(),
+  
+  cargo: z.string().optional(),
+  resumoProfissional: z.string().optional(),
+  experienciaProfissional: z.array(z.object({
+    empresa: z.string(),
+    cargo: z.string(),
+    dataInicio: z.string(),
+    dataFim: z.string().optional(),
+    descricao: z.string().optional(),
+    atual: z.boolean().optional()
+  })).optional(),
+  educacao: z.array(z.object({
+    instituicao: z.string(),
+    curso: z.string(),
+    nivel: z.string(), // superior, tecnico, pos_graduacao, mestrado, doutorado
+    dataInicio: z.string().optional(),
+    dataConclusao: z.string().optional(),
+    status: z.string().optional() // concluido, cursando, trancado
+  })).optional(),
+  habilidades: z.array(z.string()).optional(),
+  idiomas: z.array(z.object({
+    idioma: z.string(),
+    nivel: z.string() // basico, intermediario, avancado, fluente, nativo
+  })).optional(),
+  certificacoes: z.array(z.object({
+    nome: z.string(),
+    instituicao: z.string(),
+    dataEmissao: z.string().optional(),
+    dataVencimento: z.string().optional()
+  })).optional(),
+  
+  linkedin: z.string().url().optional().or(z.literal("")),
+  portfolio: z.string().url().optional().or(z.literal("")),
+  
+  pretensoSalarial: z.string().optional(),
+  disponibilidade: z.enum(["imediata", "15_dias", "30_dias", "60_dias", "a_combinar"]).optional(),
+  modalidadeTrabalho: z.enum(["presencial", "remoto", "hibrido", "indiferente"]).optional(),
+  
   status: z.enum(["ativo", "inativo"]).default("ativo"),
-  origem: z.enum(["manual", "portal_externo", "importado"]).default("manual"),
+  origem: z.enum(["manual", "portal_candidato", "importado"]).default("portal_candidato"),
 });
 
 export const insertVagaCandidatoSchema = createInsertSchema(vagaCandidatos).omit({
