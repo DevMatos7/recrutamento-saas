@@ -704,6 +704,37 @@ export class DatabaseStorage implements IStorage {
       orderBy: (comunicacoes, { asc }) => [asc(comunicacoes.dataAgendada)]
     });
   }
+
+  // Analytics methods implementation
+  async getDashboardGeral(empresaId: string): Promise<any> {
+    const { analyticsService } = await import('./services/analytics-service');
+    return await analyticsService.getDashboardGeral(empresaId);
+  }
+
+  async getAnaliseVaga(vagaId: string, empresaId: string): Promise<any> {
+    const { analyticsService } = await import('./services/analytics-service');
+    return await analyticsService.getAnaliseVaga(vagaId, empresaId);
+  }
+
+  async getAnaliseDepartamento(departamentoId: string, empresaId: string): Promise<any> {
+    const { analyticsService } = await import('./services/analytics-service');
+    return await analyticsService.getAnaliseDepartamento(departamentoId, empresaId);
+  }
+
+  async getAnaliseTestesVaga(vagaId: string, empresaId: string): Promise<any> {
+    const { analyticsService } = await import('./services/analytics-service');
+    return await analyticsService.getAnaliseTestesVaga(vagaId, empresaId);
+  }
+
+  async getAnaliseOrigens(empresaId: string): Promise<any> {
+    const { analyticsService } = await import('./services/analytics-service');
+    return await analyticsService.getAnaliseOrigens(empresaId);
+  }
+
+  async getTemposPorEtapa(empresaId: string): Promise<any> {
+    const { analyticsService } = await import('./services/analytics-service');
+    return await analyticsService.getTemposPorEtapa(empresaId);
+  }
 }
 
 export const storage = new DatabaseStorage();
