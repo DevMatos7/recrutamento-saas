@@ -94,7 +94,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   });
 
   const { data: dashboard } = useQuery({
-    queryKey: ["/api/candidate-portal/dashboard"],
+    queryKey: ["/api/candidate-portal/profile"],
     enabled: isAuthenticated
   });
 
@@ -126,8 +126,8 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     },
     onSuccess: () => {
       toast({ title: "Candidatura realizada com sucesso!" });
-      queryClient.invalidateQueries({ queryKey: ["/api/candidate-portal/profile"] });
       queryClient.invalidateQueries({ queryKey: ["/api/candidate-portal/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidate-portal/profile"] });
       setSelectedJob(null);
     },
     onError: (error: any) => {
@@ -285,11 +285,11 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                           Ver Detalhes
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
+                      <DialogContent className="max-w-2xl" aria-describedby="job-details-description">
                         <DialogHeader>
                           <DialogTitle>{job.titulo}</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-4" id="job-details-description">
                           <div>
                             <h4 className="font-semibold">Descrição</h4>
                             <p className="text-gray-700">{job.descricao}</p>
@@ -558,11 +558,11 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       {/* Application Modal */}
       {selectedJob && (
         <Dialog open={!!selectedJob} onOpenChange={() => setSelectedJob(null)}>
-          <DialogContent>
+          <DialogContent aria-describedby="application-dialog-description">
             <DialogHeader>
               <DialogTitle>Candidatar-se à vaga</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4" id="application-dialog-description">
               <div>
                 <h4 className="font-semibold">{selectedJob.titulo}</h4>
                 <p className="text-gray-600">{selectedJob.empresa}</p>
