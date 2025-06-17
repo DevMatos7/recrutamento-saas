@@ -1,0 +1,118 @@
+Implemente o **Módulo de Testes DISC e Técnicos** da plataforma GentePRO, um sistema SaaS multiempresa de recrutamento e seleção. O sistema é desenvolvido em FastAPI com PostgreSQL, usando autenticação JWT e perfis de acesso. Este módulo será utilizado para aplicar testes aos candidatos, armazenar os resultados e integrá-los ao pipeline de seleção.
+
+---
+
+### 🎯 OBJETIVO DO MÓDULO
+
+Aplicar e registrar **testes comportamentais (DISC)** e **testes técnicos personalizados** para os candidatos vinculados a uma vaga.
+
+Os testes devem ser atribuídos por recrutadores e respondidos pelos candidatos (futuramente via portal externo).
+
+---
+
+### 🧱 MODELOS DE BANCO – PostgreSQL
+
+#### 🔸 Tabela `testes`
+
+- `id`: UUID (PK)
+- `tipo`: enum (`DISC`, `tecnico`)
+- `titulo`: string
+- `descricao`: text
+- `questoes`: JSON (lista com enunciado + alternativas)
+- `ativo`: boolean
+- `data_criacao`: datetime
+- `data_atualizacao`: datetime
+
+#### 🔸 Tabela `testes_resultados`
+
+- `id`: UUID (PK)
+- `teste_id`: FK → `testes`
+- `candidato_id`: FK → `candidatos`
+- `vaga_id`: FK → `vagas`
+- `respostas`: JSON
+- `resultado`: text (ex: "Perfil D - Executor")
+- `pontuacao`: decimal (opcional para testes técnicos)
+- `status`: enum (`pendente`, `respondido`, `corrigido`)
+- `data_envio`: datetime
+- `data_resposta`: datetime
+
+---
+
+### 🔐 PERMISSÕES
+
+| Perfil       | Ação                                                           |
+|--------------|----------------------------------------------------------------|
+| `admin`      | Criar e listar testes                                           |
+| `recrutador` | Atribuir testes aos candidatos                                 |
+| `gestor`     | Visualizar resultados (após resposta)                          |
+| `candidato`  | Acessar testes atribuídos e enviar respostas (futuro portal)   |
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+#### 📄 Testes (admin/recrutador)
+
+- `POST /testes` → cadastrar novo teste DISC ou técnico
+- `GET /testes` → listar testes existentes
+- `GET /testes/{id}` → visualizar detalhes do teste
+- `PUT /testes/{id}` → editar conteúdo do teste
+- `DELETE /testes/{id}` → desativar teste (soft delete)
+
+#### 📤 Atribuição e Resposta (recrutador/candidato)
+
+- `POST /testes/aplicar` → vincular teste a candidato e vaga
+- `GET /candidatos/{id}/testes` → listar testes atribuídos ao candidato
+- `POST /testes/responder` → candidato envia respostas (JSON)
+- `GET /resultados/{candidato_id}` → ver resultados por candidato
+- `GET /vagas/{vaga_id}/resultados` → ver resultados por vaga
+
+---
+
+### 🧪 FUNCIONALIDADES E REGRAS
+
+- Um mesmo teste pode ser aplicado a vários candidatos
+- Não permitir múltiplas submissões do mesmo teste
+- Para DISC, calcular automaticamente o perfil (D, I, S ou C) com base nas respostas
+- Para técnico, registrar pontuação se houver gabarito
+- Permitir ao recrutador deixar comentários no resultado (futuro)
+- Permitir exportar resultado como PDF (futuro)
+
+---
+
+### 💻 FRONTEND – SUGESTÕES DE TELAS
+
+#### Tela: Biblioteca de Testes (admin)
+- Listagem com tipo, status, nº de questões, ações
+
+#### Tela: Atribuir Teste (recrutador)
+- Selecionar vaga, candidato e teste
+- Botão “Atribuir”
+
+#### Tela: Responder Teste (candidato – futuro portal)
+- Interface intuitiva com questões e alternativas
+- Botão “Enviar Respostas”
+
+#### Tela: Visualizar Resultado
+- Exibir perfil DISC, pontuação técnica, data de envio
+- Gráfico ou label com resultado
+
+---
+
+### ⚙️ CONSIDERAÇÕES TÉCNICAS
+
+- Usar UUID como chave primária
+- Validar se o teste já foi respondido
+- Testes devem ser armazenados com estrutura JSON
+- Separar model, schema, service e router
+- Todas as rotas protegidas por JWT com checagem de perfil
+- Preparar função auxiliar para interpretar resultado DISC
+
+---
+
+### ✅ RESULTADO ESPERADO
+
+- Testes criados e listados corretamente
+- Testes atribuídos e respondidos
+- Resultado DISC interpretado automaticamente
+- Recrutadores conseguem acessar desempenho de candidatos por vaga
