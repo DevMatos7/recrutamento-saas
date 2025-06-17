@@ -42,13 +42,41 @@ export class CandidatePortalService {
       const newCandidate = await db
         .insert(candidatos)
         .values({
+          // Basic info
           nome: data.nome,
           email: data.email,
           telefone: data.telefone,
           password: hashedPassword,
           empresaId: data.empresaId,
+          
+          // Personal info
+          cpf: data.cpf || null,
+          dataNascimento: data.dataNascimento || null,
+          endereco: data.endereco || null,
+          cidade: data.cidade || null,
+          estado: data.estado || null,
+          cep: data.cep || null,
+          
+          // Professional info
+          cargo: data.cargo || null,
+          resumoProfissional: data.resumoProfissional || null,
+          experienciaProfissional: data.experienciaProfissional || null,
+          educacao: data.educacao || null,
+          habilidades: data.habilidades || null,
+          idiomas: data.idiomas || null,
+          certificacoes: data.certificacoes || null,
+          
+          // Links
+          linkedin: data.linkedin || null,
+          portfolio: data.portfolio || null,
+          
+          // Preferences
+          pretensoSalarial: data.pretensoSalarial || null,
+          disponibilidade: data.disponibilidade || null,
+          modalidadeTrabalho: data.modalidadeTrabalho || null,
+          
           status: 'ativo',
-          origem: 'portal'
+          origem: 'portal_candidato'
         })
         .returning();
 
