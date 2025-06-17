@@ -139,6 +139,17 @@ Preferred communication style: Simple, everyday language.
   - Integrated nodemailer for email delivery and simulated WhatsApp API integration
   - Added role-based permissions for communication management and sending
 
+- **June 17, 2025**: Implemented Analytics and Reporting Module
+  - Added comprehensive analytics service with real-time recruitment metrics and KPIs
+  - Created dashboard with general overview including vacancy stats, candidate pipeline, and conversion rates
+  - Implemented per-job analysis with detailed pipeline tracking and candidate performance metrics
+  - Added department-level analytics with vacancy distribution and team performance indicators
+  - Created test results analytics with score distributions and top candidate rankings
+  - Implemented candidate source tracking with conversion rate analysis by origin
+  - Added time-per-stage analytics for process optimization insights
+  - Enhanced backend with dedicated analytics service and role-based API endpoints
+  - Created comprehensive frontend interface with tabbed navigation and data visualization
+
 ## Key Features
 
 ### DISC and Technical Tests Module
@@ -166,6 +177,15 @@ Preferred communication style: Simple, everyday language.
 - **Role-Based Access**: Admins and recruiters can send, managers can view communications
 - **Message Templates**: Pre-built templates for inscriptions, pipeline updates, interviews, and tests
 - **Delivery Management**: Automatic retry for failed messages and comprehensive error tracking
+
+### Analytics and Reporting Module
+- **Dashboard Overview**: Real-time KPIs including vacancy counts, candidate pipeline status, and conversion rates
+- **Job-Specific Analytics**: Detailed analysis per job with candidate distribution, interview tracking, and test results
+- **Department Performance**: Consolidated metrics by department with vacancy status and team performance indicators
+- **Test Analytics**: Score distributions, top performer rankings, and assessment effectiveness metrics
+- **Source Tracking**: Candidate origin analysis with conversion rates by recruitment channel
+- **Process Optimization**: Time-per-stage analytics for identifying bottlenecks and improving efficiency
+- **Role-Based Access**: Comprehensive view for admins/recruiters, department-specific access for managers
 
 ### Selection Pipeline Module
 - **Kanban Interface**: Visual candidate management through 6 pipeline stages

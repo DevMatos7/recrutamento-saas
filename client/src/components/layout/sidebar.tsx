@@ -70,6 +70,12 @@ export function Sidebar() {
       show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
     {
+      name: "Analytics",
+      href: "/analytics",
+      icon: BarChart3,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
       name: "Departamentos",
       href: "/departamentos",
       icon: Network,
