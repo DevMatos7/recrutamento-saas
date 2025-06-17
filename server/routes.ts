@@ -1346,7 +1346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Candidate Portal routes
-  app.post("/portal/auth/register", async (req, res, next) => {
+  app.post("/api/candidate-portal/register", async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1382,7 +1382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/portal/auth/login", async (req, res, next) => {
+  app.post("/api/candidate-portal/login", async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1416,7 +1416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/portal/auth/logout", (req, res) => {
+  app.post("/api/candidate-portal/logout", (req, res) => {
     req.session.destroy(() => {
       res.json({ message: "Logout realizado com sucesso" });
     });
@@ -1431,7 +1431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
-  app.get("/portal/vagas", async (req, res, next) => {
+  app.get("/api/candidate-portal/vagas", async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       

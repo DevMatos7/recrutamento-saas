@@ -36,7 +36,7 @@ interface CandidatePortalProps {
 export default function CandidatePortal({ isAuthenticated, candidate, onLogin, onLogout }: CandidatePortalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
   const [selectedJob, setSelectedJob] = useState<any>(null);
 
   // Authentication mutations
@@ -139,11 +139,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => {
-                setAuthMode('login');
-                // Reset para mostrar vagas públicas
-                window.location.reload();
-              }}
+              onClick={() => setAuthMode(null)}
               className="text-gray-500"
             >
               ← Voltar às Vagas
@@ -157,7 +153,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
           </p>
         </CardHeader>
         <CardContent>
-          <Tabs value={authMode} onValueChange={(value) => setAuthMode(value as 'login' | 'register')}>
+          <Tabs value={authMode || 'login'} onValueChange={(value) => setAuthMode(value as 'login' | 'register')}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Cadastro</TabsTrigger>
@@ -585,7 +581,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   // Show different views based on authentication state
   if (!isAuthenticated) {
     // Se authMode está definido (login ou register), mostrar formulários
-    if (authMode === 'login' || authMode === 'register') {
+    if (authMode !== null) {
       return <AuthForms />;
     }
     // Caso contrário, mostrar vagas públicas
