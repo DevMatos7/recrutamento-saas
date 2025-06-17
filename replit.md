@@ -198,6 +198,17 @@ Preferred communication style: Simple, everyday language.
 - **Process Optimization**: Time-per-stage analytics for identifying bottlenecks and improving efficiency
 - **Role-Based Access**: Comprehensive view for admins/recruiters, department-specific access for managers
 
+### Candidate Portal Module
+- **Public Job Browsing**: View open positions without authentication, with detailed job descriptions
+- **Candidate Registration**: Secure account creation with email verification and password protection
+- **Application Management**: Apply to jobs with duplicate prevention and real-time status tracking
+- **Personal Dashboard**: Overview of applications, pending tests, scheduled interviews, and notifications
+- **Test Interface**: Complete DISC behavioral and technical assessments directly through the portal
+- **Interview Tracking**: View scheduled interviews with date, time, location, and status updates
+- **Message Center**: Receive and view communications from recruiters and HR team
+- **Mobile Responsive**: Optimized interface for smartphone and tablet access
+- **Secure Authentication**: Session-based login system with password hashing and session management
+
 ### Selection Pipeline Module
 - **Kanban Interface**: Visual candidate management through 6 pipeline stages
 - **Stage Management**: Recebidos, Triagem, Entrevista, Avaliação, Aprovado, Reprovado
