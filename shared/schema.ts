@@ -108,6 +108,23 @@ export const testesResultados = pgTable("testes_resultados", {
   uniqueTesteCandidate: uniqueIndex("unique_teste_candidato").on(table.testeId, table.candidatoId, table.vagaId),
 }));
 
+// Entrevistas
+export const entrevistas = pgTable("entrevistas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaId: uuid("vaga_id").notNull().references(() => vagas.id),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
+  entrevistadorId: uuid("entrevistador_id").notNull().references(() => usuarios.id),
+  dataHora: timestamp("data_hora").notNull(),
+  local: varchar("local", { length: 255 }),
+  status: varchar("status", { length: 20 }).notNull().default("agendada"), // agendada, realizada, cancelada, faltou
+  observacoes: text("observacoes"),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+}, (table) => ({
+  uniqueEntrevistaAtiva: uniqueIndex("unique_entrevista_ativa")
+    .on(table.vagaId, table.candidatoId),
+}));
+
 // Relations
 export const empresasRelations = relations(empresas, ({ many }) => ({
   departamentos: many(departamentos),
@@ -193,6 +210,22 @@ export const testesResultadosRelations = relations(testesResultados, ({ one }) =
   vaga: one(vagas, {
     fields: [testesResultados.vagaId],
     references: [vagas.id],
+  }),
+}));
+
+// Entrevistas Relations
+export const entrevistasRelations = relations(entrevistas, ({ one }) => ({
+  vaga: one(vagas, {
+    fields: [entrevistas.vagaId],
+    references: [vagas.id],
+  }),
+  candidato: one(candidatos, {
+    fields: [entrevistas.candidatoId],
+    references: [candidatos.id],
+  }),
+  entrevistador: one(usuarios, {
+    fields: [entrevistas.entrevistadorId],
+    references: [usuarios.id],
   }),
 }));
 
@@ -295,6 +328,19 @@ export type Teste = typeof testes.$inferSelect;
 export type InsertTeste = z.infer<typeof insertTesteSchema>;
 export type TesteResultado = typeof testesResultados.$inferSelect;
 export type InsertTesteResultado = z.infer<typeof insertTesteResultadoSchema>;
+
+// Entrevistas schemas
+export const insertEntrevistaSchema = createInsertSchema(entrevistas).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+}).extend({
+  status: z.enum(["agendada", "realizada", "cancelada", "faltou"]).default("agendada"),
+  dataHora: z.string().transform((str) => new Date(str)),
+});
+
+export type Entrevista = typeof entrevistas.$inferSelect;
+export type InsertEntrevista = z.infer<typeof insertEntrevistaSchema>;
 
 // Legacy compatibility for auth blueprint
 export const users = usuarios;
