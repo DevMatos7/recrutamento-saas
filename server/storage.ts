@@ -8,6 +8,7 @@ import {
   testes,
   testesResultados,
   entrevistas,
+  comunicacoes,
   type Empresa, 
   type InsertEmpresa,
   type Departamento, 
@@ -25,10 +26,12 @@ import {
   type TesteResultado,
   type InsertTesteResultado,
   type Entrevista,
-  type InsertEntrevista
+  type InsertEntrevista,
+  type Comunicacao,
+  type InsertComunicacao
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or, asc, lte, isNull } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
 
@@ -604,6 +607,94 @@ export class DatabaseStorage implements IStorage {
         vaga: { columns: { id: true, titulo: true, status: true } }
       },
       orderBy: (entrevistas, { desc }) => [desc(entrevistas.dataHora)]
+    });
+  }
+
+  // Communication methods implementation
+  async getAllComunicacoes(): Promise<Comunicacao[]> {
+    return await db.query.comunicacoes.findMany({
+      with: {
+        candidato: { columns: { id: true, nome: true, email: true, telefone: true } },
+        enviadoPor: { columns: { id: true, nome: true } }
+      },
+      orderBy: (comunicacoes, { desc }) => [desc(comunicacoes.criadoEm)]
+    });
+  }
+
+  async getComunicacao(id: string): Promise<Comunicacao | undefined> {
+    return await db.query.comunicacoes.findFirst({
+      where: eq(comunicacoes.id, id),
+      with: {
+        candidato: { columns: { id: true, nome: true, email: true, telefone: true } },
+        enviadoPor: { columns: { id: true, nome: true } }
+      }
+    });
+  }
+
+  async createComunicacao(comunicacao: InsertComunicacao): Promise<Comunicacao> {
+    const [newComunicacao] = await db.insert(comunicacoes).values({
+      ...comunicacao,
+      atualizadoEm: new Date(),
+    }).returning();
+    
+    const result = await this.getComunicacao(newComunicacao.id);
+    if (!result) throw new Error("Erro ao criar comunicação");
+    return result;
+  }
+
+  async updateComunicacao(id: string, comunicacao: Partial<InsertComunicacao>): Promise<Comunicacao | undefined> {
+    await db.update(comunicacoes)
+      .set({ 
+        ...comunicacao, 
+        atualizadoEm: new Date(),
+        ...(comunicacao.statusEnvio === 'enviado' && { dataEnvio: new Date() })
+      })
+      .where(eq(comunicacoes.id, id));
+    
+    return await this.getComunicacao(id);
+  }
+
+  async deleteComunicacao(id: string): Promise<boolean> {
+    const result = await db.delete(comunicacoes).where(eq(comunicacoes.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getComunicacoesByCanditato(candidatoId: string): Promise<any[]> {
+    return await db.query.comunicacoes.findMany({
+      where: eq(comunicacoes.candidatoId, candidatoId),
+      with: {
+        candidato: { columns: { id: true, nome: true, email: true, telefone: true } },
+        enviadoPor: { columns: { id: true, nome: true } }
+      },
+      orderBy: (comunicacoes, { desc }) => [desc(comunicacoes.criadoEm)]
+    });
+  }
+
+  async getComunicacoesByStatus(status: string): Promise<any[]> {
+    return await db.query.comunicacoes.findMany({
+      where: eq(comunicacoes.statusEnvio, status),
+      with: {
+        candidato: { columns: { id: true, nome: true, email: true, telefone: true } },
+        enviadoPor: { columns: { id: true, nome: true } }
+      },
+      orderBy: (comunicacoes, { desc }) => [desc(comunicacoes.criadoEm)]
+    });
+  }
+
+  async getComunicacoesPendentes(): Promise<any[]> {
+    return await db.query.comunicacoes.findMany({
+      where: and(
+        eq(comunicacoes.statusEnvio, 'pendente'),
+        or(
+          isNull(comunicacoes.dataAgendada),
+          lte(comunicacoes.dataAgendada, new Date())
+        )
+      ),
+      with: {
+        candidato: { columns: { id: true, nome: true, email: true, telefone: true } },
+        enviadoPor: { columns: { id: true, nome: true } }
+      },
+      orderBy: (comunicacoes, { asc }) => [asc(comunicacoes.dataAgendada)]
     });
   }
 }
