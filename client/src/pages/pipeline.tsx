@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus, Trash2 } from "lucide-react";
+import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus, Trash2, Brain, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Sidebar } from "@/components/layout/sidebar";
 
