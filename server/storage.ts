@@ -126,6 +126,14 @@ export interface IStorage {
   getComunicacoesByStatus(status: string): Promise<any[]>;
   getComunicacoesPendentes(): Promise<any[]>;
   
+  // Analytics methods
+  getDashboardGeral(empresaId: string): Promise<any>;
+  getAnaliseVaga(vagaId: string, empresaId: string): Promise<any>;
+  getAnaliseDepartamento(departamentoId: string, empresaId: string): Promise<any>;
+  getAnaliseTestesVaga(vagaId: string, empresaId: string): Promise<any>;
+  getAnaliseOrigens(empresaId: string): Promise<any>;
+  getTemposPorEtapa(empresaId: string): Promise<any>;
+  
   sessionStore: any;
 }
 

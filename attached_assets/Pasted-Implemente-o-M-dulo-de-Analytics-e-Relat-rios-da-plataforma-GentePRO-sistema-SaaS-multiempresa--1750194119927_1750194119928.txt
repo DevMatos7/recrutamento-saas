@@ -1,0 +1,122 @@
+Implemente o **Módulo de Analytics e Relatórios** da plataforma GentePRO, sistema SaaS multiempresa de recrutamento e seleção. O backend é em FastAPI com PostgreSQL, autenticação JWT, e arquitetura modular.
+
+Este módulo terá como objetivo **coletar, processar e exibir indicadores em tempo real** sobre os processos seletivos, pipeline, desempenho de candidatos, origem das candidaturas e tempo médio por etapa.
+
+---
+
+### 🎯 OBJETIVO DO MÓDULO
+
+Fornecer relatórios estratégicos e operacionais para os usuários com perfil `admin` e `recrutador`, com visualização por:
+
+- Vaga
+- Departamento
+- Tempo de processo
+- Conversão por etapa
+- Origem dos candidatos
+- Pontuação em testes
+- Efetividade de entrevistas
+
+---
+
+### 📊 INDICADORES PRINCIPAIS (MVP)
+
+#### 🔹 Visão Geral
+- Total de vagas abertas, em triagem, encerradas
+- Candidatos por status (em processo, aprovados, reprovados)
+- Tempo médio até contratação
+- Taxa de conversão por etapa (triagem > entrevista > admissão)
+
+#### 🔹 Vaga Específica
+- Número de candidatos inscritos
+- Etapa atual dos candidatos
+- Entrevistas realizadas / pendentes
+- Resultados de testes
+
+#### 🔹 Desempenho Técnico / DISC
+- Gráfico de distribuição de perfis DISC por vaga
+- Média de pontuação técnica por vaga
+- Comparativo entre candidatos
+
+#### 🔹 Fonte de Candidatura
+- Origem das candidaturas (site, link direto, redes sociais)
+- Efetividade por canal
+
+---
+
+### 🧱 ESTRUTURA TÉCNICA DO BACKEND
+
+Criar um módulo `analytics_service.py` com funções agregadoras que consultam múltiplas tabelas:
+
+- `vagas`
+- `candidatos`
+- `pipeline_movimentacoes`
+- `entrevistas`
+- `testes_resultados`
+- `comunicacoes`
+
+---
+
+### 🔌 ENDPOINTS A IMPLEMENTAR
+
+- `GET /analytics/dashboard-geral`
+  → KPIs gerais da empresa (vagas, candidatos, conversão, tempo médio)
+
+- `GET /analytics/vagas/{vaga_id}`
+  → Análise completa por vaga (fluxo, conversão, testes, entrevistas)
+
+- `GET /analytics/departamentos/{departamento_id}`
+  → Consolidado de vagas por departamento
+
+- `GET /analytics/testes/{vaga_id}`
+  → Distribuição DISC e médias de teste técnico
+
+- `GET /analytics/origens`
+  → Gráfico com fontes de candidatura (requer campo `origem` no candidato)
+
+---
+
+### 🔐 PERMISSÕES
+
+| Perfil       | Acesso aos relatórios                                     |
+|--------------|------------------------------------------------------------|
+| `admin`      | Todos os dados de todas as empresas                        |
+| `recrutador` | Apenas dados da empresa que atua                           |
+| `gestor`     | Apenas vagas do seu departamento                           |
+
+---
+
+### 🧪 REGRAS E CONSIDERAÇÕES
+
+- Usar `SQLAlchemy` com `funções de agregação` (ex: `COUNT`, `AVG`, `DATEDIFF`)
+- Agrupar dados por status, vaga, departamento e data
+- Garantir que usuários só vejam os dados permitidos (multiempresa)
+- Os endpoints devem retornar objetos prontos para gráficos (labels, values)
+- Implementar cache leve para dashboards pesados (opcional)
+
+---
+
+### 💻 SUGESTÕES DE TELAS NO FRONTEND
+
+#### 🔹 Dashboard Geral
+- Cards com KPIs principais (vagas, candidatos, conversões, tempo médio)
+- Gráficos de linha ou barras por mês
+
+#### 🔹 Relatório de Vaga
+- Funil por etapa
+- Gráfico de perfis DISC
+- Lista de candidatos com nota técnica
+
+#### 🔹 Relatório por Origem
+- Pizza com distribuição de canais
+- Lista com total de inscritos por fonte
+
+---
+
+### ⚙️ CONSIDERAÇÕES TÉCNICAS
+
+- Criar serviço `analytics_service.py` com funções como:
+```python
+def total_vagas_ativas(empresa_id): ...
+def tempo_medio_contratacao(empresa_id): ...
+def distribuicao_perfil_disc(vaga_id): ...
+def candidatos_por_etapa(vaga_id): ...
