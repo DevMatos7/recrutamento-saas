@@ -58,6 +58,7 @@ export const candidatos = pgTable("candidatos", {
   nome: varchar("nome", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   telefone: varchar("telefone", { length: 50 }).notNull(),
+  password: text("password"), // For candidate portal login
   curriculoUrl: varchar("curriculo_url", { length: 500 }),
   linkedin: varchar("linkedin", { length: 255 }),
   status: varchar("status", { length: 20 }).notNull().default("ativo"), // ativo, inativo

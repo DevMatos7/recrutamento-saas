@@ -150,6 +150,17 @@ Preferred communication style: Simple, everyday language.
   - Enhanced backend with dedicated analytics service and role-based API endpoints
   - Created comprehensive frontend interface with tabbed navigation and data visualization
 
+- **June 17, 2025**: Implemented Candidate Portal Module
+  - Added public-facing candidate registration and authentication system with secure password hashing
+  - Created comprehensive job browsing interface with filtering and detailed job descriptions
+  - Implemented candidate application system with duplicate prevention and status tracking
+  - Added candidate dashboard with personalized overview of applications, tests, and interviews
+  - Created test-taking interface for DISC and technical assessments with response submission
+  - Implemented interview schedule viewing and status tracking for candidates
+  - Added notification center for candidates to receive and view messages from recruiters
+  - Enhanced database schema with candidate password field for portal authentication
+  - Created responsive mobile-friendly interface optimized for candidate experience
+
 ## Key Features
 
 ### DISC and Technical Tests Module
