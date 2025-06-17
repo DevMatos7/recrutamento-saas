@@ -43,6 +43,7 @@ GentePRO is a full-stack Human Resources management system built with React, Exp
 - **Pipeline (vagaCandidatos)**: Recruitment pipeline tracking
 - **Tests (testes)**: DISC behavioral and technical assessment tests
 - **Test Results (testesResultados)**: Candidate test responses and evaluations
+- **Interviews (entrevistas)**: Interview scheduling and management system
 
 ### Frontend Architecture
 - Component-based architecture with reusable UI components
@@ -117,6 +118,16 @@ Preferred communication style: Simple, everyday language.
   - Added sample DISC and technical tests for JavaScript and Python
   - Created dedicated tests management page with admin/recruiter access controls
 
+- **June 17, 2025**: Implemented Interview Management Module
+  - Added comprehensive interview scheduling and management system
+  - Created interview agenda with filtering by job, candidate, interviewer, and status
+  - Implemented role-based permissions (recruiters schedule, managers/admins can conduct)
+  - Added interview status tracking (scheduled, completed, cancelled, no-show)
+  - Enhanced database schema with interviews table and business rule validations
+  - Created interview scheduling interface with date/time validation
+  - Added interview calendar view with status updates and observations
+  - Integrated interview management with candidate pipeline workflow
+
 ## Key Features
 
 ### DISC and Technical Tests Module
@@ -126,6 +137,14 @@ Preferred communication style: Simple, everyday language.
 - **Role-Based Access**: Admins create tests, recruiters assign them, all authorized users view results
 - **Test Assignment**: Integration with candidate pipeline for seamless test distribution
 - **Result Analysis**: Comprehensive test result tracking and candidate evaluation
+
+### Interview Management Module
+- **Interview Scheduling**: Comprehensive scheduling system with conflict prevention
+- **Status Tracking**: Real-time status updates (scheduled, completed, cancelled, no-show)
+- **Role-Based Access**: Recruiters schedule interviews, managers and admins can conduct them
+- **Calendar Integration**: Visual agenda with filtering by job, candidate, interviewer, and status
+- **Business Rules**: Prevents duplicate active interviews and validates future scheduling
+- **Observations**: Post-interview notes and feedback tracking system
 
 ### Selection Pipeline Module
 - **Kanban Interface**: Visual candidate management through 6 pipeline stages
@@ -138,3 +157,4 @@ Preferred communication style: Simple, everyday language.
 
 - June 15, 2025: Initial setup
 - June 17, 2025: DISC and Technical Tests Module implementation
+- June 17, 2025: Interview Management Module implementation
