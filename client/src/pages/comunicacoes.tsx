@@ -56,9 +56,9 @@ export default function ComunicacoesPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [filters, setFilters] = useState({
-    status: "",
-    tipo: "",
-    canal: ""
+    status: "all",
+    tipo: "all", 
+    canal: "all"
   });
 
   const form = useForm<ComunicacaoFormData>({
@@ -233,9 +233,9 @@ export default function ComunicacoesPage() {
   }
 
   const filteredComunicacoes = Array.isArray(comunicacoes) ? comunicacoes.filter((comm: any) => {
-    return (!filters.status || comm.statusEnvio === filters.status) &&
-           (!filters.tipo || comm.tipo === filters.tipo) &&
-           (!filters.canal || comm.canal === filters.canal);
+    return (filters.status === "all" || comm.statusEnvio === filters.status) &&
+           (filters.tipo === "all" || comm.tipo === filters.tipo) &&
+           (filters.canal === "all" || comm.canal === filters.canal);
   }) : [];
 
   return (
@@ -280,35 +280,35 @@ export default function ComunicacoesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                    <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === "all" ? "" : value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos os status</SelectItem>
+                        <SelectItem value="all">Todos os status</SelectItem>
                         <SelectItem value="pendente">Pendente</SelectItem>
                         <SelectItem value="enviado">Enviado</SelectItem>
                         <SelectItem value="erro">Erro</SelectItem>
                       </SelectContent>
                     </Select>
 
-                    <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value }))}>
+                    <Select value={filters.tipo} onValueChange={(value) => setFilters(prev => ({ ...prev, tipo: value === "all" ? "" : value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Tipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos os tipos</SelectItem>
+                        <SelectItem value="all">Todos os tipos</SelectItem>
                         <SelectItem value="whatsapp">WhatsApp</SelectItem>
                         <SelectItem value="email">E-mail</SelectItem>
                       </SelectContent>
                     </Select>
 
-                    <Select value={filters.canal} onValueChange={(value) => setFilters(prev => ({ ...prev, canal: value }))}>
+                    <Select value={filters.canal} onValueChange={(value) => setFilters(prev => ({ ...prev, canal: value === "all" ? "" : value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Canal" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos os canais</SelectItem>
+                        <SelectItem value="all">Todos os canais</SelectItem>
                         <SelectItem value="inscricao">Inscrição</SelectItem>
                         <SelectItem value="pipeline">Pipeline</SelectItem>
                         <SelectItem value="entrevista">Entrevista</SelectItem>
