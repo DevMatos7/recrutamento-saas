@@ -382,7 +382,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{dashboard?.testesPendentes || 0}</div>
+                  <div className="text-2xl font-bold">{(dashboard as any)?.testesPendentes || 0}</div>
                 </CardContent>
               </Card>
 
@@ -392,7 +392,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{dashboard?.entrevistasAgendadas || 0}</div>
+                  <div className="text-2xl font-bold">{(dashboard as any)?.entrevistasAgendadas || 0}</div>
                 </CardContent>
               </Card>
 
@@ -402,7 +402,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{dashboard?.notificacoes || 0}</div>
+                  <div className="text-2xl font-bold">{(dashboard as any)?.notificacoes || 0}</div>
                 </CardContent>
               </Card>
             </div>
@@ -483,7 +483,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   </CardContent>
                 </Card>
               ))}
-              {(!pendingTests || pendingTests.length === 0) && (
+              {(!pendingTests || (pendingTests as any[])?.length === 0) && (
                 <p className="text-center py-8 text-gray-500">Nenhum teste pendente</p>
               )}
             </div>
@@ -519,7 +519,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   </CardContent>
                 </Card>
               ))}
-              {(!interviews || interviews.length === 0) && (
+              {(!interviews || (interviews as any[])?.length === 0) && (
                 <p className="text-center py-8 text-gray-500">Nenhuma entrevista agendada</p>
               )}
             </div>
@@ -547,7 +547,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   </CardContent>
                 </Card>
               ))}
-              {(!notifications || notifications.length === 0) && (
+              {(!notifications || (notifications as any[])?.length === 0) && (
                 <p className="text-center py-8 text-gray-500">Nenhuma mensagem</p>
               )}
             </div>
