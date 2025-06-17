@@ -259,7 +259,7 @@ export default function TestesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {testes?.map((teste: Teste) => (
+          {Array.isArray(testes) && testes.map((teste: Teste) => (
             <Card key={teste.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">
