@@ -1444,7 +1444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/portal/vagas/:id", async (req, res, next) => {
+  app.get("/api/candidate-portal/vagas/:id", async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1460,7 +1460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/portal/candidaturas", requireCandidateAuth, async (req, res, next) => {
+  app.post("/api/candidate-portal/apply", requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1486,7 +1486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/portal/minhas-candidaturas", requireCandidateAuth, async (req, res, next) => {
+  app.get("/api/candidate-portal/dashboard", requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1499,7 +1499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/portal/dashboard", requireCandidateAuth, async (req, res, next) => {
+  app.get("/api/candidate-portal/profile", requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1512,7 +1512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/portal/testes", requireCandidateAuth, async (req, res, next) => {
+  app.get("/api/candidate-portal/tests", requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1525,7 +1525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/portal/testes/:id/responder", requireCandidateAuth, async (req, res, next) => {
+  app.post("/api/candidate-portal/tests/:id/submit", requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1551,7 +1551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/portal/entrevistas", requireCandidateAuth, async (req, res, next) => {
+  app.get("/api/candidate-portal/interviews", requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1564,7 +1564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/portal/notificacoes", requireCandidateAuth, async (req, res, next) => {
+  app.get("/api/candidate-portal/notifications", requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
