@@ -1116,23 +1116,34 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   // Authenticated dashboard
   const AuthenticatedDashboard = () => (
     <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Olá, {candidate?.nome}!
-              </h1>
-              <p className="text-gray-600">Bem-vindo ao seu painel</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-8">
+              <div className="text-purple-600 font-bold text-xl">GentePRO</div>
+              <nav className="hidden md:flex space-x-8">
+                <a href="#" className="text-gray-500 hover:text-gray-900">Minhas candidaturas</a>
+                <a href="#" className="text-gray-500 hover:text-gray-900">Meu currículo</a>
+                <a href="#" className="text-gray-500 hover:text-gray-900">Buscar Oportunidades</a>
+              </nav>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
+            <div className="flex items-center space-x-4">
+              <div className="text-right hidden sm:block">
+                <div className="text-sm font-medium text-gray-900">{candidate?.nome}</div>
+                <div className="text-xs text-gray-500">{candidate?.email}</div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                className="text-gray-500 hover:text-gray-900"
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -1220,36 +1231,105 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
           </TabsContent>
 
           <TabsContent value="applications">
-            <div className="space-y-4">
-              {Array.isArray(myApplications) && myApplications.map((application: any) => (
-                <Card key={application.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{application.vaga.titulo}</CardTitle>
-                        <p className="text-gray-600">{application.vaga.empresa}</p>
-                      </div>
-                      <Badge variant={
-                        application.etapa === 'aprovado' ? 'default' :
-                        application.etapa === 'reprovado' ? 'destructive' : 'secondary'
-                      }>
-                        {application.etapa}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        Aplicado em {new Date(application.dataInscricao).toLocaleDateString('pt-BR')}
-                      </div>
-                    </div>
-                    {application.comentarios && (
-                      <p className="mt-2 text-sm text-gray-700">{application.comentarios}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Minhas candidaturas</h2>
+                  <p className="text-gray-600">Acompanhe abaixo o andamento de todas as vagas que você está participando.</p>
+                </div>
+              </div>
+
+              {/* Search and Filters */}
+              <div className="bg-white rounded-lg border p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <Input placeholder="Digite o nome da vaga ou empresa" className="w-full" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">Em andamento</Button>
+                    <Button variant="outline" size="sm">Em banco de talentos</Button>
+                    <Button variant="outline" size="sm">Finalizadas</Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Applications List */}
+              {Array.isArray(myApplications) && myApplications.length > 0 ? (
+                <div className="space-y-4">
+                  {myApplications.map((application: any) => (
+                    <Card key={application.id} className="bg-white border hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg font-semibold text-gray-900 mb-1">
+                              {application.vaga.titulo}
+                            </CardTitle>
+                            <p className="text-purple-600 font-medium mb-2">{application.vaga.empresa}</p>
+                            <div className="flex items-center text-sm text-gray-600 space-x-4">
+                              <div className="flex items-center space-x-1">
+                                <MapPin className="h-4 w-4" />
+                                <span>{application.vaga.local}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Clock className="h-4 w-4" />
+                                <span>Aplicado em {new Date(application.dataInscricao).toLocaleDateString('pt-BR')}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end space-y-2">
+                            <Badge 
+                              variant={
+                                application.etapa === 'aprovado' ? 'default' :
+                                application.etapa === 'reprovado' ? 'destructive' : 'secondary'
+                              }
+                              className="text-xs font-medium"
+                            >
+                              {application.etapa === 'recebido' && 'Recebido'}
+                              {application.etapa === 'triagem' && 'Em triagem'}
+                              {application.etapa === 'entrevista' && 'Entrevista'}
+                              {application.etapa === 'avaliacao' && 'Avaliação'}
+                              {application.etapa === 'aprovado' && 'Aprovado'}
+                              {application.etapa === 'reprovado' && 'Não selecionado'}
+                            </Badge>
+                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-500">
+                              ❤️
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      {application.comentarios && (
+                        <CardContent className="pt-0">
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">Feedback: </span>
+                              {application.comentarios}
+                            </p>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="bg-blue-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Você ainda não possui candidaturas.</h3>
+                  <p className="text-gray-600 mb-4">Comece a explorar as oportunidades disponíveis.</p>
+                  <Button 
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    onClick={() => {
+                      // Switch to jobs tab
+                      const jobsTab = document.querySelector('[value="jobs"]') as HTMLElement;
+                      jobsTab?.click();
+                    }}
+                  >
+                    Buscar Oportunidades
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
 
