@@ -445,6 +445,12 @@ export default function ModernVagas() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Vaga Modal */}
+      <CreateVagaModal 
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
     </div>
   );
 }
