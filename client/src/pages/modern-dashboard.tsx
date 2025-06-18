@@ -115,7 +115,10 @@ export default function ModernDashboard() {
             <Filter className="h-4 w-4" />
             Filtros
           </Button>
-          <Button className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2">
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
+            onClick={() => window.location.href = '/vagas'}
+          >
             <Plus className="h-4 w-4" />
             Nova Vaga
           </Button>
@@ -211,21 +214,40 @@ export default function ModernDashboard() {
               <CardTitle className="text-lg font-semibold">Ações Rápidas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full justify-start bg-purple-600 hover:bg-purple-700" size="lg">
+              <Button 
+                className="w-full justify-start bg-purple-600 hover:bg-purple-700" 
+                size="lg"
+                onClick={() => window.location.href = '/vagas'}
+              >
                 <Plus className="h-5 w-5 mr-3" />
                 Criar Nova Vaga
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="lg">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="lg"
+                onClick={() => window.location.href = '/candidatos'}
+              >
                 <Users className="h-5 w-5 mr-3" />
                 Adicionar Candidato
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="lg">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="lg"
+                onClick={() => window.location.href = '/entrevistas'}
+              >
                 <Calendar className="h-5 w-5 mr-3" />
                 Agendar Entrevista
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="lg">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="lg"
+                onClick={() => window.location.href = '/pipeline'}
+              >
                 <Search className="h-5 w-5 mr-3" />
-                Buscar no Sistema
+                Ver Pipeline
               </Button>
             </CardContent>
           </Card>
@@ -351,7 +373,10 @@ export default function ModernDashboard() {
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Pipeline de Candidatos</h3>
                 <p className="text-gray-600 mb-6">Visualize o progresso dos candidatos em suas vagas</p>
-                <Button className="bg-purple-600 hover:bg-purple-700">
+                <Button 
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={() => window.location.href = '/pipeline'}
+                >
                   Ver Pipeline Completo
                 </Button>
               </div>

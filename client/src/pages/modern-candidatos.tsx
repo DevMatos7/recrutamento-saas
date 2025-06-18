@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CreateCandidatoModal from "@/components/modals/create-candidato-modal";
 import { 
   Plus,
   Search,
@@ -40,6 +41,7 @@ export default function ModernCandidatos() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data: candidatos, isLoading } = useQuery({
     queryKey: ["/api/candidatos"],
@@ -382,7 +384,10 @@ export default function ModernCandidatos() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <Button className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2">
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
             <Plus className="h-4 w-4" />
             Adicionar Candidato
           </Button>
@@ -497,7 +502,10 @@ export default function ModernCandidatos() {
                   : "Comece adicionando candidatos ao seu banco de talentos."
                 }
               </p>
-              <Button className="bg-purple-600 hover:bg-purple-700">
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 {searchQuery ? "Adicionar Novo Candidato" : "Adicionar Primeiro Candidato"}
               </Button>
@@ -554,6 +562,12 @@ export default function ModernCandidatos() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Candidato Modal */}
+      <CreateCandidatoModal 
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
     </div>
   );
 }

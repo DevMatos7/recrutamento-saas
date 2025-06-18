@@ -49,6 +49,11 @@ export default function ModernPipeline() {
     enabled: !!selectedVaga,
   });
 
+  const { data: candidatosVaga } = useQuery({
+    queryKey: ["/api/vagas", selectedVaga, "candidatos"],
+    enabled: !!selectedVaga,
+  });
+
   const moveCandidateMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("PUT", `/api/vagas/${data.vagaId}/candidatos/${data.candidatoId}/mover`, {
@@ -302,7 +307,13 @@ export default function ModernPipeline() {
           <div className="overflow-x-auto">
             <div className="flex gap-6 pb-6 min-w-max">
               {stages.map((stage) => {
-                const stageCandidatos = pipelineData?.candidatosPorEtapa?.[stage.id] || [];
+                // Get candidatos from the API response, grouping by stage
+                const allCandidatos = Array.isArray(candidatosVaga) ? candidatosVaga : [];
+                const stageCandidatos = allCandidatos.filter((candidato: any) => 
+                  candidato.etapaAtual === stage.id || 
+                  (stage.id === 'recebido' && !candidato.etapaAtual)
+                );
+                
                 const filteredCandidatos = stageCandidatos.filter((candidato: any) =>
                   candidato.candidato?.nome?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   candidato.candidato?.email?.toLowerCase().includes(searchQuery.toLowerCase())

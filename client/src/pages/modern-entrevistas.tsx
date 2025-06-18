@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import CreateEntrevistaModal from "@/components/modals/create-entrevista-modal";
 import { 
   Plus,
   Search,
@@ -498,6 +499,12 @@ export default function ModernEntrevistas() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Entrevista Modal */}
+      <CreateEntrevistaModal 
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
     </div>
   );
 }
