@@ -32,6 +32,126 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
+const CreateComunicacaoForm = ({ onClose }: { onClose: () => void }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: candidatos } = useQuery({
+    queryKey: ["/api/candidatos"],
+  });
+
+  const createComunicacaoMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/comunicacoes", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Comunicação criada com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/comunicacoes"] });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao criar comunicação", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const [formData, setFormData] = useState({
+    candidatoId: "",
+    tipo: "email",
+    assunto: "",
+    mensagem: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.candidatoId || !formData.mensagem) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+    createComunicacaoMutation.mutate(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="candidato">Candidato *</Label>
+        <Select value={formData.candidatoId} onValueChange={(value) => setFormData({...formData, candidatoId: value})}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o candidato" />
+          </SelectTrigger>
+          <SelectContent>
+            {Array.isArray(candidatos) && candidatos.map((candidato: any) => (
+              <SelectItem key={candidato.id} value={candidato.id}>
+                {candidato.nome} - {candidato.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="tipo">Tipo *</Label>
+        <Select value={formData.tipo} onValueChange={(value) => setFormData({...formData, tipo: value})}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="email">E-mail</SelectItem>
+            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="assunto">Assunto</Label>
+        <Input
+          id="assunto"
+          value={formData.assunto}
+          onChange={(e) => setFormData({...formData, assunto: e.target.value})}
+          placeholder="Assunto da mensagem"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="mensagem">Mensagem *</Label>
+        <Textarea
+          id="mensagem"
+          value={formData.mensagem}
+          onChange={(e) => setFormData({...formData, mensagem: e.target.value})}
+          placeholder="Digite sua mensagem..."
+          rows={4}
+        />
+      </div>
+
+      <div className="flex gap-3 pt-4">
+        <Button 
+          type="submit" 
+          disabled={createComunicacaoMutation.isPending}
+          className="flex-1 bg-purple-600 hover:bg-purple-700"
+        >
+          {createComunicacaoMutation.isPending ? "Enviando..." : "Enviar Comunicação"}
+        </Button>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onClose}
+          className="flex-1"
+        >
+          Cancelar
+        </Button>
+      </div>
+    </form>
+  );
+};
+
 export default function ModernComunicacoes() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -276,13 +396,20 @@ export default function ModernComunicacoes() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <Button 
-            className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Nova Comunicação
-          </Button>
+          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Nova Comunicação
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Nova Comunicação</DialogTitle>
+              </DialogHeader>
+              <CreateComunicacaoForm onClose={() => setIsCreateModalOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

@@ -60,8 +60,8 @@ export default function ModernTestes() {
   });
 
   const filteredTestes = Array.isArray(testes) ? testes.filter((teste: any) => {
-    const matchesSearch = teste.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         teste.descricao?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (teste.nome?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                         (teste.descricao?.toLowerCase() || '').includes(searchQuery.toLowerCase());
     const matchesTipo = tipoFilter === "all" || teste.tipo === tipoFilter;
     return matchesSearch && matchesTipo;
   }) : [];
