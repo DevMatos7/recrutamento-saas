@@ -98,7 +98,7 @@ export default function ModernPortal({ isAuthenticated, candidate, onLogin, onLo
     enabled: isAuthenticated
   });
 
-  const myApplications = Array.isArray(profileData?.candidaturas) ? profileData.candidaturas : [];
+  const myApplications = Array.isArray((profileData as any)?.candidaturas) ? (profileData as any).candidaturas : [];
 
   const { data: pendingTests } = useQuery({
     queryKey: ["/api/candidate-portal/tests"],
@@ -633,11 +633,13 @@ export default function ModernPortal({ isAuthenticated, candidate, onLogin, onLo
               <Card className="p-6">
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
-                    <Input 
-                      placeholder="Digite o nome da vaga ou empresa" 
-                      className="h-12"
-                      startAdornment={<Search className="h-5 w-5 text-gray-400" />}
-                    />
+                    <div className="relative">
+                      <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                      <Input 
+                        placeholder="Digite o nome da vaga ou empresa" 
+                        className="h-12 pl-10"
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
