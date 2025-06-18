@@ -60,14 +60,14 @@ const ROLE_CONFIG = {
     icon: Crown,
     description: "Acesso total ao sistema"
   },
-  recruiter: { 
+  recrutador: { 
     label: "Recrutador", 
     color: "bg-blue-100 text-blue-800 border-blue-200",
     icon: Users,
     description: "Gestão de vagas e candidatos"
   },
-  manager: { 
-    label: "Gerente", 
+  gestor: { 
+    label: "Gestor", 
     color: "bg-green-100 text-green-800 border-green-200",
     icon: Briefcase,
     description: "Gestão de departamento"
@@ -159,7 +159,7 @@ export default function ModernUsuarios() {
       nome: "",
       email: "",
       senha: "",
-      role: "recruiter",
+      role: "recrutador",
       empresaId: "",
       departamentoId: "",
     },
@@ -188,13 +188,13 @@ export default function ModernUsuarios() {
     },
     {
       name: 'Recrutadores',
-      value: Array.isArray(usuarios) ? usuarios.filter((u: any) => u.role === 'recruiter').length : 0,
+      value: Array.isArray(usuarios) ? usuarios.filter((u: any) => u.role === 'recrutador').length : 0,
       icon: UserCheck,
       color: 'bg-green-500'
     },
     {
       name: 'Gerentes',
-      value: Array.isArray(usuarios) ? usuarios.filter((u: any) => u.role === 'manager').length : 0,
+      value: Array.isArray(usuarios) ? usuarios.filter((u: any) => u.role === 'gestor').length : 0,
       icon: Briefcase,
       color: 'bg-purple-500'
     },
@@ -241,7 +241,7 @@ export default function ModernUsuarios() {
   };
 
   const UsuarioCard = ({ usuario }: { usuario: any }) => {
-    const roleConfig = ROLE_CONFIG[usuario.role as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.recruiter;
+    const roleConfig = ROLE_CONFIG[usuario.role as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.recrutador;
     const RoleIcon = roleConfig.icon;
     
     return (
@@ -379,8 +379,8 @@ export default function ModernUsuarios() {
               <SelectContent>
                 <SelectItem value="all">Todas as Funções</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="recruiter">Recrutador</SelectItem>
-                <SelectItem value="manager">Gerente</SelectItem>
+                <SelectItem value="recrutador">Recrutador</SelectItem>
+                <SelectItem value="gestor">Gestor</SelectItem>
               </SelectContent>
             </Select>
             <Select value={empresaFilter} onValueChange={setEmpresaFilter}>
@@ -410,8 +410,8 @@ export default function ModernUsuarios() {
           <TabsList>
             <TabsTrigger value="todos">Todos</TabsTrigger>
             <TabsTrigger value="admin">Administradores</TabsTrigger>
-            <TabsTrigger value="recruiter">Recrutadores</TabsTrigger>
-            <TabsTrigger value="manager">Gerentes</TabsTrigger>
+            <TabsTrigger value="recrutador">Recrutadores</TabsTrigger>
+            <TabsTrigger value="gestor">Gestores</TabsTrigger>
           </TabsList>
           <div className="text-sm text-gray-600">
             {filteredUsuarios.length} usuário(s) encontrado(s)
