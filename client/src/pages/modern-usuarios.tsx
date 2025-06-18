@@ -42,6 +42,15 @@ const usuarioFormSchema = z.object({
   departamentoId: z.string().optional(),
 });
 
+const usuarioEditFormSchema = z.object({
+  nome: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  senha: z.string().optional(),
+  role: z.enum(["admin", "recruiter", "manager"]),
+  empresaId: z.string().min(1, "Empresa é obrigatória"),
+  departamentoId: z.string().optional(),
+});
+
 type UsuarioFormData = z.infer<typeof usuarioFormSchema>;
 
 const ROLE_CONFIG = {
@@ -145,7 +154,7 @@ export default function ModernUsuarios() {
   });
 
   const form = useForm<UsuarioFormData>({
-    resolver: zodResolver(usuarioFormSchema),
+    resolver: zodResolver(editingUsuario ? usuarioEditFormSchema : usuarioFormSchema),
     defaultValues: {
       nome: "",
       email: "",
@@ -193,7 +202,7 @@ export default function ModernUsuarios() {
 
   const onSubmit = (data: UsuarioFormData) => {
     if (editingUsuario) {
-      const updateData = { ...data };
+      const updateData: any = { ...data };
       if (data.senha === editingUsuario.senha) {
         delete updateData.senha; // Don't update password if unchanged
       }
@@ -524,9 +533,15 @@ export default function ModernUsuarios() {
                   name="senha"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Senha *</FormLabel>
+                      <FormLabel>
+                        Senha {editingUsuario ? "(deixe em branco para manter)" : "*"}
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} type="password" placeholder="••••••••" />
+                        <Input 
+                          {...field} 
+                          type="password" 
+                          placeholder={editingUsuario ? "••••••••" : "Mínimo 6 caracteres"} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
