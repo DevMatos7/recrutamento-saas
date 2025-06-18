@@ -912,14 +912,16 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   });
 
   const { data: dashboard } = useQuery({
+    queryKey: ["/api/candidate-portal/dashboard"],
+    enabled: isAuthenticated
+  });
+
+  const { data: profileData } = useQuery({
     queryKey: ["/api/candidate-portal/profile"],
     enabled: isAuthenticated
   });
 
-  const { data: myApplications } = useQuery({
-    queryKey: ["/api/candidate-portal/dashboard"],
-    enabled: isAuthenticated
-  });
+  const myApplications = profileData?.candidaturas || [];
 
   const { data: pendingTests } = useQuery({
     queryKey: ["/api/candidate-portal/tests"],
