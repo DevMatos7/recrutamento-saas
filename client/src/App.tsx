@@ -11,9 +11,9 @@ import DepartamentosPage from "@/pages/departamentos";
 import EmpresasPage from "@/pages/empresas";
 import UsuariosPage from "@/pages/usuarios";
 import ModernPipeline from "@/pages/modern-pipeline";
-import TestesPage from "@/pages/testes";
+import ModernTestes from "@/pages/modern-testes";
 import ModernEntrevistas from "@/pages/modern-entrevistas";
-import ComunicacoesPage from "@/pages/comunicacoes";
+import ModernComunicacoes from "@/pages/modern-comunicacoes";
 import ModernAnalytics from "@/pages/modern-analytics";
 import CandidatePortalPage from "@/pages/candidate-portal";
 import AuthPage from "@/pages/auth-page";
@@ -30,9 +30,9 @@ function Router() {
       <ProtectedRoute path="/empresas" component={EmpresasPage} />
       <ProtectedRoute path="/usuarios" component={UsuariosPage} />
       <ProtectedRoute path="/pipeline" component={ModernPipeline} />
-      <ProtectedRoute path="/testes" component={TestesPage} />
+      <ProtectedRoute path="/testes" component={ModernTestes} />
       <ProtectedRoute path="/entrevistas" component={ModernEntrevistas} />
-      <ProtectedRoute path="/comunicacoes" component={ComunicacoesPage} />
+      <ProtectedRoute path="/comunicacoes" component={ModernComunicacoes} />
       <ProtectedRoute path="/analytics" component={ModernAnalytics} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/auth" component={AuthPage} />
