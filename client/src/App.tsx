@@ -8,8 +8,8 @@ import ModernDashboard from "@/pages/modern-dashboard";
 import ModernVagas from "@/pages/modern-vagas";
 import ModernCandidatos from "@/pages/modern-candidatos";
 import DepartamentosPage from "@/pages/departamentos";
-import EmpresasPage from "@/pages/empresas";
-import UsuariosPage from "@/pages/usuarios";
+import ModernEmpresas from "@/pages/modern-empresas";
+import ModernUsuarios from "@/pages/modern-usuarios";
 import ModernPipeline from "@/pages/modern-pipeline";
 import ModernTestes from "@/pages/modern-testes";
 import ModernEntrevistas from "@/pages/modern-entrevistas";
@@ -27,8 +27,8 @@ function Router() {
       <ProtectedRoute path="/vagas" component={ModernVagas} />
       <ProtectedRoute path="/candidatos" component={ModernCandidatos} />
       <ProtectedRoute path="/departamentos" component={DepartamentosPage} />
-      <ProtectedRoute path="/empresas" component={EmpresasPage} />
-      <ProtectedRoute path="/usuarios" component={UsuariosPage} />
+      <ProtectedRoute path="/empresas" component={ModernEmpresas} />
+      <ProtectedRoute path="/usuarios" component={ModernUsuarios} />
       <ProtectedRoute path="/pipeline" component={ModernPipeline} />
       <ProtectedRoute path="/testes" component={ModernTestes} />
       <ProtectedRoute path="/entrevistas" component={ModernEntrevistas} />
