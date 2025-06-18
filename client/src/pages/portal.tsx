@@ -921,7 +921,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     enabled: isAuthenticated
   });
 
-  const myApplications = profileData?.candidaturas || [];
+  const myApplications = Array.isArray(profileData?.candidaturas) ? profileData.candidaturas : [];
 
   const { data: pendingTests } = useQuery({
     queryKey: ["/api/candidate-portal/tests"],
