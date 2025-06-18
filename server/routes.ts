@@ -1514,9 +1514,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!candidateId) {
         return res.status(401).json({ message: "Candidato não autenticado" });
       }
-      const dashboard = await candidatePortalService.getCandidateDashboard(candidateId);
       
-      res.json(dashboard);
+      // Get candidate's actual applications, not dashboard stats
+      const candidaturas = await candidatePortalService.getCandidateApplications(candidateId);
+      
+      res.json({ candidaturas });
     } catch (error) {
       next(error);
     }
