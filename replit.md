@@ -161,6 +161,16 @@ Preferred communication style: Simple, everyday language.
   - Enhanced database schema with candidate password field for portal authentication
   - Created responsive mobile-friendly interface optimized for candidate experience
 
+- **June 18, 2025**: Enhanced Candidate Portal with Comprehensive Curriculum Registration
+  - Implemented multi-step curriculum registration form with 5 detailed sections
+  - Added extensive candidate profile fields including personal information, professional experience, education, skills, languages, and certifications
+  - Enhanced database schema with comprehensive curriculum fields (CPF, address, professional summary, work experience array, education history, skills, languages, certifications)
+  - Created dynamic form components for adding/removing multiple experiences, education records, languages, and certifications
+  - Fixed critical bug where candidates appeared automatically enrolled in jobs without applying
+  - Corrected candidate portal profile endpoint to return actual applications instead of dashboard statistics
+  - Updated backend service to handle extended candidate data with all curriculum fields
+  - Applied database migrations for new candidate profile structure
+
 ## Key Features
 
 ### DISC and Technical Tests Module
