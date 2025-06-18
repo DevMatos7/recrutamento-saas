@@ -14,17 +14,21 @@ export default function CandidatePortalPage() {
   });
 
   useEffect(() => {
-    // Check session storage or make a request to verify authentication
+    // Check if candidate is authenticated by calling the correct API endpoint
     const checkAuth = async () => {
       try {
-        const response = await fetch("/portal/dashboard");
+        const response = await fetch("/api/candidate-portal/dashboard", {
+          credentials: 'include'
+        });
         if (response.ok) {
           const data = await response.json();
           setIsAuthenticated(true);
-          setCandidate(data.candidate);
+          setCandidate({ id: 'authenticated' }); // Basic auth flag
         }
       } catch (error) {
         // Not authenticated, stay on public view
+        setIsAuthenticated(false);
+        setCandidate(null);
       }
     };
     
