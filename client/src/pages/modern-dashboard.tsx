@@ -41,7 +41,7 @@ export default function ModernDashboard() {
   const dashboardStats = [
     {
       name: 'Vagas Ativas',
-      value: stats?.totalVagasAbertas || '0',
+      value: Array.isArray(recentJobs) ? recentJobs.filter((j: any) => j.status === 'aberta').length.toString() : '0',
       change: '+12%',
       changeType: 'positive',
       icon: Briefcase,
@@ -49,7 +49,7 @@ export default function ModernDashboard() {
     },
     {
       name: 'Candidatos Ativos',
-      value: stats?.totalCandidatos || '0', 
+      value: Array.isArray(recentCandidates) ? recentCandidates.length.toString() : '0', 
       change: '+2.1%',
       changeType: 'positive',
       icon: Users,
