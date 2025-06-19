@@ -75,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: req.body.senha, // Map 'senha' to 'password'
         perfil: req.body.role, // Map 'role' to 'perfil'
         empresaId: req.body.empresaId,
-        departamentoId: req.body.departamentoId,
+        departamentoId: req.body.departamentoId || null,
       };
       
       // Validate with backend schema
