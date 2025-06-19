@@ -63,6 +63,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create user (admin only) - Modern UI
+  app.post("/api/usuarios", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      console.log("Creating user with data:", req.body);
+      
+      // Map frontend field names to backend schema
+      const userData = {
+        nome: req.body.nome,
+        email: req.body.email,
+        password: req.body.senha, // Map 'senha' to 'password'
+        perfil: req.body.role, // Map 'role' to 'perfil'
+        empresaId: req.body.empresaId,
+        departamentoId: req.body.departamentoId,
+      };
+      
+      // Validate with backend schema
+      const validatedData = insertUsuarioSchema.parse(userData);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(validatedData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email já está em uso" });
+      }
+
+      const hashedPassword = await hashPassword(validatedData.password);
+      const user = await storage.createUser({
+        ...validatedData,
+        password: hashedPassword,
+      });
+
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Companies endpoints
   app.get("/api/empresas", requireAuth, async (req, res, next) => {
     try {

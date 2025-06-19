@@ -37,7 +37,7 @@ const usuarioFormSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("E-mail inválido"),
   senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  role: z.enum(["admin", "recruiter", "manager"]),
+  role: z.enum(["admin", "recrutador", "gestor"]),
   empresaId: z.string().min(1, "Empresa é obrigatória"),
   departamentoId: z.string().optional(),
 });
@@ -46,7 +46,7 @@ const usuarioEditFormSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("E-mail inválido"),
   senha: z.string().optional(),
-  role: z.enum(["admin", "recruiter", "manager"]),
+  role: z.enum(["admin", "recrutador", "gestor"]),
   empresaId: z.string().min(1, "Empresa é obrigatória"),
   departamentoId: z.string().optional(),
 });
