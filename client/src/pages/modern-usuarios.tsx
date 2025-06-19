@@ -107,9 +107,10 @@ export default function ModernUsuarios() {
       form.reset();
     },
     onError: (error: any) => {
+      console.error("Create user error:", error);
       toast({ 
         title: "Erro ao criar usuário", 
-        description: error.message,
+        description: error.message || "Erro desconhecido",
         variant: "destructive" 
       });
     }
@@ -201,6 +202,7 @@ export default function ModernUsuarios() {
   ];
 
   const onSubmit = (data: UsuarioFormData) => {
+    console.log("Form submit data:", data);
     if (editingUsuario) {
       const updateData: any = { ...data };
       if (data.senha === editingUsuario.senha) {
