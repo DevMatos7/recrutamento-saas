@@ -171,6 +171,13 @@ Preferred communication style: Simple, everyday language.
   - Updated backend service to handle extended candidate data with all curriculum fields
   - Applied database migrations for new candidate profile structure
 
+- **June 20, 2025**: Fixed User Registration Department Loading Issue
+  - Resolved problem where departments weren't loading in user registration form
+  - Implemented cascading selection (company → department) with proper validation
+  - Added dynamic placeholders and visual feedback for better user experience
+  - Fixed SelectItem component error with empty values
+  - Enhanced form UX with department field disabling until company selection
+
 ## Key Features
 
 ### DISC and Technical Tests Module
