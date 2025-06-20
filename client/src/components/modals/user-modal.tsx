@@ -237,9 +237,9 @@ export function UserModal({ isOpen, onClose, editingUser }: UserModalProps) {
                         </SelectItem>
                       ))}
                       {selectedEmpresaId && filteredDepartamentos.length === 0 && (
-                        <SelectItem value="" disabled>
+                        <div className="px-2 py-1.5 text-sm text-gray-500">
                           Nenhum departamento encontrado
-                        </SelectItem>
+                        </div>
                       )}
                     </SelectContent>
                   </Select>
