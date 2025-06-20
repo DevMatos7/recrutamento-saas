@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import ModernPortal from "./modern-portal";
+import CandidatePortal from "./portal";
 
 export default function CandidatePortalPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -46,7 +46,7 @@ export default function CandidatePortalPage() {
   };
 
   return (
-    <ModernPortal
+    <CandidatePortal
       isAuthenticated={isAuthenticated}
       candidate={candidate}
       onLogin={handleLogin}
