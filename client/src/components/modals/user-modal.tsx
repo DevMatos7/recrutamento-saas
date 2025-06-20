@@ -108,9 +108,10 @@ export function UserModal({ isOpen, onClose, editingUser }: UserModalProps) {
     }
   };
 
-  const filteredDepartamentos = departamentos.filter((dept: any) => 
-    dept.empresaId === form.watch("empresaId")
-  );
+  const selectedEmpresaId = form.watch("empresaId");
+  const filteredDepartamentos = selectedEmpresaId 
+    ? departamentos.filter((dept: any) => dept.empresaId === selectedEmpresaId)
+    : [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -181,7 +182,14 @@ export function UserModal({ isOpen, onClose, editingUser }: UserModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Empresa</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Reset department when company changes
+                      form.setValue("departamentoId", "");
+                    }} 
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma empresa" />
@@ -206,10 +214,20 @@ export function UserModal({ isOpen, onClose, editingUser }: UserModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Departamento</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                    disabled={!selectedEmpresaId}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um departamento" />
+                        <SelectValue 
+                          placeholder={
+                            !selectedEmpresaId 
+                              ? "Selecione uma empresa primeiro" 
+                              : "Selecione um departamento"
+                          } 
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -218,6 +236,11 @@ export function UserModal({ isOpen, onClose, editingUser }: UserModalProps) {
                           {departamento.nome}
                         </SelectItem>
                       ))}
+                      {selectedEmpresaId && filteredDepartamentos.length === 0 && (
+                        <SelectItem value="" disabled>
+                          Nenhum departamento encontrado
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
