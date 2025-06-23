@@ -1362,7 +1362,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     );
   };
 
-  // Public jobs view
+  // Public jobs view  
   const PublicJobsView = () => (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -1384,7 +1384,31 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.isArray(jobs) && jobs.map((job: any) => (
+              <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg">{job.titulo}</CardTitle>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Building2 className="h-4 w-4" />
+                    {job.empresa}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 text-sm mb-4">{job.descricao}</p>
+                  <Button 
+                    onClick={() => setSelectedJob(job)}
+                    className="w-full"
+                  >
+                    Candidatar-se
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
               {Array.isArray(jobs) && jobs.map((job: any) => (
                 <Card key={job.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
