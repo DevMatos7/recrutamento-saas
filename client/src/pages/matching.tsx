@@ -42,7 +42,7 @@ interface CandidatoMatch {
   };
 }
 
-function MatchingPage() {
+export default function MatchingPage() {
   const { vagaId } = useParams();
   const { toast } = useToast();
   const [filtros, setFiltros] = useState({
@@ -513,13 +513,5 @@ function CandidateProfile({ candidato, match }: { candidato: any; match: any }) 
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-export default function MatchingPageWrapper() {
-  return (
-    <ProtectedRoute>
-      <MatchingPage />
-    </ProtectedRoute>
   );
 }
