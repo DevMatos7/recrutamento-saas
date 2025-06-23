@@ -189,6 +189,14 @@ Preferred communication style: Simple, everyday language.
   - Added Credenciais page for SMTP and WhatsApp API configuration
   - Created secure credential management interface for administrators
 
+- **June 23, 2025**: Fixed Duplicate Sidebar Issue System-Wide
+  - Resolved duplicate sidebar appearing on all application pages
+  - Centralized sidebar management through ProtectedRoute component
+  - Removed redundant Sidebar components from individual pages
+  - Fixed JSX syntax errors and component structure issues
+  - Corrected indentation and layout structure across all pages
+  - Ensured single sidebar consistency throughout the application
+
 ## Key Features
 
 ### DISC and Technical Tests Module

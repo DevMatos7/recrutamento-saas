@@ -384,21 +384,21 @@ export default function VagasPage() {
 
   return (
     <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestão de Vagas</h1>
-              <p className="text-gray-600 mt-1">Gerencie todas as vagas da sua empresa</p>
-            </div>
-            {canManageVagas && (
-              <Button onClick={handleNewVaga} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Nova Vaga
-              </Button>
-            )}
-          </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gestão de Vagas</h1>
+          <p className="text-gray-600 mt-1">Gerencie todas as vagas da sua empresa</p>
+        </div>
+        {canManageVagas && (
+          <Button onClick={handleNewVaga} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Nova Vaga
+          </Button>
+        )}
+      </div>
 
-          {/* Filters */}
-          <Card>
+      {/* Filters */}
+      <Card>
             <CardContent className="p-4">
               <div className="flex gap-4 items-center">
                 <div className="flex-1">
@@ -425,14 +425,14 @@ export default function VagasPage() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+      </Card>
 
-          {/* Vagas Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Lista de Vagas ({filteredVagas.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
+      {/* Vagas Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Vagas ({filteredVagas.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -531,10 +531,10 @@ export default function VagasPage() {
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+        </CardContent>
+      </Card>
 
-          <VagaModal
+      <VagaModal
             isOpen={isModalOpen}
             onClose={() => {
               setIsModalOpen(false);
