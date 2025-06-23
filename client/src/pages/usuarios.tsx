@@ -8,7 +8,7 @@ import { Trash2, Edit, UserPlus, Search, Shield, Users, Building, Filter } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Sidebar } from "@/components/layout/sidebar";
+
 import { UserModal } from "@/components/modals/user-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Usuario, Empresa, Departamento } from "@shared/schema";
