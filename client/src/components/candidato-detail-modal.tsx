@@ -1,0 +1,389 @@
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Briefcase, 
+  GraduationCap, 
+  Award, 
+  Languages, 
+  Brain,
+  Shield,
+  ShieldCheck,
+  ShieldX,
+  AlertTriangle,
+  DollarSign,
+  Calendar
+} from "lucide-react";
+
+interface CandidatoDetailModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  candidatoId: string | null;
+}
+
+export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: CandidatoDetailModalProps) {
+  const { data: candidato, isLoading } = useQuery({
+    queryKey: ['/api/candidatos', candidatoId],
+    enabled: !!candidatoId && isOpen,
+  });
+
+  const { data: resultadoDisc } = useQuery({
+    queryKey: ['/api/avaliacoes/disc/candidato', candidatoId],
+    enabled: !!candidatoId && isOpen,
+  });
+
+  if (!isOpen || !candidatoId) return null;
+
+  if (isLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!candidato) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl">
+          <div className="text-center py-8">
+            <p className="text-destructive">Candidato não encontrado</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const renderStatusEtico = () => {
+    switch (candidato.statusEtico) {
+      case "aprovado":
+        return (
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-green-500" />
+            <Badge variant="default" className="bg-green-100 text-green-800">
+              Aprovado Eticamente
+            </Badge>
+          </div>
+        );
+      case "reprovado":
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <ShieldX className="h-5 w-5 text-red-500" />
+              <Badge variant="destructive">
+                Reprovado Eticamente
+              </Badge>
+            </div>
+            {candidato.motivoReprovacaoEtica && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800">
+                  <strong>Motivo:</strong> {candidato.motivoReprovacaoEtica}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      case "pendente":
+        return (
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+              Avaliação Ética Pendente
+            </Badge>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-gray-500" />
+            <Badge variant="outline">
+              Não Avaliado
+            </Badge>
+          </div>
+        );
+    }
+  };
+
+  const renderResultadoDisc = () => {
+    if (!resultadoDisc || resultadoDisc.length === 0) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Perfil DISC
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant="outline">Teste não realizado</Badge>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    const ultimo = resultadoDisc[resultadoDisc.length - 1];
+    const fatores = ultimo.resultado?.fatores || {};
+    
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            Perfil DISC
+          </CardTitle>
+          <CardDescription>
+            Perfil comportamental identificado: <strong>{ultimo.perfilPrincipal}</strong>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Dominância (D)</span>
+                <Badge variant="destructive">{fatores.D || 0}</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Influência (I)</span>
+                <Badge variant="default">{fatores.I || 0}</Badge>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Estabilidade (S)</span>
+                <Badge variant="secondary">{fatores.S || 0}</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Conformidade (C)</span>
+                <Badge variant="outline">{fatores.C || 0}</Badge>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground">
+            Realizado em: {new Date(ultimo.dataFinalizacao).toLocaleDateString('pt-BR')}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            {candidato.nome}
+          </DialogTitle>
+          <DialogDescription>
+            Informações completas do candidato
+          </DialogDescription>
+        </DialogHeader>
+        
+        <ScrollArea className="max-h-[calc(90vh-120px)]">
+          <div className="space-y-6">
+            {/* Informações Básicas */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações Pessoais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{candidato.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{candidato.telefone}</span>
+                  </div>
+                  {candidato.localizacao && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{candidato.localizacao}</span>
+                    </div>
+                  )}
+                  {candidato.pretensaoSalarial && (
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">R$ {candidato.pretensaoSalarial}</span>
+                    </div>
+                  )}
+                </div>
+
+                {candidato.resumoProfissional && (
+                  <div>
+                    <h4 className="font-medium mb-2">Resumo Profissional</h4>
+                    <p className="text-sm text-muted-foreground">{candidato.resumoProfissional}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Status Ético */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Status Ético</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderStatusEtico()}
+              </CardContent>
+            </Card>
+
+            {/* Resultado DISC */}
+            {renderResultadoDisc()}
+
+            {/* Experiência Profissional */}
+            {candidato.experienciaProfissional && candidato.experienciaProfissional.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Experiência Profissional
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {candidato.experienciaProfissional.map((exp: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{exp.cargo}</h4>
+                          <p className="text-sm text-muted-foreground">{exp.empresa}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {exp.dataInicio} - {exp.dataFim || 'Atual'}
+                          </div>
+                        </div>
+                      </div>
+                      {exp.descricao && (
+                        <p className="text-sm">{exp.descricao}</p>
+                      )}
+                      {index < candidato.experienciaProfissional.length - 1 && <Separator />}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Educação */}
+            {candidato.educacao && candidato.educacao.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" />
+                    Formação Acadêmica
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {candidato.educacao.map((edu: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{edu.curso}</h4>
+                          <p className="text-sm text-muted-foreground">{edu.instituicao}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline">{edu.status}</Badge>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {edu.anoInicio} - {edu.anoFim || 'Em andamento'}
+                          </div>
+                        </div>
+                      </div>
+                      {index < candidato.educacao.length - 1 && <Separator />}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Habilidades */}
+            {candidato.habilidades && candidato.habilidades.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Habilidades e Competências</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {candidato.habilidades.map((habilidade: any, index: number) => (
+                      <Badge key={index} variant="secondary">
+                        {habilidade.nome} {habilidade.nivel && `(${habilidade.nivel})`}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Idiomas */}
+            {candidato.idiomas && candidato.idiomas.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Languages className="h-5 w-5" />
+                    Idiomas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {candidato.idiomas.map((idioma: any, index: number) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="text-sm">{idioma.idioma}</span>
+                        <Badge variant="outline">{idioma.nivel}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Certificações */}
+            {candidato.certificacoes && candidato.certificacoes.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Certificações
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {candidato.certificacoes.map((cert: any, index: number) => (
+                    <div key={index} className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-sm">{cert.nome}</h4>
+                        <p className="text-xs text-muted-foreground">{cert.instituicao}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-muted-foreground">
+                          {cert.dataObtencao}
+                        </div>
+                        {cert.validade && (
+                          <div className="text-xs text-muted-foreground">
+                            Válido até: {cert.validade}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
