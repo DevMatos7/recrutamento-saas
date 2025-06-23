@@ -229,7 +229,7 @@ export default function EntrevistasPage() {
       <div className="space-y-6">
         {isLoading ? (
           <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
+            {[...Array(5)].map((_, i) => (
                 <Card key={i} className="animate-pulse">
                   <CardHeader>
                     <div className="h-4 bg-muted rounded w-3/4"></div>
