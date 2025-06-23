@@ -2,6 +2,7 @@ import { storage } from "./storage";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { seedTests } from "./seed-tests.js";
+import { seedQuestoesDisc } from "./seed-disc.js";
 
 const scryptAsync = promisify(scrypt);
 

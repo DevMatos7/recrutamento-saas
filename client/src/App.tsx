@@ -13,6 +13,7 @@ import UsuariosPage from "@/pages/usuarios";
 import Dashboard from "@/pages/dashboard";
 import PipelinePage from "@/pages/pipeline";
 import TestesPage from "@/pages/testes";
+import AvaliacaoDiscPage from "@/pages/avaliacao-disc";
 import EntrevistasPage from "@/pages/entrevistas";
 import ComunicacoesPage from "@/pages/comunicacoes";
 import CredenciaisPage from "@/pages/credenciais";
@@ -29,6 +30,7 @@ function Router() {
       <ProtectedRoute path="/candidatos" component={CandidatosPage} />
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
       <ProtectedRoute path="/testes" component={TestesPage} />
+      <ProtectedRoute path="/avaliacao-disc" component={AvaliacaoDiscPage} />
       <ProtectedRoute path="/entrevistas" component={EntrevistasPage} />
       <ProtectedRoute path="/configuracoes/dashboard" component={Dashboard} />
       <ProtectedRoute path="/configuracoes/departamentos" component={DepartamentosPage} />
