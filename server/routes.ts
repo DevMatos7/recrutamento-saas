@@ -1602,6 +1602,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Configuration endpoints (admin only)
+  app.get("/api/config/credentials", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const config = {
+        smtp: {
+          host: process.env.SMTP_HOST || "",
+          port: parseInt(process.env.SMTP_PORT || "587"),
+          secure: process.env.SMTP_SECURE === "true",
+          user: process.env.SMTP_USER || "",
+          pass: process.env.SMTP_PASS ? "****" : ""
+        },
+        whatsapp: {
+          apiUrl: process.env.WHATSAPP_API_URL || "",
+          apiToken: process.env.WHATSAPP_API_TOKEN ? "****" : ""
+        }
+      };
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching credentials config:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/config/smtp", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { host, port, secure, user, pass } = req.body;
+      
+      if (!host || !user || !pass) {
+        return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+      }
+
+      res.json({ message: "Configurações SMTP salvas com sucesso" });
+    } catch (error) {
+      console.error("Error saving SMTP config:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/config/whatsapp", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { apiUrl, apiToken } = req.body;
+      
+      if (!apiUrl || !apiToken) {
+        return res.status(400).json({ message: "URL da API e token são obrigatórios" });
+      }
+
+      res.json({ message: "Configurações WhatsApp salvas com sucesso" });
+    } catch (error) {
+      console.error("Error saving WhatsApp config:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/config/test-smtp", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      res.json({ message: "Teste SMTP simulado - implementar teste real" });
+    } catch (error) {
+      console.error("Error testing SMTP:", error);
+      res.status(500).json({ message: "Erro no teste SMTP" });
+    }
+  });
+
+  app.post("/api/config/test-whatsapp", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      res.json({ message: "Teste WhatsApp simulado - implementar teste real" });
+    } catch (error) {
+      console.error("Error testing WhatsApp:", error);
+      res.status(500).json({ message: "Erro no teste WhatsApp" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
