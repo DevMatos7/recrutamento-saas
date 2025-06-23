@@ -15,6 +15,7 @@ import PipelinePage from "@/pages/pipeline";
 import TestesPage from "@/pages/testes";
 import AvaliacaoDiscPage from "@/pages/avaliacao-disc";
 import CandidateDiscTest from "@/pages/candidate-disc-test";
+import MatchingPage from "@/pages/matching";
 import EntrevistasPage from "@/pages/entrevistas";
 import ComunicacoesPage from "@/pages/comunicacoes";
 import CredenciaisPage from "@/pages/credenciais";
@@ -39,6 +40,7 @@ function Router() {
       <ProtectedRoute path="/configuracoes/usuarios" component={UsuariosPage} />
       <ProtectedRoute path="/configuracoes/comunicacoes" component={ComunicacoesPage} />
       <ProtectedRoute path="/configuracoes/credenciais" component={CredenciaisPage} />
+      <ProtectedRoute path="/vagas/:vagaId/matches" component={MatchingPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/portal/disc" component={CandidateDiscTest} />
       <Route path="/auth" component={AuthPage} />
