@@ -37,6 +37,8 @@ export default function ConfiguracoesPage() {
                 {canViewDepartamentos && <li>• Departamentos - Gestão da estrutura organizacional</li>}
                 {canViewUsuarios && <li>• Usuários - Controle de acesso e perfis</li>}
                 {canViewEmpresas && <li>• Empresas - Cadastro de clientes</li>}
+                {["admin", "recrutador"].includes(user?.perfil || "") && <li>• Comunicações - Gestão de mensagens</li>}
+                {["admin"].includes(user?.perfil || "") && <li>• Credenciais - Configuração SMTP e WhatsApp</li>}
               </ul>
             </div>
           </CardContent>

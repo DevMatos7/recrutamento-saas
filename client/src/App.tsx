@@ -15,6 +15,7 @@ import PipelinePage from "@/pages/pipeline";
 import TestesPage from "@/pages/testes";
 import EntrevistasPage from "@/pages/entrevistas";
 import ComunicacoesPage from "@/pages/comunicacoes";
+import CredenciaisPage from "@/pages/credenciais";
 import CandidatePortalPage from "@/pages/candidate-portal";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
@@ -29,11 +30,12 @@ function Router() {
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
       <ProtectedRoute path="/testes" component={TestesPage} />
       <ProtectedRoute path="/entrevistas" component={EntrevistasPage} />
-      <ProtectedRoute path="/comunicacoes" component={ComunicacoesPage} />
       <ProtectedRoute path="/configuracoes/dashboard" component={Dashboard} />
       <ProtectedRoute path="/configuracoes/departamentos" component={DepartamentosPage} />
       <ProtectedRoute path="/configuracoes/empresas" component={EmpresasPage} />
       <ProtectedRoute path="/configuracoes/usuarios" component={UsuariosPage} />
+      <ProtectedRoute path="/configuracoes/comunicacoes" component={ComunicacoesPage} />
+      <ProtectedRoute path="/configuracoes/credenciais" component={CredenciaisPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />

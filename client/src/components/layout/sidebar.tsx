@@ -76,12 +76,6 @@ export function Sidebar() {
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
-      name: "Comunicações",
-      href: "/comunicacoes",
-      icon: MessageSquare,
-      show: ["admin", "recrutador"].includes(user?.perfil || ""),
-    },
-    {
       name: "Portal do Candidato",
       href: "/portal",
       icon: Globe,
@@ -114,6 +108,18 @@ export function Sidebar() {
       name: "Empresas",
       href: "/configuracoes/empresas",
       icon: Building2,
+      show: ["admin"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Comunicações",
+      href: "/configuracoes/comunicacoes",
+      icon: MessageSquare,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Credenciais",
+      href: "/configuracoes/credenciais",
+      icon: Settings,
       show: ["admin"].includes(user?.perfil || ""),
     },
   ];
