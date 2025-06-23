@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Eye, Square, Users, Target } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Square, Users, Target, Settings } from "lucide-react";
 import { Link } from "wouter";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -516,6 +516,15 @@ export default function VagasPage() {
                               </Button>
                             </>
                           )}
+                          <Link href={`/vagas/${vaga.id}/configurar-matching`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Configurar Matching"
+                            >
+                              <Target className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           {user?.perfil === "admin" && (
                             <Button
                               variant="ghost"

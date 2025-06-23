@@ -1,5 +1,6 @@
 import React from "react";
-import { useParams, useNavigate } from "wouter";
+import { useParams } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function VagaMatchingConfigPage() {
   const { vagaId } = useParams();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
