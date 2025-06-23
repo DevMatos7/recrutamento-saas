@@ -7,10 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Eye, Mail, Phone, LinkedinIcon, FileText } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Mail, Phone, LinkedinIcon, FileText, MoreHorizontal, Shield, ShieldCheck, ShieldX, AlertTriangle, Brain } from "lucide-react";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CandidatoDetailModal } from "@/components/candidato-detail-modal";
 
 // Candidate Modal Component
 function CandidatoModal({ isOpen, onClose, editingCandidato }: { isOpen: boolean; onClose: () => void; editingCandidato?: any | null }) {
@@ -215,6 +217,13 @@ export default function CandidatosPage() {
   const [origemFilter, setOrigemFilter] = useState("todos");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCandidato, setEditingCandidato] = useState<any | null>(null);
+  const [selectedCandidatoId, setSelectedCandidatoId] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  
+  // Query para obter resultados DISC de todos os candidatos
+  const { data: resultadosDisc } = useQuery({
+    queryKey: ['/api/avaliacoes/disc/resultados-todos'],
+  });
 
   // Fetch data
   const { data: candidatos = [], isLoading } = useQuery({ queryKey: ["/api/candidatos"] });
@@ -263,6 +272,79 @@ export default function CandidatosPage() {
     if (confirm("Tem certeza que deseja excluir este candidato?")) {
       deleteMutation.mutate(candidatoId);
     }
+  };
+
+  const renderStatusEtico = (statusEtico: string, motivo: string) => {
+    switch (statusEtico) {
+      case "aprovado":
+        return (
+          <div className="flex items-center gap-1">
+            <ShieldCheck className="h-4 w-4 text-green-500" />
+            <Badge variant="default" className="bg-green-100 text-green-800">
+              Aprovado
+            </Badge>
+          </div>
+        );
+      case "reprovado":
+        return (
+          <div className="flex items-center gap-1">
+            <ShieldX className="h-4 w-4 text-red-500" />
+            <Badge variant="destructive" title={motivo || "Reprovado por questões éticas"}>
+              Reprovado
+            </Badge>
+          </div>
+        );
+      case "pendente":
+        return (
+          <div className="flex items-center gap-1">
+            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+              Pendente
+            </Badge>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center gap-1">
+            <Shield className="h-4 w-4 text-gray-500" />
+            <Badge variant="outline">
+              Não avaliado
+            </Badge>
+          </div>
+        );
+    }
+  };
+
+  const renderStatusDisc = (candidatoId: string) => {
+    const resultado = (resultadosDisc as any[])?.find(r => r.candidatoId === candidatoId);
+    
+    if (!resultado) {
+      return (
+        <Badge variant="outline" className="text-gray-500">
+          Pendente
+        </Badge>
+      );
+    }
+
+    const perfil = resultado.perfilPrincipal;
+    const getPerfilColor = (perfil: string) => {
+      switch (perfil) {
+        case "D": return "bg-red-100 text-red-800";
+        case "I": return "bg-blue-100 text-blue-800";
+        case "S": return "bg-green-100 text-green-800";
+        case "C": return "bg-purple-100 text-purple-800";
+        default: return "bg-gray-100 text-gray-800";
+      }
+    };
+
+    return (
+      <div className="flex items-center gap-1">
+        <Brain className="h-4 w-4 text-gray-500" />
+        <Badge className={getPerfilColor(perfil)} title={`Perfil DISC: ${perfil}`}>
+          {perfil}
+        </Badge>
+      </div>
+    );
   };
 
   const getStatusColor = (status: string) => {
