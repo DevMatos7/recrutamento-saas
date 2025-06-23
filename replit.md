@@ -178,6 +178,13 @@ Preferred communication style: Simple, everyday language.
   - Fixed SelectItem component error with empty values
   - Enhanced form UX with department field disabling until company selection
 
+- **June 23, 2025**: Reorganized Navigation Structure
+  - Moved empresas, usuários, departamentos and dashboard to "Configurações" menu
+  - Set Analytics as the main landing page after login (route "/")
+  - Created comprehensive Configurações page with tabbed interface
+  - Maintained role-based access control for all configuration sections
+  - Updated sidebar navigation to reflect new structure
+
 ## Key Features
 
 ### DISC and Technical Tests Module
