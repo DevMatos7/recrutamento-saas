@@ -1673,6 +1673,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==========================================
+  // AVALIAÇÕES DISC ROUTES
+  // ==========================================
+
+  // GET /api/avaliacoes/disc/modelo - Retorna modelo das questões DISC
+  app.get("/api/avaliacoes/disc/modelo", async (req: Request, res: Response) => {
+    try {
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const modelo = await AvaliacaoService.obterModeloDisc();
+      res.json(modelo);
+    } catch (error: any) {
+      console.error("Erro ao obter modelo DISC:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/avaliacoes/disc/iniciar - Inicia nova avaliação DISC
+  app.post("/api/avaliacoes/disc/iniciar", async (req: Request, res: Response) => {
+    try {
+      const { candidatoId } = req.body;
+      
+      if (!candidatoId) {
+        return res.status(400).json({ message: "candidatoId é obrigatório" });
+      }
+
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const avaliacao = await AvaliacaoService.iniciarAvaliacao(candidatoId);
+      res.json(avaliacao);
+    } catch (error: any) {
+      console.error("Erro ao iniciar avaliação:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/avaliacoes/disc/:id/responder - Salva respostas de um bloco
+  app.post("/api/avaliacoes/disc/:id/responder", async (req: Request, res: Response) => {
+    try {
+      const avaliacaoId = parseInt(req.params.id);
+      const { bloco, respostas } = req.body;
+
+      if (!bloco || !respostas || !Array.isArray(respostas)) {
+        return res.status(400).json({ 
+          message: "bloco e respostas (array) são obrigatórios" 
+        });
+      }
+
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const resultado = await AvaliacaoService.salvarRespostasBloco(
+        avaliacaoId, 
+        bloco, 
+        respostas
+      );
+      res.json(resultado);
+    } catch (error: any) {
+      console.error("Erro ao salvar respostas:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/avaliacoes/disc/:id/finalizar - Finaliza avaliação e calcula resultado
+  app.post("/api/avaliacoes/disc/:id/finalizar", async (req: Request, res: Response) => {
+    try {
+      const avaliacaoId = parseInt(req.params.id);
+
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const resultado = await AvaliacaoService.finalizarAvaliacao(avaliacaoId);
+      res.json(resultado);
+    } catch (error: any) {
+      console.error("Erro ao finalizar avaliação:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/avaliacoes/disc/:id/resultado - Retorna resultado da avaliação
+  app.get("/api/avaliacoes/disc/:id/resultado", async (req: Request, res: Response) => {
+    try {
+      const avaliacaoId = parseInt(req.params.id);
+
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const resultado = await AvaliacaoService.obterResultado(avaliacaoId);
+      res.json(resultado);
+    } catch (error: any) {
+      console.error("Erro ao obter resultado:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/avaliacoes/disc/candidato/:candidatoId - Histórico de avaliações do candidato
+  app.get("/api/avaliacoes/disc/candidato/:candidatoId", async (req: Request, res: Response) => {
+    try {
+      const { candidatoId } = req.params;
+
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const historico = await AvaliacaoService.obterHistoricoCandidato(candidatoId);
+      res.json(historico);
+    } catch (error: any) {
+      console.error("Erro ao obter histórico:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
