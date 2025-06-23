@@ -1,0 +1,127 @@
+Implementar um sistema automático de recomendação (match) entre perfis de candidatos e vagas cadastradas, com base em critérios específicos definidos para cada vaga, incluindo competências técnicas, formação, experiência, localização, pretensão salarial e perfil comportamental (DISC).
+
+📌 Estrutura do Banco de Dados (ajustes necessários):
+
+Criar ou atualizar as tabelas no PostgreSQL:
+
+Tabela de Vagas:
+
+id
+
+titulo
+
+descricao
+
+competencias (array)
+
+nivel_experiencia
+
+formacao_minima
+
+localizacao
+
+salario
+
+tipo_contratacao
+
+perfil_disc_ideal (JSONB)
+
+status (aberta, fechada, suspensa)
+
+Tabela de Candidatos:
+
+id
+
+nome
+
+cargo_desejado
+
+competencias (array)
+
+nivel_experiencia
+
+formacao
+
+localizacao
+
+pretensao_salarial
+
+tipo_contratacao
+
+resultado_disc (JSONB)
+
+🛠️ Backend em FastAPI:
+
+Criar endpoint:
+
+/api/vagas/{vaga_id}/matches
+
+Retorna lista de candidatos com score de match superior a um valor mínimo definido (default 70%).
+
+Implementar a função de match inteligente:
+
+Calcular score com pesos customizáveis para cada critério:
+
+Competências técnicas (40%)
+
+Nível de experiência (20%)
+
+Formação acadêmica (10%)
+
+Localização geográfica (10%)
+
+Pretensão salarial (10%)
+
+Perfil comportamental DISC (10%)
+
+Garantir:
+
+Validação correta de entrada dos dados;
+
+Ordenação por score decrescente na resposta;
+
+Autenticação e autorização adequada para acesso ao endpoint.
+
+🎨 Frontend em React + Tailwind:
+
+Tela de visualização dos matches:
+
+Exibir em ordem decrescente de score;
+
+Apresentar claramente nome, cargo desejado e porcentagem de compatibilidade.
+
+Interatividade:
+
+Permitir filtro adicional por localização, score e nível de experiência;
+
+Botão de ação direta para visualização detalhada do perfil do candidato.
+
+🔄 Mudanças adicionais necessárias no sistema atual:
+
+Atualizar os formulários de cadastro de vagas e candidatos para inclusão obrigatória dos novos campos (competências, perfil DISC);
+
+Criar rotinas ou scripts para preencher ou atualizar esses dados retroativamente, se houver cadastros antigos;
+
+Garantir que qualquer alteração nos critérios da vaga atualize automaticamente os matches relacionados.
+
+⚙️ Regras e Validações Essenciais:
+
+O sistema de match deve considerar "mínimos obrigatórios" (por exemplo, candidatos com pretensão salarial acima do ofertado não devem ser considerados);
+
+Garantir tratamento adequado quando não houver candidatos que atinjam o match mínimo;
+
+Registrar logs dos matches para auditoria posterior.
+
+✅ Tarefas claras para implementação:
+
+Criar e atualizar estruturas do banco;
+
+Implementar endpoint de matches no backend;
+
+Desenvolver a tela de visualização dos matches no frontend;
+
+Realizar testes integrados do match com casos reais;
+
+Documentar a nova funcionalidade detalhadamente (uso e técnico);
+
+Fazer deploy e monitorar inicialmente o funcionamento.

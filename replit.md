@@ -215,6 +215,25 @@ Preferred communication style: Simple, everyday language.
   - Made DISC assessment mandatory and accessible only to candidates
   - Added assessment history tracking with results and completion dates
 
+- **June 23, 2025**: Enhanced DISC System with Portal Integration and Admin Management
+  - Added prominent DISC test alerts in candidate portal dashboard
+  - Created comprehensive DISC results viewing in candidates admin section
+  - Implemented email/WhatsApp invitation system for sending test links
+  - Added visual status indicators showing test completion status
+  - Enhanced candidate detail view with dedicated DISC results tab
+  - Created API endpoints for bulk DISC results and invitation management
+
+- **June 23, 2025**: Implemented Intelligent Candidate-Job Matching System
+  - Enhanced database schema with matching fields for vagas and candidatos tables
+  - Created comprehensive MatchingService with weighted scoring algorithm
+  - Implemented multi-criteria matching: competências (40%), experiência (20%), formação (10%), localização (10%), salário (10%), DISC (10%)
+  - Added automatic candidate compatibility scoring with configurable minimum thresholds
+  - Created dedicated matching interface (/vagas/:id/matches) with advanced filtering
+  - Implemented match statistics and analytics dashboard with score distribution
+  - Added detailed candidate profile views with compatibility breakdowns
+  - Integrated matching system with existing job management interface
+  - Added real-time match calculation with audit logging for compliance
+
 ## Key Features
 
 ### Candidate Assessment Module (Avaliações)

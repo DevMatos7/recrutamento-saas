@@ -488,6 +488,14 @@ export default function VagasPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.location.href = `/vagas/${vaga.id}/matches`}
+                            title="Ver matches compatíveis"
+                          >
+                            <Target className="h-4 w-4" />
+                          </Button>
                           {canManageVagas && vaga.status === "aberta" && (
                             <>
                               <Button

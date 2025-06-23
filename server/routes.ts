@@ -1847,6 +1847,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === ENDPOINTS DE MATCHING ===
+  
+  // GET /api/vagas/:vagaId/matches - Obter matches para uma vaga
+  app.get("/api/vagas/:vagaId/matches", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { vagaId } = req.params;
+      const { scoreMinimo = "70", localizacao, nivelExperiencia } = req.query;
+
+      const { MatchingService } = await import("./services/matching-service.js");
+      
+      let matches = await MatchingService.calcularMatchesParaVaga(
+        vagaId, 
+        parseInt(scoreMinimo as string)
+      );
+
+      // Aplicar filtros adicionais
+      if (localizacao) {
+        matches = matches.filter(match => 
+          match.candidato.localizacao?.toLowerCase().includes((localizacao as string).toLowerCase())
+        );
+      }
+
+      if (nivelExperiencia) {
+        matches = matches.filter(match => 
+          match.candidato.nivelExperiencia === nivelExperiencia
+        );
+      }
+
+      res.json(matches);
+    } catch (error: any) {
+      console.error("Erro ao obter matches:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/vagas/:vagaId/matches/estatisticas - Obter estatísticas de matching
+  app.get("/api/vagas/:vagaId/matches/estatisticas", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { vagaId } = req.params;
+
+      const { MatchingService } = await import("./services/matching-service.js");
+      const estatisticas = await MatchingService.obterEstatisticasMatching(vagaId);
+
+      res.json(estatisticas);
+    } catch (error: any) {
+      console.error("Erro ao obter estatísticas de matching:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
