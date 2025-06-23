@@ -1362,64 +1362,28 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     );
   };
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="jobs">Vagas</TabsTrigger>
-            <TabsTrigger value="applications">Minhas Candidaturas</TabsTrigger>
-            <TabsTrigger value="tests">Testes</TabsTrigger>
-            <TabsTrigger value="interviews">Entrevistas</TabsTrigger>
-            <TabsTrigger value="messages">Mensagens</TabsTrigger>
-          </TabsList>
+  // Public jobs view
+  const PublicJobsView = () => (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-900">Vagas Disponíveis</h1>
+            <Button onClick={() => setAuthMode('login')}>
+              Fazer Login
+            </Button>
+          </div>
+        </div>
+      </header>
 
-          <TabsContent value="dashboard">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Candidaturas</CardTitle>
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {(dashboard as any)?.candidaturas?.reduce((acc: number, c: any) => acc + c.total, 0) || 0}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Testes Pendentes</CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{(dashboard as any)?.testesPendentes || 0}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Entrevistas</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{(dashboard as any)?.entrevistasAgendadas || 0}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Notificações</CardTitle>
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{(dashboard as any)?.notificacoes || 0}</div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="jobs">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {jobsLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Carregando vagas...</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {Array.isArray(jobs) && jobs.map((job: any) => (
                 <Card key={job.id} className="hover:shadow-lg transition-shadow">
@@ -1600,13 +1564,12 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   // Show different views based on authentication state
   if (!isAuthenticated) {
-    // Se authMode está definido (login ou register), mostrar formulários
     if (authMode !== null) {
       return <AuthForms />;
     }
-    // Caso contrário, mostrar vagas públicas
     return <PublicJobsView />;
   }
 
   return <AuthenticatedDashboard />;
+}
 }
