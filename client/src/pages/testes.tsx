@@ -221,9 +221,9 @@ export default function TestesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Testes DISC e Técnicos</h1>
+          <h1 className="text-3xl font-bold">Avaliações</h1>
           <p className="text-muted-foreground">
-            Gerencie testes comportamentais e técnicos para avaliação de candidatos
+            Gerencie avaliações comportamentais e técnicas para candidatos
           </p>
         </div>
         
@@ -231,11 +231,11 @@ export default function TestesPage() {
           <div className="flex gap-2">
             <Button onClick={handleCreateDISC} variant="outline">
               <Brain className="w-4 h-4 mr-2" />
-              Criar Teste DISC
+              Criar Avaliação DISC
             </Button>
             <Button onClick={handleCreateTecnico}>
               <FileText className="w-4 h-4 mr-2" />
-              Criar Teste Técnico
+              Criar Avaliação Técnica
             </Button>
           </div>
         )}
@@ -354,10 +354,10 @@ export default function TestesPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingTeste ? "Editar Teste" : "Criar Novo Teste"}
+              {editingTeste ? "Editar Avaliação" : "Criar Nova Avaliação"}
             </DialogTitle>
             <DialogDescription>
-              Configure as questões e alternativas do teste
+              Configure as questões e alternativas da avaliação
             </DialogDescription>
           </DialogHeader>
 
@@ -548,7 +548,7 @@ export default function TestesPage() {
                   type="submit"
                   disabled={createTesteMutation.isPending}
                 >
-                  {createTesteMutation.isPending ? "Salvando..." : "Salvar Teste"}
+                  {createTesteMutation.isPending ? "Salvando..." : "Salvar Avaliação"}
                 </Button>
               </DialogFooter>
             </form>

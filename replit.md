@@ -109,15 +109,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **June 17, 2025**: Implemented DISC and Technical Tests Module
-  - Added comprehensive test management system with DISC behavioral assessments and technical evaluations
-  - Created test creation interface with question builder and answer validation
+- **June 17, 2025**: Implemented Candidate Assessment Module (Avaliações)
+  - Added comprehensive assessment management system with DISC behavioral assessments and technical evaluations
+  - Created assessment creation interface with question builder and answer validation
   - Implemented automatic DISC profile calculation (Dominante, Influente, Estável, Consciente)
-  - Added technical test scoring with correct answer validation
-  - Integrated test assignment functionality with role-based permissions
-  - Enhanced database schema with tests and test results tables
-  - Added sample DISC and technical tests for JavaScript and Python
-  - Created dedicated tests management page with admin/recruiter access controls
+  - Added technical assessment scoring with correct answer validation
+  - Integrated assessment assignment functionality with role-based permissions
+  - Enhanced database schema with assessments and assessment results tables
+  - Added sample DISC and technical assessments for JavaScript and Python
+  - Created dedicated assessments management page with admin/recruiter access controls
 
 - **June 17, 2025**: Implemented Interview Management Module
   - Added comprehensive interview scheduling and management system
@@ -197,15 +197,21 @@ Preferred communication style: Simple, everyday language.
   - Corrected indentation and layout structure across all pages
   - Ensured single sidebar consistency throughout the application
 
+- **June 23, 2025**: Module Rebranding - Testes DISC to Avaliações
+  - Renamed "Testes DISC" module to "Avaliações" throughout the system
+  - Updated sidebar navigation, page titles, and user interface text
+  - Maintained all functionality while improving terminology clarity
+  - Updated documentation to reflect new naming convention
+
 ## Key Features
 
-### DISC and Technical Tests Module
-- **Test Creation**: Admin users can create DISC behavioral tests and technical assessments
+### Candidate Assessment Module (Avaliações)
+- **Assessment Creation**: Admin users can create DISC behavioral assessments and technical evaluations
 - **Question Builder**: Interactive interface for creating questions with multiple choice answers
-- **Automatic Scoring**: DISC profile calculation and technical test percentage scoring  
-- **Role-Based Access**: Admins create tests, recruiters assign them, all authorized users view results
-- **Test Assignment**: Integration with candidate pipeline for seamless test distribution
-- **Result Analysis**: Comprehensive test result tracking and candidate evaluation
+- **Automatic Scoring**: DISC profile calculation and technical assessment percentage scoring  
+- **Role-Based Access**: Admins create assessments, recruiters assign them, all authorized users view results
+- **Assessment Assignment**: Integration with candidate pipeline for seamless assessment distribution
+- **Result Analysis**: Comprehensive assessment result tracking and candidate evaluation
 
 ### Interview Management Module
 - **Interview Scheduling**: Comprehensive scheduling system with conflict prevention
