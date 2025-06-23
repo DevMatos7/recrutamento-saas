@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Sidebar } from "@/components/layout/sidebar";
+
 import { UserModal } from "@/components/modals/user-modal";
 import { Building, Users, Map, UserPlus, Bell, Edit, Trash2 } from "lucide-react";
 import { type Usuario } from "@shared/schema";
