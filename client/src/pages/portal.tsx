@@ -1372,10 +1372,6 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   return <AuthenticatedDashboard />;
 }
-            </div>
-          </TabsContent>
-
-          <TabsContent value="applications">
             <div className="space-y-4">
               {Array.isArray(myApplications) && myApplications.map((application: any) => (
                 <Card key={application.id}>
