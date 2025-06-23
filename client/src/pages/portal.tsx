@@ -1117,30 +1117,86 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   );
 
   // Authenticated dashboard
-  const AuthenticatedDashboard = () => (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Olá, {candidate?.nome}!
-              </h1>
-              <p className="text-gray-600">Bem-vindo ao seu painel</p>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
+  const AuthenticatedDashboard = () => {
+    const queryClient = useQueryClient();
+    
+    // Buscar dados do candidato
+    const { data: candidateData } = useQuery({
+      queryKey: ["/api/candidate-portal/profile"],
+    });
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    // Verificar se precisa fazer o teste DISC
+    const { data: historicoDisc = [] } = useQuery({
+      queryKey: ["/api/avaliacoes/disc/candidato", candidateData?.candidaturas?.[0]?.candidatoId],
+      enabled: !!candidateData?.candidaturas?.[0]?.candidatoId,
+    });
+
+    const precisaFazerTesteDISC = historicoDisc.length === 0 || 
+      !historicoDisc.some((av: any) => av.status === "finalizada");
+
+    const logoutMutation = useMutation({
+      mutationFn: async () => {
+        await apiRequest("POST", "/api/candidate-portal/logout");
+      },
+      onSuccess: () => {
+        queryClient.clear();
+        onLogout();
+        toast({ title: "Logout realizado com sucesso!" });
+      },
+    });
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Olá, {candidate?.nome}!
+                </h1>
+                <p className="text-gray-600">Bem-vindo ao seu painel</p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Alerta do Teste DISC */}
+          {precisaFazerTesteDISC && (
+            <div className="mb-6">
+              <Card className="border-orange-400 bg-orange-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-800">
+                    <Brain className="h-5 w-5" />
+                    ⚠️ Teste DISC Obrigatório Pendente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-orange-700 mb-4">
+                    Você precisa completar o teste DISC para continuar no processo seletivo. 
+                    Este teste é obrigatório para todos os candidatos.
+                  </p>
+                  <Button 
+                    onClick={() => window.location.href = '/portal/disc'}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    Fazer Teste DISC Agora
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
