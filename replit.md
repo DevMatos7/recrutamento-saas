@@ -185,6 +185,9 @@ Preferred communication style: Simple, everyday language.
   - Implemented separate routes for each configuration section
   - Maintained role-based access control for all configuration sections
   - Updated sidebar navigation with collapsible Configurações submenu
+  - Moved comunicações to Configurações submenu
+  - Added Credenciais page for SMTP and WhatsApp API configuration
+  - Created secure credential management interface for administrators
 
 ## Key Features
 
