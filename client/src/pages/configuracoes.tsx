@@ -1,28 +1,17 @@
-import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import DepartamentosPage from "@/pages/departamentos";
-import EmpresasPage from "@/pages/empresas";
-import UsuariosPage from "@/pages/usuarios";
-import Dashboard from "@/pages/dashboard";
-import { 
-  Building2, 
-  Users, 
-  Network, 
-  BarChart3,
-  Settings
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Settings } from "lucide-react";
 
 export default function ConfiguracoesPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Verificar permissões baseadas no perfil do usuário
+  // Verificar se tem alguma permissão de configuração
   const canViewEmpresas = ["admin"].includes(user?.perfil || "");
   const canViewUsuarios = ["admin"].includes(user?.perfil || "");
   const canViewDepartamentos = ["admin", "recrutador"].includes(user?.perfil || "");
+  const canViewDashboard = ["admin", "recrutador", "gestor"].includes(user?.perfil || "");
+
+  const hasAnyAccess = canViewEmpresas || canViewUsuarios || canViewDepartamentos || canViewDashboard;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -31,108 +20,28 @@ export default function ConfiguracoesPage() {
         <div>
           <h1 className="text-3xl font-bold">Configurações</h1>
           <p className="text-muted-foreground">
-            Gerencie empresas, usuários, departamentos e visualize estatísticas gerais
+            Use o menu lateral para acessar as opções de configuração
           </p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
-          
-          {canViewDepartamentos && (
-            <TabsTrigger value="departamentos" className="flex items-center gap-2">
-              <Network className="h-4 w-4" />
-              Departamentos
-            </TabsTrigger>
-          )}
-          
-          {canViewUsuarios && (
-            <TabsTrigger value="usuarios" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Usuários
-            </TabsTrigger>
-          )}
-          
-          {canViewEmpresas && (
-            <TabsTrigger value="empresas" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Empresas
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="dashboard" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Dashboard Geral
-                <Badge variant="outline">Estatísticas do Sistema</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Dashboard />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {canViewDepartamentos && (
-          <TabsContent value="departamentos" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Network className="h-5 w-5" />
-                  Gestão de Departamentos
-                  <Badge variant="outline">Estrutura Organizacional</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DepartamentosPage />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {canViewUsuarios && (
-          <TabsContent value="usuarios" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Gestão de Usuários
-                  <Badge variant="outline">Controle de Acesso</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UsuariosPage />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {canViewEmpresas && (
-          <TabsContent value="empresas" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Gestão de Empresas
-                  <Badge variant="outline">Cadastro de Clientes</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EmpresasPage />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-      </Tabs>
-
-      {!canViewEmpresas && !canViewUsuarios && !canViewDepartamentos && (
+      {hasAnyAccess ? (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center text-muted-foreground">
+              <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">Selecione uma opção no menu lateral</p>
+              <p>Use o menu "Configurações" na barra lateral para acessar:</p>
+              <ul className="mt-4 space-y-2 text-sm">
+                {canViewDashboard && <li>• Dashboard - Estatísticas gerais do sistema</li>}
+                {canViewDepartamentos && <li>• Departamentos - Gestão da estrutura organizacional</li>}
+                {canViewUsuarios && <li>• Usuários - Controle de acesso e perfis</li>}
+                {canViewEmpresas && <li>• Empresas - Cadastro de clientes</li>}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">

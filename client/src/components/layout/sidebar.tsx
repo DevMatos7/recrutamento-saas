@@ -2,6 +2,8 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState } from "react";
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -16,12 +18,21 @@ import {
   Calendar,
   MessageSquare,
   BarChart3,
-  Globe
+  Globe,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 export function Sidebar() {
   const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
+  const [configuracoesOpen, setConfiguracoesOpen] = useState(
+    location.startsWith("/configuracoes") || 
+    location === "/dashboard" || 
+    location === "/empresas" || 
+    location === "/usuarios" || 
+    location === "/departamentos"
+  );
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -71,12 +82,6 @@ export function Sidebar() {
       show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
     {
-      name: "Configurações",
-      href: "/configuracoes",
-      icon: Settings,
-      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
-    },
-    {
       name: "Portal do Candidato",
       href: "/portal",
       icon: Globe,
@@ -84,6 +89,36 @@ export function Sidebar() {
       target: "_blank",
     },
   ];
+
+  // Submenus de configurações
+  const configuracoesSubmenus = [
+    {
+      name: "Dashboard",
+      href: "/configuracoes/dashboard",
+      icon: LayoutDashboard,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Departamentos", 
+      href: "/configuracoes/departamentos",
+      icon: Network,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Usuários",
+      href: "/configuracoes/usuarios", 
+      icon: Users,
+      show: ["admin"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Empresas",
+      href: "/configuracoes/empresas",
+      icon: Building2,
+      show: ["admin"].includes(user?.perfil || ""),
+    },
+  ];
+
+  const hasConfigAccess = configuracoesSubmenus.some(item => item.show);
 
   return (
     <div className="flex h-screen w-64 flex-col bg-gray-50 border-r">
@@ -125,6 +160,45 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+        {/* Menu Configurações com submenu */}
+        {hasConfigAccess && (
+          <Collapsible open={configuracoesOpen} onOpenChange={setConfiguracoesOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant={location.startsWith("/configuracoes") ? "default" : "ghost"}
+                className="w-full justify-start gap-3"
+              >
+                <Settings className="h-5 w-5" />
+                Configurações
+                {configuracoesOpen ? (
+                  <ChevronDown className="ml-auto h-4 w-4" />
+                ) : (
+                  <ChevronRight className="ml-auto h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 pl-4 pt-1">
+              {configuracoesSubmenus.filter(item => item.show).map((item) => {
+                const isActive = location === item.href;
+                const IconComponent = item.icon;
+                
+                return (
+                  <Link key={item.name} href={item.href}>
+                    <Button
+                      variant={isActive ? "default" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start gap-3"
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      {item.name}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </nav>
 
       {/* User Info */}

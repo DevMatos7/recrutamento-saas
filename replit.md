@@ -181,9 +181,10 @@ Preferred communication style: Simple, everyday language.
 - **June 23, 2025**: Reorganized Navigation Structure
   - Moved empresas, usuários, departamentos and dashboard to "Configurações" menu
   - Set Analytics as the main landing page after login (route "/")
-  - Created comprehensive Configurações page with tabbed interface
+  - Created collapsible sidebar submenu for configuration options
+  - Implemented separate routes for each configuration section
   - Maintained role-based access control for all configuration sections
-  - Updated sidebar navigation to reflect new structure
+  - Updated sidebar navigation with collapsible Configurações submenu
 
 ## Key Features
 
