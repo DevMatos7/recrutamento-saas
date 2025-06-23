@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Eye, Square, Users } from "lucide-react";
 import { Link } from "wouter";
-import { Sidebar } from "@/components/layout/sidebar";
+
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type Vaga } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";

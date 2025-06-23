@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus, Trash2, Brain, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Sidebar } from "@/components/layout/sidebar";
+
 
 const PIPELINE_STAGES = [
   { id: "recebido", title: "Recebidos", color: "bg-blue-500 text-white" },
