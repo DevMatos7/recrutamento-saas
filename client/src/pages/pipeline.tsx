@@ -387,7 +387,7 @@ export default function PipelinePage() {
       <div className="mb-6">
         <Label htmlFor="vaga-select">Selecionar Vaga</Label>
         <div className="flex gap-4 items-end">
-              <Select value={selectedVaga} onValueChange={setSelectedVaga}>
+          <Select value={selectedVaga} onValueChange={setSelectedVaga}>
                 <SelectTrigger className="w-[400px]">
                   <SelectValue placeholder="Escolha uma vaga para visualizar o pipeline" />
                 </SelectTrigger>
@@ -408,14 +408,14 @@ export default function PipelinePage() {
                   <Plus className="h-4 w-4" />
                   Adicionar Candidato
                 </Button>
-              )}
+          )}
         </div>
       </div>
 
       {/* Pipeline */}
       {selectedVaga && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-              {PIPELINE_STAGES.map((stage) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          {PIPELINE_STAGES.map((stage) => {
                 const stageCandidates = (pipeline && typeof pipeline === 'object' && !Array.isArray(pipeline) && pipeline[stage.id]) ? pipeline[stage.id] : [];
                 
                 return (
@@ -450,11 +450,11 @@ export default function PipelinePage() {
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+          })}
+        </div>
+      )}
 
-          {!selectedVaga && (
+      {!selectedVaga && (
             <div className="text-center py-16">
               <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -463,9 +463,8 @@ export default function PipelinePage() {
               <p className="text-gray-600">
                 Escolha uma vaga acima para visualizar o pipeline de candidatos
               </p>
-            </div>
-          )}
         </div>
+      )}
 
       {/* Move Modal */}
       <MoveModal
