@@ -48,7 +48,7 @@ export default function MatchingPage() {
   const [filtros, setFiltros] = useState({
     scoreMinimo: "70",
     localizacao: "",
-    nivelExperiencia: ""
+    nivelExperiencia: "todos"
   });
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
 
@@ -83,7 +83,9 @@ export default function MatchingPage() {
   });
 
   const handleFiltroChange = (key: string, value: string) => {
-    setFiltros(prev => ({ ...prev, [key]: value }));
+    // Se o valor for "todos", converter para string vazia para o backend
+    const finalValue = value === "todos" ? "" : value;
+    setFiltros(prev => ({ ...prev, [key]: finalValue }));
   };
 
   const getScoreColor = (score: number) => {
@@ -182,7 +184,7 @@ export default function MatchingPage() {
                       <SelectValue placeholder="Todos os níveis" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
+                      <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="estagiario">Estagiário</SelectItem>
                       <SelectItem value="junior">Júnior</SelectItem>
                       <SelectItem value="pleno">Pleno</SelectItem>
