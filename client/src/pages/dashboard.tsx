@@ -58,10 +58,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      
-      <main className="flex-1 overflow-auto bg-gray-50">
+    <div className="space-y-6">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex justify-between items-center">
@@ -279,7 +276,6 @@ export default function Dashboard() {
             </Card>
           </div>
         </div>
-      </main>
 
       <UserModal 
         isOpen={isUserModalOpen}
