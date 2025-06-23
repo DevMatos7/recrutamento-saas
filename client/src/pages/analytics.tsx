@@ -69,14 +69,16 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics e Relatórios</h1>
-            <p className="text-gray-600">Indicadores estratégicos e operacionais dos processos seletivos</p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <BarChart3 className="h-8 w-8" />
+        <div>
+          <h1 className="text-3xl font-bold">Analytics e Relatórios</h1>
+          <p className="text-muted-foreground">
+            Indicadores estratégicos e operacionais dos processos seletivos
+          </p>
+        </div>
+      </div>
 
           <Tabs defaultValue="dashboard" className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
@@ -402,9 +404,7 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
-        </div>
+        </Tabs>
       </div>
-    </div>
-  );
+    );
 }
