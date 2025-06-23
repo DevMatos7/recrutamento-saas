@@ -226,24 +226,24 @@ export default function TestesPage() {
             Gerencie testes comportamentais e técnicos para avaliação de candidatos
           </p>
         </div>
-            
-            {canManageTests && (
-              <div className="flex gap-2">
-                <Button onClick={handleCreateDISC} variant="outline">
-                  <Brain className="w-4 h-4 mr-2" />
-                  Criar Teste DISC
-                </Button>
-                <Button onClick={handleCreateTecnico}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Criar Teste Técnico
-                </Button>
-              </div>
-            )}
+        
+        {canManageTests && (
+          <div className="flex gap-2">
+            <Button onClick={handleCreateDISC} variant="outline">
+              <Brain className="w-4 h-4 mr-2" />
+              Criar Teste DISC
+            </Button>
+            <Button onClick={handleCreateTecnico}>
+              <FileText className="w-4 h-4 mr-2" />
+              Criar Teste Técnico
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
                 <Card key={i} className="animate-pulse">
                   <CardHeader>
