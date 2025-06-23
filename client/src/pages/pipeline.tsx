@@ -370,9 +370,9 @@ export default function PipelinePage() {
 
   return (
     <div className="space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <Users className="h-8 w-8" />
                 Pipeline de Candidatos
@@ -380,13 +380,13 @@ export default function PipelinePage() {
               <p className="text-gray-600 mt-2">
                 Visualize e gerencie candidatos através das etapas do processo seletivo
               </p>
-            </div>
-          </div>
+        </div>
+      </div>
 
-          {/* Job selector */}
-          <div className="mb-6">
-            <Label htmlFor="vaga-select">Selecionar Vaga</Label>
-            <div className="flex gap-4 items-end">
+      {/* Job selector */}
+      <div className="mb-6">
+        <Label htmlFor="vaga-select">Selecionar Vaga</Label>
+        <div className="flex gap-4 items-end">
               <Select value={selectedVaga} onValueChange={setSelectedVaga}>
                 <SelectTrigger className="w-[400px]">
                   <SelectValue placeholder="Escolha uma vaga para visualizar o pipeline" />
@@ -409,11 +409,11 @@ export default function PipelinePage() {
                   Adicionar Candidato
                 </Button>
               )}
-            </div>
-          </div>
+        </div>
+      </div>
 
-          {/* Pipeline */}
-          {selectedVaga && (
+      {/* Pipeline */}
+      {selectedVaga && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
               {PIPELINE_STAGES.map((stage) => {
                 const stageCandidates = (pipeline && typeof pipeline === 'object' && !Array.isArray(pipeline) && pipeline[stage.id]) ? pipeline[stage.id] : [];
@@ -466,7 +466,6 @@ export default function PipelinePage() {
             </div>
           )}
         </div>
-      </div>
 
       {/* Move Modal */}
       <MoveModal
