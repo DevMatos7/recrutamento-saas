@@ -1372,12 +1372,6 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   return <AuthenticatedDashboard />;
 }
-            <div className="space-y-4">
-              {Array.isArray(myApplications) && myApplications.map((application: any) => (
-                <Card key={application.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
                         <CardTitle className="text-lg">{application.vaga.titulo}</CardTitle>
                         <p className="text-gray-600">{application.vaga.empresa}</p>
                       </div>
