@@ -64,7 +64,7 @@ export function Sidebar() {
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
-      name: "Testes DISC",
+      name: "Avaliações",
       href: "/testes",
       icon: Brain,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
