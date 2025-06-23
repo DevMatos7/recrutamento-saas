@@ -282,32 +282,23 @@ export default function EmpresasPage() {
 
   if (!canManageEmpresas) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1 bg-gray-50 p-6">
-          <div className="text-center py-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Acesso Negado</h1>
-            <p className="text-gray-600">Apenas administradores podem gerenciar empresas.</p>
-          </div>
-        </div>
+      <div className="text-center py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Acesso Negado</h1>
+        <p className="text-gray-600">Apenas administradores podem gerenciar empresas.</p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1 bg-gray-50 p-6">Carregando empresas...</div>
+      <div className="flex items-center justify-center min-h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <div className="flex-1 bg-gray-50">
-        <div className="space-y-6 p-6">
+    <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Gestão de Empresas</h1>
@@ -468,8 +459,6 @@ export default function EmpresasPage() {
             }}
             editingEmpresa={editingEmpresa}
           />
-        </div>
-      </div>
     </div>
   );
 }

@@ -218,18 +218,14 @@ export default function TestesPage() {
   const canManageTests = ["admin"].includes(user.perfil);
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white shadow-sm border-b p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Testes DISC e Técnicos</h1>
-              <p className="text-muted-foreground">
-                Gerencie testes comportamentais e técnicos para avaliação de candidatos
-              </p>
-            </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Testes DISC e Técnicos</h1>
+          <p className="text-muted-foreground">
+            Gerencie testes comportamentais e técnicos para avaliação de candidatos
+          </p>
+        </div>
             
             {canManageTests && (
               <div className="flex gap-2">
@@ -243,10 +239,9 @@ export default function TestesPage() {
                 </Button>
               </div>
             )}
-          </div>
-        </div>
+      </div>
 
-        <div className="flex-1 overflow-auto p-6">
+      <div className="space-y-6">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
