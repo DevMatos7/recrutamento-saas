@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Sidebar } from "@/components/layout/sidebar";
+
 
 const comunicacaoFormSchema = z.object({
   candidatoId: z.string().min(1, "Candidato é obrigatório"),
@@ -239,30 +239,25 @@ export default function ComunicacoesPage() {
   }) : [];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white shadow-sm border-b p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Comunicações WhatsApp e E-mail</h1>
-              <p className="text-muted-foreground">
-                Gerencie o envio de mensagens automáticas e manuais para candidatos
-              </p>
-            </div>
-            
-            {canManageCommunications && (
-              <Button onClick={() => setCreateModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Comunicação
-              </Button>
-            )}
-          </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Comunicações WhatsApp e E-mail</h1>
+          <p className="text-muted-foreground">
+            Gerencie o envio de mensagens automáticas e manuais para candidatos
+          </p>
         </div>
-
-        <div className="flex-1 overflow-auto p-6">
-          <Tabs defaultValue="historico" className="space-y-6">
+        
+        {canManageCommunications && (
+          <Button onClick={() => setCreateModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Comunicação
+          </Button>
+        )}
+      </div>
+      
+      <div className="space-y-6">
+        <Tabs defaultValue="historico" className="space-y-6">
             <TabsList>
               <TabsTrigger value="historico">Histórico</TabsTrigger>
               <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
@@ -490,8 +485,7 @@ export default function ComunicacoesPage() {
                 </Card>
               </div>
             </TabsContent>
-          </Tabs>
-        </div>
+        </Tabs>
       </div>
 
       {/* Create Communication Modal */}
