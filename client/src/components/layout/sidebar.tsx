@@ -29,9 +29,9 @@ export function Sidebar() {
 
   const navigation = [
     {
-      name: "Dashboard",
+      name: "Analytics",
       href: "/",
-      icon: LayoutDashboard,
+      icon: BarChart3,
       show: true,
     },
     {
@@ -71,28 +71,10 @@ export function Sidebar() {
       show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
     {
-      name: "Analytics",
-      href: "/analytics",
-      icon: BarChart3,
+      name: "Configurações",
+      href: "/configuracoes",
+      icon: Settings,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
-    },
-    {
-      name: "Departamentos",
-      href: "/departamentos",
-      icon: Network,
-      show: ["admin", "recrutador"].includes(user?.perfil || ""),
-    },
-    {
-      name: "Usuários",
-      href: "/usuarios",
-      icon: Users,
-      show: ["admin"].includes(user?.perfil || ""),
-    },
-    {
-      name: "Empresas",
-      href: "/empresas",
-      icon: Building2,
-      show: ["admin"].includes(user?.perfil || ""),
     },
     {
       name: "Portal do Candidato",

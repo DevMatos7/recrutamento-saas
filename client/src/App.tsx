@@ -4,17 +4,14 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
-import Dashboard from "@/pages/dashboard";
+import AnalyticsPage from "@/pages/analytics";
 import VagasPage from "@/pages/vagas-enhanced";
 import CandidatosPage from "@/pages/candidatos";
-import DepartamentosPage from "@/pages/departamentos";
-import EmpresasPage from "@/pages/empresas";
-import UsuariosPage from "@/pages/usuarios";
 import PipelinePage from "@/pages/pipeline";
 import TestesPage from "@/pages/testes";
 import EntrevistasPage from "@/pages/entrevistas";
 import ComunicacoesPage from "@/pages/comunicacoes";
-import AnalyticsPage from "@/pages/analytics";
+import ConfiguracoesPage from "@/pages/configuracoes";
 import CandidatePortalPage from "@/pages/candidate-portal";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
@@ -23,17 +20,14 @@ import { ProtectedRoute } from "./lib/protected-route";
 function Router() {
   return (
     <Switch>
-      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/" component={AnalyticsPage} />
       <ProtectedRoute path="/vagas" component={VagasPage} />
       <ProtectedRoute path="/candidatos" component={CandidatosPage} />
-      <ProtectedRoute path="/departamentos" component={DepartamentosPage} />
-      <ProtectedRoute path="/empresas" component={EmpresasPage} />
-      <ProtectedRoute path="/usuarios" component={UsuariosPage} />
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
       <ProtectedRoute path="/testes" component={TestesPage} />
       <ProtectedRoute path="/entrevistas" component={EntrevistasPage} />
       <ProtectedRoute path="/comunicacoes" component={ComunicacoesPage} />
-      <ProtectedRoute path="/analytics" component={AnalyticsPage} />
+      <ProtectedRoute path="/configuracoes" component={ConfiguracoesPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
