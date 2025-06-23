@@ -499,9 +499,7 @@ export default function VagasEnhancedPage() {
 
   if (error) {
     return (
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-        <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-64">
           <Card className="p-6">
             <CardHeader>
               <CardTitle className="text-red-600">Erro ao carregar vagas</CardTitle>
@@ -519,12 +517,12 @@ export default function VagasEnhancedPage() {
     <div className="space-y-6">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Gestão de Vagas</h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Gerencie o ciclo completo das vagas de emprego
-                </p>
-              </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Gestão de Vagas</h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Gerencie o ciclo completo das vagas de emprego
+            </p>
+          </div>
               {["admin", "recrutador"].includes(user?.perfil || "") && (
                 <Button onClick={handleNewVaga} className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="w-4 h-4 mr-2" />
