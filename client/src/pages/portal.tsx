@@ -1027,8 +1027,8 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     </div>
   );
 
-  // Public jobs view
-  const PublicJobsView = () => (
+  // Jobs listing view for public access
+  const JobsListingView = () => (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -1362,53 +1362,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     );
   };
 
-  // Public jobs view  
-  const PublicJobsView = () => (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Vagas Disponíveis</h1>
-            <Button onClick={() => setAuthMode('login')}>
-              Fazer Login
-            </Button>
-          </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {jobsLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Carregando vagas...</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {Array.isArray(jobs) && jobs.map((job: any) => (
-              <Card key={job.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">{job.titulo}</CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Building2 className="h-4 w-4" />
-                    {job.empresa}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 text-sm mb-4">{job.descricao}</p>
-                  <Button 
-                    onClick={() => setSelectedJob(job)}
-                    className="w-full"
-                  >
-                    Candidatar-se
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
-  );
               {Array.isArray(jobs) && jobs.map((job: any) => (
                 <Card key={job.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
@@ -1591,7 +1545,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     if (authMode !== null) {
       return <AuthForms />;
     }
-    return <PublicJobsView />;
+    return <JobsListingView />;
   }
 
   return <AuthenticatedDashboard />;
