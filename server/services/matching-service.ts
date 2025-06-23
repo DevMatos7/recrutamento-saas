@@ -179,10 +179,10 @@ export class MatchingService {
   }
 
   private static calcularMatchLocalizacao(candidato: any, vaga: any): number {
-    const localizacaoVaga = vaga.localizacao?.toLowerCase() || "";
+    const localizacaoVaga = vaga.local?.toLowerCase() || "";
     const localizacaoCandidato = candidato.localizacao?.toLowerCase() || "";
 
-    if (!localizacaoVaga || !localizacaoCandidato) return 50; // Neutro se não informado
+    if (!localizacaoVaga || !localizacaoCandidato) return 70; // Neutro se não informado
 
     // Match exato
     if (localizacaoCandidato === localizacaoVaga) return 100;
@@ -195,26 +195,34 @@ export class MatchingService {
     if (localizacaoVaga.includes("remoto") || 
         localizacaoVaga.includes("home office")) return 90;
 
-    return 30; // Localizações diferentes
+    return 40; // Localizações diferentes
   }
 
   private static calcularMatchSalario(candidato: any, vaga: any): number {
     const pretensaoCandidato = candidato.pretensaoSalarial || 0;
-    const salarioMaxVaga = vaga.salarioMax || 0;
-    const salarioMinVaga = vaga.salarioMin || 0;
+    
+    // Extrair valor numérico do campo salário da vaga (ex: "3000" -> 3000)
+    const salarioVagaStr = vaga.salario || "0";
+    const salarioVaga = parseInt(salarioVagaStr.replace(/\D/g, '')) || 0;
 
-    if (pretensaoCandidato === 0 || salarioMaxVaga === 0) return 50; // Neutro se não informado
+    if (pretensaoCandidato === 0 || salarioVaga === 0) return 80; // Neutro se não informado
 
-    // Candidato pede mais que o máximo oferecido - eliminar
-    if (pretensaoCandidato > salarioMaxVaga) return 0;
+    // Calcular diferença percentual
+    const diferenca = Math.abs(pretensaoCandidato - salarioVaga) / salarioVaga;
+    
+    // Match excelente (diferença até 10%)
+    if (diferenca <= 0.1) return 100;
+    
+    // Match bom (diferença até 20%)
+    if (diferenca <= 0.2) return 90;
+    
+    // Match aceitável (diferença até 40%)
+    if (diferenca <= 0.4) return 70;
+    
+    // Match baixo (diferença até 60%)
+    if (diferenca <= 0.6) return 50;
 
-    // Candidato pede dentro da faixa
-    if (pretensaoCandidato >= salarioMinVaga && pretensaoCandidato <= salarioMaxVaga) return 100;
-
-    // Candidato pede menos que o mínimo (ótimo para empresa)
-    if (pretensaoCandidato < salarioMinVaga) return 95;
-
-    return 0;
+    return 30; // Diferença muito grande
   }
 
   private static calcularMatchDisc(candidato: any, vaga: any): number {
