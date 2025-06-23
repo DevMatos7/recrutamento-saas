@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { Sidebar } from "@/components/layout/sidebar";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 

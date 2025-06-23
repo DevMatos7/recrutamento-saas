@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, TrendingUp, Users, Calendar, Target, Clock } from "lucide-react";
-import { Sidebar } from "@/components/layout/sidebar";
+
 import { useAuth } from "@/hooks/use-auth";
 
 export default function AnalyticsPage() {
