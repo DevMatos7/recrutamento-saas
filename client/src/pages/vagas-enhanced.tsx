@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Plus, Edit, Trash2, Eye, Filter, Building2, Users, MapPin, Clock, CheckCircle, XCircle } from "lucide-react";
-import { Sidebar } from "@/components/layout/sidebar";
+
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type Vaga, type Empresa, type Departamento, type Usuario } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -516,12 +516,9 @@ export default function VagasEnhancedPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
+    <div className="space-y-6">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Gestão de Vagas</h1>
                 <p className="text-gray-600 dark:text-gray-400">
@@ -778,8 +775,6 @@ export default function VagasEnhancedPage() {
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
 
       <VagaModal
         isOpen={isModalOpen}
