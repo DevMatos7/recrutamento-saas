@@ -145,8 +145,8 @@ export default function UsuariosPage() {
 
   return (
     <div className="space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <Users className="h-8 w-8" />
@@ -361,7 +361,6 @@ export default function UsuariosPage() {
               )}
             </CardContent>
           </Card>
-        </div>
 
       {/* User Modal */}
       <UserModal
