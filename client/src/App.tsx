@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import AnalyticsPage from "@/pages/analytics";
-import VagasPage from "@/pages/vagas-enhanced";
+import VagasPage from "@/pages/vagas";
 import CandidatosPage from "@/pages/candidatos";
 import DepartamentosPage from "@/pages/departamentos";
 import EmpresasPage from "@/pages/empresas";
