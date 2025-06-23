@@ -286,4 +286,32 @@ export class AvaliacaoService {
       throw error;
     }
   }
+
+  // Obter resultados DISC de todos os candidatos
+  static async obterResultadosTodosCandidatos() {
+    try {
+      const todasAvaliacoes = await db
+        .select()
+        .from(avaliacoes)
+        .where(eq(avaliacoes.status, "finalizada"))
+        .orderBy(desc(avaliacoes.dataFim));
+
+      // Organizar por candidato (pegar o resultado mais recente)
+      const resultadosPorCandidato: { [candidatoId: string]: any } = {};
+      
+      todasAvaliacoes.forEach(avaliacao => {
+        if (!resultadosPorCandidato[avaliacao.candidatoId!] && avaliacao.resultadoJson) {
+          resultadosPorCandidato[avaliacao.candidatoId!] = {
+            ...JSON.parse(avaliacao.resultadoJson as string),
+            dataAvaliacao: avaliacao.dataFim
+          };
+        }
+      });
+
+      return resultadosPorCandidato;
+    } catch (error) {
+      console.error("Erro ao obter resultados de todos candidatos:", error);
+      throw error;
+    }
+  }
 }
