@@ -1774,6 +1774,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/avaliacoes/disc/resultados-todos - Obter resultados DISC de todos os candidatos
+  app.get("/api/avaliacoes/disc/resultados-todos", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const resultados = await AvaliacaoService.obterResultadosTodosCandidatos();
+      res.json(resultados);
+    } catch (error: any) {
+      console.error("Erro ao obter resultados:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/avaliacoes/disc/enviar-convite - Enviar convite para teste DISC
+  app.post("/api/avaliacoes/disc/enviar-convite", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { candidatoId, tipo } = req.body;
+
+      if (!candidatoId || !tipo) {
+        return res.status(400).json({ message: "candidatoId e tipo são obrigatórios" });
+      }
+
+      // Buscar dados do candidato
+      const candidato = await storage.getCandidatoById(candidatoId);
+      if (!candidato) {
+        return res.status(404).json({ message: "Candidato não encontrado" });
+      }
+
+      const linkTeste = `${req.get('origin') || 'http://localhost:5000'}/portal/disc`;
+      
+      if (tipo === 'email') {
+        // Criar comunicação por email
+        await storage.createComunicacao({
+          candidatoId,
+          tipo: 'email',
+          canal: 'teste',
+          destinatario: candidato.email,
+          assunto: 'Teste DISC Obrigatório - GentePRO',
+          conteudo: `
+            Olá ${candidato.nome},
+
+            Você precisa completar o teste DISC obrigatório para continuar no processo seletivo.
+
+            Acesse o link abaixo para realizar o teste:
+            ${linkTeste}
+
+            O teste é obrigatório e deve ser realizado o quanto antes.
+
+            Atenciosamente,
+            Equipe GentePRO
+          `,
+          statusEnvio: 'pendente',
+          enviadoPor: req.user.id,
+        });
+      } else if (tipo === 'whatsapp') {
+        // Criar comunicação por WhatsApp
+        await storage.createComunicacao({
+          candidatoId,
+          tipo: 'whatsapp',
+          canal: 'teste',
+          destinatario: candidato.telefone || candidato.email,
+          conteudo: `Olá ${candidato.nome}! Você precisa completar o teste DISC obrigatório. Acesse: ${linkTeste}`,
+          statusEnvio: 'pendente',
+          enviadoPor: req.user.id,
+        });
+      }
+
+      res.json({ message: "Convite enviado com sucesso" });
+    } catch (error: any) {
+      console.error("Erro ao enviar convite:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
