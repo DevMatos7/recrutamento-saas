@@ -342,7 +342,6 @@ export default function TestesPage() {
             </Card>
           )}
         </div>
-      </div>
 
       {/* Create/Edit Test Modal */}
       <Dialog open={createModalOpen || !!editingTeste} onOpenChange={(open) => {

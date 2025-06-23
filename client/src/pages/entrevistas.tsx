@@ -349,7 +349,6 @@ export default function EntrevistasPage() {
             </Card>
           )}
         </div>
-      </div>
 
       {/* Create/Edit Interview Modal */}
       <Dialog open={createModalOpen || !!editingEntrevista} onOpenChange={(open) => {
