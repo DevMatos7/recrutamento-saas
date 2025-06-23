@@ -1,0 +1,82 @@
+Implementar o módulo de Avaliações do sistema GentePRO com foco no Teste DISC, utilizando o banco de dados PostgreSQL e backend em FastAPI. O candidato responderá 24 blocos de frases, cada uma vinculada a um fator DISC (D, I, S, C), e a pontuação será automaticamente processada ao final.
+
+🔧 Backend – FastAPI + PostgreSQL
+Tabelas:
+
+sql
+Copiar
+Editar
+avaliacoes (
+  id SERIAL PRIMARY KEY,
+  candidato_id INTEGER,
+  tipo VARCHAR DEFAULT 'DISC',
+  data_inicio TIMESTAMP,
+  data_fim TIMESTAMP,
+  resultado_json JSONB,
+  status VARCHAR DEFAULT 'em_andamento'
+);
+
+questoes_disc (
+  id SERIAL PRIMARY KEY,
+  bloco VARCHAR(2),
+  ordem SMALLINT,
+  frase TEXT,
+  fator CHAR(1) -- D, I, S, C
+);
+
+respostas_disc (
+  id SERIAL PRIMARY KEY,
+  avaliacao_id INTEGER REFERENCES avaliacoes(id),
+  bloco VARCHAR(2),
+  respostas JSONB -- exemplo: [4,2,3,1]
+);
+Endpoints:
+
+GET /avaliacoes/disc/modelo → Retorna os blocos e frases para preenchimento
+
+POST /avaliacoes/disc/iniciar → Inicia avaliação para o candidato
+
+POST /avaliacoes/disc/{id}/responder → Recebe as respostas de um bloco
+
+POST /avaliacoes/disc/{id}/finalizar → Calcula e armazena o resultado final
+
+GET /avaliacoes/disc/{id}/resultado → Retorna perfil DISC com pontuação
+
+🧠 Lógica de Correção
+Cada bloco possui 4 frases associadas a D, I, S ou C.
+
+O candidato deve atribuir valores de 1 a 4 (sem repetir).
+
+O sistema soma os valores correspondentes a cada fator DISC com base nas respostas.
+
+Ao final, o sistema exibe a pontuação total e o fator predominante.
+
+📥 Dados de Seed
+Você pode importar os dados completos dos blocos diretamente deste arquivo JSON:
+
+👉 Download do JSON dos blocos DISC
+
+🖥️ Frontend – React + Tailwind
+Página "Minhas Avaliações"
+
+Iniciar avaliação DISC
+
+Página de Teste DISC
+
+Exibe 1 bloco por vez
+
+Cada frase com dropdown de 1 a 4 (sem repetições)
+
+Página de Resultado
+
+Mostra gráfico ou barra de pontuação DISC
+
+Perfil dominante com descrição
+
+Se desejar, posso gerar também:
+
+🎨 Texto para descrição de cada perfil DISC
+
+📊 Layout visual sugerido para tela de resultado
+
+🔁 Versão do módulo para aplicar avaliações a terceiros (ex: pela empresa)

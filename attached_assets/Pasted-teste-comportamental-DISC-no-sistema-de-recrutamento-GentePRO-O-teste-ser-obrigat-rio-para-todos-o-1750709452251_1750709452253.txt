@@ -1,0 +1,130 @@
+teste comportamental DISC no sistema de recrutamento GentePRO. O teste será obrigatório para todos os candidatos e deverá seguir rigorosamente a lógica DISC apresentada, com aplicação, cálculo automático e exibição dos resultados no perfil dos candidatos, com histórico detalhado (data e resultado).
+
+✅ Especificações Técnicas
+
+Banco de Dados (PostgreSQL)
+
+Crie as seguintes tabelas:
+
+CREATE TABLE avaliacoes (
+  id SERIAL PRIMARY KEY,
+  candidato_id INTEGER,
+  tipo VARCHAR DEFAULT 'DISC',
+  data_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  data_fim TIMESTAMP,
+  resultado_json JSONB,
+  status VARCHAR DEFAULT 'em_andamento'
+);
+
+CREATE TABLE questoes_disc (
+  id SERIAL PRIMARY KEY,
+  bloco VARCHAR(2),
+  ordem SMALLINT,
+  frase TEXT,
+  fator CHAR(1)
+);
+
+CREATE TABLE respostas_disc (
+  id SERIAL PRIMARY KEY,
+  avaliacao_id INTEGER REFERENCES avaliacoes(id),
+  bloco VARCHAR(2),
+  respostas JSONB
+);
+
+🔗 API REST (FastAPI)
+
+GET /avaliacoes/disc/modelo: Retorna todos os blocos com frases DISC.
+
+POST /avaliacoes/disc/iniciar: Inicia uma nova avaliação para candidato.
+
+POST /avaliacoes/disc/{id}/responder: Recebe respostas do candidato por bloco.
+
+POST /avaliacoes/disc/{id}/finalizar: Calcula e salva automaticamente resultado DISC.
+
+GET /avaliacoes/disc/{id}/resultado: Retorna resultado detalhado da avaliação.
+
+GET /avaliacoes/disc/candidato/{candidato_id}: Histórico completo das avaliações DISC do candidato.
+
+🖥️ Frontend (React + Tailwind)
+
+Telas:
+
+Avaliações DISC: Iniciar nova avaliação, ver histórico.
+
+Aplicação do Teste DISC: Exibe 1 bloco por vez, candidato ordena frases de 1 a 4.
+
+Resultado do Teste: Pontuação DISC (D, I, S, C), fator dominante destacado, gráfico de barras.
+
+Perfil do Candidato: Exibir histórico de avaliações com datas e resultados.
+
+📌 Lógica de Aplicação e Pontuação
+
+Cada bloco contém 4 frases ligadas a fatores DISC. O candidato atribui pontuações únicas (1-4), onde:
+
+1 = menos identificado
+
+4 = mais identificado
+
+O sistema:
+
+Impede repetições no mesmo bloco.
+
+Soma pontos para cada fator DISC.
+
+Determina fator predominante pela pontuação mais alta.
+
+📋 JSON Completo (Exemplo dos primeiros blocos)
+
+[
+  {
+    "bloco": "A",
+    "frases": [
+      {"texto": "Assertiva", "fator": "D"},
+      {"texto": "Ser decisivo", "fator": "I"},
+      {"texto": "Variedade", "fator": "S"},
+      {"texto": "Ditatorial", "fator": "C"}
+    ]
+  },
+  {
+    "bloco": "B",
+    "frases": [
+      {"texto": "Persuasiva", "fator": "D"},
+      {"texto": "Amizade social", "fator": "I"},
+      {"texto": "Menos estrutura", "fator": "S"},
+      {"texto": "Sarcástico", "fator": "C"}
+    ]
+  },
+  ... (Incluir todos os blocos até o bloco X com 4 frases por bloco)
+]
+
+📊 Exibição dos Resultados
+
+Após finalizar, mostre no perfil do candidato:
+
+Data e hora da realização.
+
+Pontuações detalhadas para cada fator (D, I, S, C).
+
+Fator predominante destacado.
+
+Gráfico visual com a distribuição das pontuações DISC.
+
+Histórico das avaliações anteriores acessível no perfil.
+
+🧪 Testes Automatizados
+
+Validação dos valores inseridos (impedir valores repetidos por bloco).
+
+Testes de cálculo automático DISC.
+
+Persistência correta dos resultados no banco.
+
+🖼️ Interface
+
+Responsiva, clara e amigável.
+
+Interface visual intuitiva, utilizando React e Tailwind CSS.
+
+Este teste DISC é obrigatório para todos os candidatos cadastrados na plataforma, devendo ser executado automaticamente como requisito padrão para o processo seletivo, sem possibilidade de exclusão ou alteração da estrutura do teste pelos usuários administrativos.
+
+Inicie a implementação seguindo rigorosamente as diretrizes acima.

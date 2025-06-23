@@ -1,4 +1,4 @@
-import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniqueIndex, json, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniqueIndex, json, date, integer, jsonb, smallint, char } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -151,6 +151,32 @@ export const entrevistas = pgTable("entrevistas", {
   uniqueEntrevistaAtiva: uniqueIndex("unique_entrevista_ativa")
     .on(table.vagaId, table.candidatoId),
 }));
+
+// Tabelas para o sistema de avaliação DISC
+export const avaliacoes = pgTable("avaliacoes", {
+  id: serial("id").primaryKey(),
+  candidatoId: uuid("candidato_id").references(() => candidatos.id),
+  tipo: varchar("tipo", { length: 10 }).default("DISC"),
+  dataInicio: timestamp("data_inicio").defaultNow(),
+  dataFim: timestamp("data_fim"),
+  resultadoJson: jsonb("resultado_json"),
+  status: varchar("status", { length: 20 }).default("em_andamento"),
+});
+
+export const questoesDisc = pgTable("questoes_disc", {
+  id: serial("id").primaryKey(),
+  bloco: varchar("bloco", { length: 2 }),
+  ordem: smallint("ordem"),
+  frase: text("frase"),
+  fator: char("fator", { length: 1 }), // D, I, S, C
+});
+
+export const respostasDisc = pgTable("respostas_disc", {
+  id: serial("id").primaryKey(),
+  avaliacaoId: integer("avaliacao_id").references(() => avaliacoes.id),
+  bloco: varchar("bloco", { length: 2 }),
+  respostas: jsonb("respostas"), // exemplo: [4,2,3,1]
+});
 
 // Comunicações
 export const comunicacoes = pgTable("comunicacoes", {
@@ -461,6 +487,19 @@ export const insertComunicacaoSchema = createInsertSchema(comunicacoes).omit({
 
 export type Comunicacao = typeof comunicacoes.$inferSelect;
 export type InsertComunicacao = z.infer<typeof insertComunicacaoSchema>;
+
+// Tipos para avaliações DISC
+export type Avaliacao = typeof avaliacoes.$inferSelect;
+export const insertAvaliacaoSchema = createInsertSchema(avaliacoes);
+export type InsertAvaliacao = z.infer<typeof insertAvaliacaoSchema>;
+
+export type QuestaoDisc = typeof questoesDisc.$inferSelect;
+export const insertQuestaoDiscSchema = createInsertSchema(questoesDisc);
+export type InsertQuestaoDisc = z.infer<typeof insertQuestaoDiscSchema>;
+
+export type RespostaDisc = typeof respostasDisc.$inferSelect;
+export const insertRespostaDiscSchema = createInsertSchema(respostasDisc);
+export type InsertRespostaDisc = z.infer<typeof insertRespostaDiscSchema>;
 
 // Legacy compatibility for auth blueprint
 export const users = usuarios;
