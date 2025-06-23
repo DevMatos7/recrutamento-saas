@@ -57,6 +57,9 @@ export async function seedDatabase() {
 
       // Seed test data
       await seedTests();
+      
+      // Seed DISC questions
+      await seedQuestoesDisc();
 
       console.log("Seed data created successfully!");
       console.log("Master user: admin@gentepro.com / 123456");

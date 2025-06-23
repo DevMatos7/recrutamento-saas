@@ -203,6 +203,18 @@ Preferred communication style: Simple, everyday language.
   - Maintained all functionality while improving terminology clarity
   - Updated documentation to reflect new naming convention
 
+- **June 23, 2025**: Implemented Mandatory DISC Assessment System
+  - Created comprehensive DISC assessment system with 24 question blocks
+  - Added database tables: avaliacoes, questoes_disc, respostas_disc
+  - Implemented AvaliacaoService with full DISC logic and scoring calculation
+  - Created dedicated DISC assessment page for candidates (/avaliacao-disc)
+  - Added API endpoints for DISC model, initiation, response saving, and finalization
+  - Integrated automatic DISC profile calculation (D, I, S, C factors)
+  - Added assessment progress tracking and result visualization
+  - Seeded database with complete DISC question set (24 blocks x 4 phrases each)
+  - Made DISC assessment mandatory and accessible only to candidates
+  - Added assessment history tracking with results and completion dates
+
 ## Key Features
 
 ### Candidate Assessment Module (Avaliações)

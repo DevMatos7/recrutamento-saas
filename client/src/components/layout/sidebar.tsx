@@ -70,6 +70,12 @@ export function Sidebar() {
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
+      name: "Teste DISC",
+      href: "/avaliacao-disc",
+      icon: Brain,
+      show: user?.perfil === "candidato",
+    },
+    {
       name: "Entrevistas",
       href: "/entrevistas",
       icon: Calendar,
