@@ -1196,6 +1196,172 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
             </div>
           )}
 
+          <Tabs defaultValue="dashboard" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="jobs">Vagas</TabsTrigger>
+              <TabsTrigger value="applications">Minhas Candidaturas</TabsTrigger>
+              <TabsTrigger value="tests">Testes</TabsTrigger>
+              <TabsTrigger value="interviews">Entrevistas</TabsTrigger>
+              <TabsTrigger value="messages">Mensagens</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dashboard">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Candidaturas</CardTitle>
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {candidateData?.candidaturas?.length || 0}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Testes Pendentes</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{precisaFazerTesteDISC ? 1 : 0}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Entrevistas</CardTitle>
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">0</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Notificações</CardTitle>
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">0</div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="jobs">
+              <div className="text-center py-8">
+                <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  Explore vagas disponíveis
+                </h3>
+                <p className="text-gray-500">
+                  Navegue pelas oportunidades e candidate-se às vagas que interessam.
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="applications">
+              <div className="space-y-4">
+                {candidateData?.candidaturas?.map((candidatura: any) => (
+                  <Card key={candidatura.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold">{candidatura.vaga?.titulo}</h4>
+                          <p className="text-sm text-gray-600">{candidatura.vaga?.empresa}</p>
+                          <p className="text-sm text-gray-500">
+                            Aplicado em: {new Date(candidatura.dataInscricao).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant="secondary">
+                          {candidatura.etapa || 'Recebido'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )) || (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                      Nenhuma candidatura ainda
+                    </h3>
+                    <p className="text-gray-500">
+                      Candidate-se às vagas para acompanhar seu progresso aqui.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="tests">
+              <div className="space-y-4">
+                {precisaFazerTesteDISC ? (
+                  <Card className="border-orange-400 bg-orange-50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Brain className="h-8 w-8 text-orange-600" />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-orange-800">Teste DISC Obrigatório</h4>
+                          <p className="text-sm text-orange-700">
+                            Complete este teste para continuar no processo seletivo.
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={() => window.location.href = '/portal/disc'}
+                          className="bg-orange-600 hover:bg-orange-700"
+                        >
+                          Fazer Teste
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                      Todos os testes concluídos
+                    </h3>
+                    <p className="text-gray-500">
+                      Você completou todos os testes obrigatórios.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="interviews">
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  Nenhuma entrevista agendada
+                </h3>
+                <p className="text-gray-500">
+                  Suas entrevistas aparecerão aqui quando forem agendadas.
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="messages">
+              <div className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  Nenhuma mensagem
+                </h3>
+                <p className="text-gray-500">
+                  Comunicações dos recrutadores aparecerão aqui.
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
+    );
+  };
+
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList>
