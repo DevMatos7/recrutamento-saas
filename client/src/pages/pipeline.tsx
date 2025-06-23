@@ -369,10 +369,7 @@ export default function PipelinePage() {
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+    <div className="space-y-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -569,9 +566,9 @@ export default function PipelinePage() {
                 {addCandidateMutation.isPending ? "Adicionando..." : "Adicionar"}
               </Button>
             </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        </form>
+      </DialogContent>
+    </Dialog>
     </div>
   );
 }

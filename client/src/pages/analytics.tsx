@@ -56,14 +56,9 @@ export default function AnalyticsPage() {
 
   if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
     return (
-      <div className="flex h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Acesso Restrito</h2>
-            <p className="text-gray-600">Você não tem permissão para acessar os relatórios.</p>
-          </div>
-        </div>
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Acesso Restrito</h2>
+        <p className="text-gray-600">Você não tem permissão para acessar os relatórios.</p>
       </div>
     );
   }

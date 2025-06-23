@@ -202,18 +202,14 @@ export default function DepartamentosPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1 bg-gray-50 p-6">Carregando departamentos...</div>
+      <div className="flex items-center justify-center min-h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <div className="flex-1 bg-gray-50">
-        <div className="space-y-6 p-6">
+    <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Gestão de Departamentos</h1>
@@ -336,8 +332,6 @@ export default function DepartamentosPage() {
             }}
             editingDepartamento={editingDepartamento}
           />
-        </div>
-      </div>
     </div>
   );
 }

@@ -209,18 +209,14 @@ export default function EntrevistasPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white shadow-sm border-b p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Agenda de Entrevistas</h1>
-              <p className="text-muted-foreground">
-                Gerencie o agendamento e acompanhamento de entrevistas dos candidatos
-              </p>
-            </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Agenda de Entrevistas</h1>
+          <p className="text-muted-foreground">
+            Gerencie o agendamento e acompanhamento de entrevistas dos candidatos
+          </p>
+        </div>
             
             {canManageInterviews && (
               <Button onClick={() => setCreateModalOpen(true)}>
@@ -228,10 +224,9 @@ export default function EntrevistasPage() {
                 Agendar Entrevista
               </Button>
             )}
-          </div>
-        </div>
+      </div>
 
-        <div className="flex-1 overflow-auto p-6">
+      <div className="space-y-6">
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
