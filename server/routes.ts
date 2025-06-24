@@ -1399,6 +1399,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set session for candidate
       (req.session as any).candidateId = candidate.id;
       (req.session as any).candidateEmail = candidate.email;
+      
+      // Force session save
+      await new Promise((resolve, reject) => {
+        (req.session as any).save((err: any) => {
+          if (err) {
+            console.error("Session save error:", err);
+            reject(err);
+          } else {
+            console.log("Session saved successfully for candidate:", candidate.id);
+            resolve(true);
+          }
+        });
+      });
 
       res.json({
         message: "Login realizado com sucesso",
@@ -1692,10 +1705,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/avaliacoes/disc/iniciar - Inicia nova avaliação DISC
   app.post("/api/avaliacoes/disc/iniciar", async (req: Request, res: Response) => {
     try {
-      const { candidatoId } = req.body;
+      let candidatoId = req.body.candidatoId;
+      
+      // Debug session data
+      console.log("Session data:", {
+        candidateId: (req as any).session?.candidateId,
+        candidateEmail: (req as any).session?.candidateEmail,
+        sessionId: (req as any).session?.id,
+        hasSession: !!(req as any).session
+      });
+      
+      // Se não foi fornecido candidatoId no body, tentar obter da sessão
+      if (!candidatoId && (req as any).session?.candidateId) {
+        candidatoId = (req as any).session.candidateId;
+        console.log("Using candidateId from session:", candidatoId);
+      }
       
       if (!candidatoId) {
-        return res.status(400).json({ message: "candidatoId é obrigatório" });
+        return res.status(400).json({ 
+          message: "candidatoId é obrigatório", 
+          debug: {
+            sessionExists: !!(req as any).session,
+            candidateIdInSession: (req as any).session?.candidateId,
+            bodyData: req.body
+          }
+        });
       }
 
       const { AvaliacaoService } = await import("./services/avaliacao-service.js");
