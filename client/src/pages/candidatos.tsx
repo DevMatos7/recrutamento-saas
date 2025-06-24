@@ -434,100 +434,74 @@ export default function CandidatosPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Candidato</TableHead>
-                    <TableHead>Contato</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Telefone</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Status Ético</TableHead>
+                    <TableHead>DISC</TableHead>
                     <TableHead>Origem</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCandidatos.map((candidato: any) => (
                     <TableRow key={candidato.id}>
+                      <TableCell className="font-medium">{candidato.nome}</TableCell>
+                      <TableCell>{candidato.email}</TableCell>
+                      <TableCell>{candidato.telefone}</TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{candidato.nome}</div>
-                          <div className="text-sm text-gray-500">{candidato.email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1 text-sm">
-                            <Phone className="h-3 w-3" />
-                            {candidato.telefone}
-                          </div>
-                          {candidato.linkedin && (
-                            <div className="flex items-center gap-1 text-sm">
-                              <LinkedinIcon className="h-3 w-3" />
-                              <a href={candidato.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                LinkedIn
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(candidato.status)}>
-                          {candidato.status === "ativo" ? "Ativo" : "Inativo"}
+                        <Badge variant={candidato.status === "ativo" ? "default" : "secondary"}>
+                          {candidato.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getOrigemColor(candidato.origem)}>
-                          {candidato.origem === "manual" ? "Manual" : 
-                           candidato.origem === "portal_externo" ? "Portal" : "Importado"}
+                        {renderStatusEtico(candidato.statusEtico, candidato.motivoReprovacaoEtica)}
+                      </TableCell>
+                      <TableCell>
+                        {renderStatusDisc(candidato.id)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {candidato.origem || "manual"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {new Date(candidato.dataCriacao).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {candidato.curriculoUrl && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(candidato.curriculoUrl, '_blank')}
-                              title="Ver Currículo"
-                            >
-                              <FileText className="h-4 w-4" />
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Abrir menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditCandidato(candidato)}
-                            title="Visualizar"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {canManageCandidatos && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditCandidato(candidato)}
-                                title="Editar"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteCandidato(candidato.id)}
-                                title="Excluir"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedCandidatoId(candidato.id);
+                              setShowDetailModal(true);
+                            }}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditCandidato(candidato)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteCandidato(candidato.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
                   {filteredCandidatos.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                         Nenhum candidato encontrado
                       </TableCell>
                     </TableRow>
