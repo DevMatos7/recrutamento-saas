@@ -1,24 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { Brain, ChevronLeft, ChevronRight, CheckCircle, BarChart3 } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-
-interface FraseDisc {
-  id: number;
-  texto: string;
-  fator: string;
-}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Brain, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface BlocoDisc {
   bloco: string;
-  frases: FraseDisc[];
+  frases: {
+    id: number;
+    frase: string;
+  }[];
 }
 
 interface ResultadoDisc {
@@ -30,14 +27,9 @@ interface ResultadoDisc {
   descricaoCompleta: string;
 }
 
-interface AvaliacaoAtual {
-  id: number;
-  candidatoId: string;
-  status: string;
-}
-
 export default function CandidateDiscTest() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [etapa, setEtapa] = useState<"introducao" | "teste" | "finalizado">("introducao");
   const [avaliacaoId, setAvaliacaoId] = useState<number | null>(null);
   const [blocoAtual, setBlocoAtual] = useState(0);
@@ -71,6 +63,8 @@ export default function CandidateDiscTest() {
       const data = await response.json();
       setAvaliacaoId(data.id);
       setEtapa("teste");
+      setBlocoAtual(0);
+      setRespostas({});
     } catch (error: any) {
       toast({
         title: "Erro",
@@ -82,46 +76,17 @@ export default function CandidateDiscTest() {
     }
   };
 
-  // Iniciar nova avaliação
-  const iniciarAvaliacaoMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/avaliacoes/disc/iniciar", {
-        candidatoId: candidateData?.candidaturas?.[0]?.candidatoId
-      });
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      setAvaliacaoAtual({ 
-        id: data.id, 
-        candidatoId: candidateData?.candidaturas?.[0]?.candidatoId!, 
-        status: "em_andamento" 
-      });
-      setBlocoAtual(0);
-      setRespostas({});
-      setAvaliacaoFinalizada(false);
-      setResultado(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   // Salvar respostas de um bloco
   const salvarRespostasMutation = useMutation({
     mutationFn: async ({ bloco, respostasBloco }: { bloco: string; respostasBloco: number[] }) => {
-      console.log("Salvando respostas:", { avaliacaoId, bloco, respostas: respostasBloco });
       const res = await apiRequest("POST", `/api/avaliacoes/disc/${avaliacaoId}/responder`, {
         bloco,
         respostas: respostasBloco
       });
       return await res.json();
     },
-    onSuccess: (data) => {
-      console.log("Respostas salvas:", data);
+    onSuccess: () => {
+      console.log("Respostas salvas com sucesso");
     },
     onError: (error: any) => {
       console.error("Erro ao salvar respostas:", error);
@@ -156,23 +121,9 @@ export default function CandidateDiscTest() {
     },
   });
 
-  // Atualizar respostas do bloco atual
-  const atualizarResposta = (indexFrase: number, valor: number) => {
-    if (!blocos[blocoAtual]) return;
-
-    const blocoId = blocos[blocoAtual].bloco;
+  // Atualizar resposta de uma frase
+  const atualizarResposta = (blocoId: string, indexFrase: number, valor: number) => {
     const respostasBloco = respostas[blocoId] || [0, 0, 0, 0];
-    
-    // Verificar se o valor já foi usado
-    if (respostasBloco.includes(valor) && respostasBloco[indexFrase] !== valor) {
-      toast({
-        title: "Valor já utilizado",
-        description: "Cada número de 1 a 4 deve ser usado apenas uma vez por bloco.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     respostasBloco[indexFrase] = valor;
     setRespostas({ ...respostas, [blocoId]: respostasBloco });
   };
@@ -188,13 +139,7 @@ export default function CandidateDiscTest() {
 
   // Próximo bloco
   const proximoBloco = async () => {
-    if (!blocos[blocoAtual] || !avaliacaoAtual) {
-      console.log("Próximo bloco - condições não atendidas:", {
-        temBlocos: !!blocos[blocoAtual],
-        temAvaliacao: !!avaliacaoAtual
-      });
-      return;
-    }
+    if (!blocos[blocoAtual] || !avaliacaoId) return;
 
     const blocoId = blocos[blocoAtual].bloco;
     const respostasBloco = respostas[blocoId];
@@ -208,8 +153,6 @@ export default function CandidateDiscTest() {
       });
       return;
     }
-
-    console.log("Salvando bloco:", { blocoId, respostasBloco, avaliacaoId: avaliacaoAtual.id });
 
     try {
       // Salvar respostas do bloco atual
@@ -348,7 +291,16 @@ export default function CandidateDiscTest() {
     );
   }
 
-  // Tela principal do teste
+  // Verificar se está na etapa de teste
+  if (etapa !== "teste" || !avaliacaoId) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Tela de teste
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 space-y-6">
@@ -368,149 +320,72 @@ export default function CandidateDiscTest() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {!avaliacaoAtual ? (
-              <div className="text-center space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <h3 className="font-semibold text-blue-800 mb-2">⚠️ Teste Obrigatório</h3>
-                  <p className="text-blue-700">
-                    O teste DISC é obrigatório para todos os candidatos. 
-                    Ele ajuda a identificar seu perfil comportamental e é essencial para o processo seletivo.
-                  </p>
+            <div className="space-y-6">
+              {/* Progresso */}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Progresso</span>
+                  <span>{blocoAtual + 1} de {blocos.length}</span>
                 </div>
+                <Progress value={((blocoAtual + 1) / blocos.length) * 100} />
+              </div>
+
+              {/* Bloco atual */}
+              {blocos[blocoAtual] && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">
+                    Bloco {blocos[blocoAtual].bloco} - Ordene as frases de 1 a 4
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    1 = Menos me descreve | 4 = Mais me descreve
+                  </p>
+
+                  <div className="grid gap-4">
+                    {blocos[blocoAtual].frases.map((frase, index) => (
+                      <div key={frase.id} className="p-4 border rounded-lg">
+                        <p className="mb-3">{frase.frase}</p>
+                        <RadioGroup
+                          value={respostas[blocos[blocoAtual].bloco]?.[index]?.toString() || ""}
+                          onValueChange={(value) => 
+                            atualizarResposta(blocos[blocoAtual].bloco, index, parseInt(value))
+                          }
+                          className="flex gap-4"
+                        >
+                          {[1, 2, 3, 4].map((valor) => (
+                            <div key={valor} className="flex items-center space-x-2">
+                              <RadioGroupItem value={valor.toString()} id={`${frase.id}-${valor}`} />
+                              <Label htmlFor={`${frase.id}-${valor}`}>{valor}</Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Navegação */}
+              <div className="flex justify-between">
                 <Button 
-                  onClick={() => iniciarAvaliacaoMutation.mutate()}
-                  disabled={iniciarAvaliacaoMutation.isPending}
-                  size="lg"
+                  onClick={blocoAnterior}
+                  disabled={blocoAtual === 0}
+                  variant="outline"
                 >
-                  {iniciarAvaliacaoMutation.isPending ? "Iniciando..." : "Iniciar Teste DISC"}
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  Anterior
+                </Button>
+                
+                <Button 
+                  onClick={proximoBloco}
+                  disabled={!blocoCompleto() || salvarRespostasMutation.isPending}
+                >
+                  {blocoAtual === blocos.length - 1 ? "Finalizar" : "Próximo"}
+                  <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Progresso */}
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Progresso</span>
-                    <span>{blocoAtual + 1} de {blocos.length}</span>
-                  </div>
-                  <Progress value={((blocoAtual + 1) / blocos.length) * 100} />
-                </div>
-
-                {/* Bloco atual */}
-                {blocos[blocoAtual] && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>
-                        Bloco {blocos[blocoAtual].bloco}
-                      </CardTitle>
-                      <p className="text-sm text-gray-600">
-                        Ordene as frases de 1 a 4, sendo:
-                        <br />
-                        <strong>1 = Menos se identifica</strong> até <strong>4 = Mais se identifica</strong>
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {blocos[blocoAtual].frases.map((frase, index) => {
-                          const blocoId = blocos[blocoAtual].bloco;
-                          const valorAtual = respostas[blocoId]?.[index] || 0;
-                          
-                          return (
-                            <div key={frase.id} className="flex items-center gap-4">
-                              <div className="flex-1">
-                                <Label>{frase.texto}</Label>
-                              </div>
-                              <div className="w-20">
-                                <Select
-                                  value={valorAtual.toString()}
-                                  onValueChange={(value) => 
-                                    atualizarResposta(index, parseInt(value))
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="--" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="1">1</SelectItem>
-                                    <SelectItem value="2">2</SelectItem>
-                                    <SelectItem value="3">3</SelectItem>
-                                    <SelectItem value="4">4</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="flex justify-between mt-6">
-                        <Button
-                          variant="outline"
-                          onClick={blocoAnterior}
-                          disabled={blocoAtual === 0}
-                        >
-                          <ChevronLeft className="w-4 h-4 mr-2" />
-                          Anterior
-                        </Button>
-
-                        <Button
-                          onClick={proximoBloco}
-                          disabled={!blocoCompleto() || salvarRespostasMutation.isPending}
-                        >
-                          {salvarRespostasMutation.isPending ? (
-                            "Salvando..."
-                          ) : blocoAtual === blocos.length - 1 ? (
-                            "Finalizar"
-                          ) : (
-                            <>
-                              Próximo
-                              <ChevronRight className="w-4 h-4 ml-2" />
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
-
-        {/* Histórico */}
-        {historico.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Histórico de Avaliações
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {historico.map((avaliacao: any) => (
-                  <div key={avaliacao.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <div>
-                      <p className="font-medium">
-                        {new Date(avaliacao.dataInicio).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Status: {avaliacao.status}
-                      </p>
-                    </div>
-                    {avaliacao.resultado && (
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          Perfil: {avaliacao.resultado.perfilDominante}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
