@@ -316,7 +316,17 @@ export default function CandidatosPage() {
   };
 
   const renderStatusDisc = (candidatoId: string) => {
-    const resultado = (resultadosDisc as any[])?.find(r => r.candidatoId === candidatoId);
+    // Verificar se resultadosDisc é um array ou objeto
+    let resultadosArray: any[] = [];
+    
+    if (Array.isArray(resultadosDisc)) {
+      resultadosArray = resultadosDisc;
+    } else if (resultadosDisc && typeof resultadosDisc === 'object') {
+      // Se for um objeto, tentar extrair valores ou criar array vazio
+      resultadosArray = Object.values(resultadosDisc).filter(item => item && typeof item === 'object');
+    }
+    
+    const resultado = resultadosArray.find(r => r?.candidatoId === candidatoId);
     
     if (!resultado) {
       return (
