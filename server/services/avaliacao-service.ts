@@ -137,7 +137,7 @@ export class AvaliacaoService {
         // Atualizar respostas existentes
         await db
           .update(respostasDisc)
-          .set({ respostas: JSON.stringify(respostas) })
+          .set({ respostas: respostas })
           .where(
             and(
               eq(respostasDisc.avaliacaoId, avaliacaoId),
@@ -151,7 +151,7 @@ export class AvaliacaoService {
           .values({
             avaliacaoId,
             bloco,
-            respostas: JSON.stringify(respostas)
+            respostas: respostas
           });
       }
 
@@ -185,7 +185,24 @@ export class AvaliacaoService {
       const pontuacao = { D: 0, I: 0, S: 0, C: 0 };
 
       respostas.forEach(resposta => {
-        const respostasArray = JSON.parse(resposta.respostas as string) as number[];
+        let respostasArray: number[];
+        try {
+          console.log(`Processando bloco ${resposta.bloco}, dados:`, resposta.respostas);
+          
+          // Como agora salvamos diretamente como JSONB, deve ser um array
+          if (Array.isArray(resposta.respostas)) {
+            respostasArray = resposta.respostas;
+          } else {
+            console.error("Respostas não é um array:", resposta.respostas);
+            return;
+          }
+          
+          console.log(`Respostas processadas para bloco ${resposta.bloco}:`, respostasArray);
+        } catch (error) {
+          console.error(`Erro ao fazer parse das respostas do bloco ${resposta.bloco}:`, error, "Data:", resposta.respostas);
+          return; // Pular esta resposta inválida
+        }
+        
         const questoesBloco = questoes.filter(q => q.bloco === resposta.bloco);
 
         respostasArray.forEach((pontos, index) => {
