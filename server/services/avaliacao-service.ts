@@ -318,6 +318,50 @@ export class AvaliacaoService {
     }
   }
 
+  // Buscar progresso de uma avaliação
+  static async buscarProgressoAvaliacao(avaliacaoId: number) {
+    try {
+      console.log("Buscando progresso para avaliação:", avaliacaoId);
+      
+      // Buscar todas as respostas salvas
+      const respostasSalvas = await db
+        .select()
+        .from(respostasDisc)
+        .where(eq(respostasDisc.avaliacaoId, avaliacaoId))
+        .orderBy(respostasDisc.bloco);
+
+      console.log("Respostas encontradas:", respostasSalvas.length);
+
+      // Organizar respostas por bloco
+      const respostasOrganizadas: { [bloco: string]: number[] } = {};
+      let proximoBloco = 0;
+
+      respostasSalvas.forEach((resposta) => {
+        respostasOrganizadas[resposta.bloco] = resposta.respostas as number[];
+        proximoBloco = Math.max(proximoBloco, this.obterIndiceBlocoSequencial(resposta.bloco) + 1);
+      });
+
+      // Limitar ao máximo de 24 blocos
+      proximoBloco = Math.min(proximoBloco, 23);
+
+      console.log("Progresso calculado:", { proximoBloco, blocosSalvos: respostasSalvas.length });
+
+      return {
+        respostas: respostasOrganizadas,
+        proximoBloco,
+        blocosSalvos: respostasSalvas.length
+      };
+    } catch (error) {
+      console.error("Erro ao buscar progresso:", error);
+      return { respostas: {}, proximoBloco: 0, blocosSalvos: 0 };
+    }
+  }
+
+  // Helper para converter letra do bloco em índice numérico
+  private static obterIndiceBlocoSequencial(bloco: string): number {
+    return bloco.charCodeAt(0) - 65; // A=0, B=1, C=2, etc.
+  }
+
   // Obter resultados DISC de todos os candidatos
   static async obterResultadosTodosCandidatos() {
     try {
