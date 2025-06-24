@@ -38,27 +38,49 @@ interface AvaliacaoAtual {
 
 export default function CandidateDiscTest() {
   const { toast } = useToast();
-  const [avaliacaoAtual, setAvaliacaoAtual] = useState<AvaliacaoAtual | null>(null);
+  const [etapa, setEtapa] = useState<"introducao" | "teste" | "finalizado">("introducao");
+  const [avaliacaoId, setAvaliacaoId] = useState<number | null>(null);
   const [blocoAtual, setBlocoAtual] = useState(0);
   const [respostas, setRespostas] = useState<{ [bloco: string]: number[] }>({});
-  const [avaliacaoFinalizada, setAvaliacaoFinalizada] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [resultado, setResultado] = useState<ResultadoDisc | null>(null);
-
-  // Obter dados do candidato da sessão
-  const { data: candidateData } = useQuery({
-    queryKey: ["/api/candidate-portal/profile"],
-  });
 
   // Buscar modelo das questões DISC
   const { data: blocos = [], isLoading: loadingBlocos } = useQuery<BlocoDisc[]>({
     queryKey: ["/api/avaliacoes/disc/modelo"],
   });
 
-  // Buscar histórico de avaliações do candidato
-  const { data: historico = [] } = useQuery({
-    queryKey: ["/api/avaliacoes/disc/candidato", candidateData?.candidaturas?.[0]?.candidatoId],
-    enabled: !!candidateData?.candidaturas?.[0]?.candidatoId,
-  });
+  // Iniciar nova avaliação
+  const iniciarTeste = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/avaliacoes/disc/iniciar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao iniciar teste");
+      }
+
+      const data = await response.json();
+      setAvaliacaoId(data.id);
+      setEtapa("teste");
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Iniciar nova avaliação
   const iniciarAvaliacaoMutation = useMutation({
@@ -91,19 +113,18 @@ export default function CandidateDiscTest() {
   // Salvar respostas de um bloco
   const salvarRespostasMutation = useMutation({
     mutationFn: async ({ bloco, respostasBloco }: { bloco: string; respostasBloco: number[] }) => {
-      const res = await apiRequest("POST", `/api/avaliacoes/disc/${avaliacaoAtual?.id}/responder`, {
+      console.log("Salvando respostas:", { avaliacaoId, bloco, respostas: respostasBloco });
+      const res = await apiRequest("POST", `/api/avaliacoes/disc/${avaliacaoId}/responder`, {
         bloco,
         respostas: respostasBloco
       });
       return await res.json();
     },
-    onSuccess: () => {
-      toast({
-        title: "Sucesso",
-        description: "Respostas salvas com sucesso!",
-      });
+    onSuccess: (data) => {
+      console.log("Respostas salvas:", data);
     },
     onError: (error: any) => {
+      console.error("Erro ao salvar respostas:", error);
       toast({
         title: "Erro",
         description: error.message,
@@ -115,15 +136,12 @@ export default function CandidateDiscTest() {
   // Finalizar avaliação
   const finalizarAvaliacaoMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/avaliacoes/disc/${avaliacaoAtual?.id}/finalizar`);
+      const res = await apiRequest("POST", `/api/avaliacoes/disc/${avaliacaoId}/finalizar`);
       return await res.json();
     },
     onSuccess: (data: ResultadoDisc) => {
       setResultado(data);
-      setAvaliacaoFinalizada(true);
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/avaliacoes/disc/candidato", candidateData?.candidaturas?.[0]?.candidatoId] 
-      });
+      setEtapa("finalizado");
       toast({
         title: "Avaliação Finalizada",
         description: "Seu perfil DISC foi calculado com sucesso!",
@@ -170,21 +188,45 @@ export default function CandidateDiscTest() {
 
   // Próximo bloco
   const proximoBloco = async () => {
-    if (!blocos[blocoAtual] || !avaliacaoAtual) return;
+    if (!blocos[blocoAtual] || !avaliacaoAtual) {
+      console.log("Próximo bloco - condições não atendidas:", {
+        temBlocos: !!blocos[blocoAtual],
+        temAvaliacao: !!avaliacaoAtual
+      });
+      return;
+    }
 
     const blocoId = blocos[blocoAtual].bloco;
     const respostasBloco = respostas[blocoId];
 
-    // Salvar respostas do bloco atual
-    await salvarRespostasMutation.mutateAsync({ 
-      bloco: blocoId, 
-      respostasBloco 
-    });
+    // Verificar se todas as respostas foram preenchidas
+    if (!respostasBloco || respostasBloco.includes(0)) {
+      toast({
+        title: "Atenção",
+        description: "Por favor, preencha todas as respostas antes de continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    if (blocoAtual < blocos.length - 1) {
-      setBlocoAtual(blocoAtual + 1);
-    } else {
-      // Finalizar avaliação
+    console.log("Salvando bloco:", { blocoId, respostasBloco, avaliacaoId: avaliacaoAtual.id });
+
+    try {
+      // Salvar respostas do bloco atual
+      await salvarRespostasMutation.mutateAsync({ 
+        bloco: blocoId, 
+        respostasBloco 
+      });
+
+      if (blocoAtual < blocos.length - 1) {
+        setBlocoAtual(blocoAtual + 1);
+      } else {
+        // Último bloco - finalizar avaliação
+        finalizarAvaliacaoMutation.mutate();
+      }
+    } catch (error) {
+      console.error("Erro ao salvar bloco:", error);
+    }
       await finalizarAvaliacaoMutation.mutateAsync();
     }
   };
@@ -196,20 +238,42 @@ export default function CandidateDiscTest() {
     }
   };
 
-  // Verificar se há avaliação em andamento
-  useEffect(() => {
-    const avaliacaoEmAndamento = historico.find(
-      (av: any) => av.status === "em_andamento"
+  // Tela de introdução
+  if (etapa === "introducao") {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 space-y-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Link href="/portal/dashboard">
+              <Button variant="outline" size="sm">
+                ← Voltar ao Dashboard
+              </Button>
+            </Link>
+          </div>
+          
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Brain className="h-6 w-6 text-blue-600" />
+                Teste DISC Obrigatório
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-blue-800">
+                  O teste DISC é obrigatório para todos os candidatos. Ele ajuda a identificar seu perfil 
+                  comportamental e é essencial para o processo seletivo.
+                </p>
+              </div>
+              <Button onClick={iniciarTeste} disabled={isLoading} className="px-8">
+                {isLoading ? "Iniciando..." : "Iniciar Teste DISC"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     );
-    
-    if (avaliacaoEmAndamento) {
-      setAvaliacaoAtual({
-        id: avaliacaoEmAndamento.id,
-        candidatoId: candidateData?.candidaturas?.[0]?.candidatoId!,
-        status: "em_andamento"
-      });
-    }
-  }, [historico, candidateData?.candidaturas]);
+  }
 
   if (loadingBlocos) {
     return (
@@ -220,7 +284,7 @@ export default function CandidateDiscTest() {
   }
 
   // Tela de resultado
-  if (avaliacaoFinalizada && resultado) {
+  if (etapa === "finalizado" && resultado) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 space-y-6">
@@ -272,7 +336,7 @@ export default function CandidateDiscTest() {
 
               <div className="mt-6 text-center">
                 <Button 
-                  onClick={() => window.location.reload()}
+                  onClick={() => setEtapa("introducao")}
                   variant="outline"
                 >
                   <Brain className="w-4 h-4 mr-2" />

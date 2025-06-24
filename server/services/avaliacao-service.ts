@@ -98,6 +98,13 @@ export class AvaliacaoService {
   // Salvar respostas de um bloco
   static async salvarRespostasBloco(avaliacaoId: number, bloco: string, respostas: number[]) {
     try {
+      console.log("AvaliacaoService.salvarRespostasBloco - Input:", { avaliacaoId, bloco, respostas });
+      
+      // Validar dados de entrada
+      if (!Array.isArray(respostas) || respostas.length !== 4) {
+        throw new Error("Respostas deve ser um array com 4 elementos");
+      }
+
       // Validar que respostas são únicas e estão entre 1-4
       const respostasUnicas = new Set(respostas);
       if (respostasUnicas.size !== 4 || 
@@ -155,6 +162,7 @@ export class AvaliacaoService {
           });
       }
 
+      console.log("Respostas salvas com sucesso para bloco:", bloco);
       return { success: true };
     } catch (error) {
       console.error("Erro ao salvar respostas:", error);
