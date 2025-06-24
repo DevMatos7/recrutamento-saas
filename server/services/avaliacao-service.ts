@@ -51,6 +51,8 @@ export class AvaliacaoService {
   // Iniciar nova avaliação DISC para candidato
   static async iniciarAvaliacao(candidatoId: string) {
     try {
+      console.log("Iniciando avaliação para candidato:", candidatoId);
+      
       // Verificar se candidato existe
       const candidato = await db
         .select()
@@ -75,20 +77,24 @@ export class AvaliacaoService {
         .limit(1);
 
       if (avaliacaoExistente.length > 0) {
-        return { id: avaliacaoExistente[0].id };
+        console.log("Encontrada avaliação em andamento:", avaliacaoExistente[0].id);
+        return { id: avaliacaoExistente[0].id, continuando: true };
       }
 
+      console.log("Criando nova avaliação...");
       // Criar nova avaliação
       const novaAvaliacao = await db
         .insert(avaliacoes)
         .values({
           candidatoId,
           tipo: "DISC",
-          status: "em_andamento"
+          status: "em_andamento",
+          dataInicio: new Date()
         })
         .returning();
 
-      return { id: novaAvaliacao[0].id };
+      console.log("Nova avaliação criada:", novaAvaliacao[0].id);
+      return { id: novaAvaliacao[0].id, continuando: false };
     } catch (error) {
       console.error("Erro ao iniciar avaliação:", error);
       throw error;

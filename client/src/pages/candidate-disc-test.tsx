@@ -54,20 +54,7 @@ export default function CandidateDiscTest() {
     try {
       setIsLoading(true);
       
-      // Verificar se há avaliação em andamento
-      if (avaliacaoExistente && avaliacaoExistente.length > 0) {
-        const avaliacaoAtiva = avaliacaoExistente.find((av: any) => av.status === "em_andamento");
-        if (avaliacaoAtiva) {
-          // Continuar avaliação existente
-          setAvaliacaoId(avaliacaoAtiva.id);
-          await carregarProgressoExistente(avaliacaoAtiva.id);
-          setEtapa("teste");
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // Criar nova avaliação
+      // Sempre chamar o endpoint de iniciar - ele decide se cria nova ou retorna existente
       const response = await fetch("/api/avaliacoes/disc/iniciar", {
         method: "POST",
         headers: {
@@ -84,9 +71,21 @@ export default function CandidateDiscTest() {
 
       const data = await response.json();
       setAvaliacaoId(data.id);
+      
+      // Se está continuando uma avaliação, carregar progresso
+      if (data.continuando) {
+        await carregarProgressoExistente(data.id);
+        toast({
+          title: "Teste Continuado",
+          description: "Continuando de onde você parou!",
+        });
+      } else {
+        // Nova avaliação - resetar estado
+        setBlocoAtual(0);
+        setRespostas({});
+      }
+      
       setEtapa("teste");
-      setBlocoAtual(0);
-      setRespostas({});
     } catch (error: any) {
       toast({
         title: "Erro",
