@@ -273,6 +273,14 @@ export default function CandidateDiscTest() {
                  (avaliacaoExistente && avaliacaoExistente.some((av: any) => av.status === "em_andamento") ? 
                   "Continuar Teste DISC" : "Iniciar Teste DISC")}
               </Button>
+              {avaliacaoExistente && avaliacaoExistente.length > 0 && (
+                <div className="text-sm text-gray-600 mt-2">
+                  Avaliações encontradas: {avaliacaoExistente.length}
+                  {avaliacaoExistente.some((av: any) => av.status === "em_andamento") && (
+                    <span className="text-blue-600 font-medium"> - Teste em andamento detectado</span>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

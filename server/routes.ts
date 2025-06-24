@@ -1797,13 +1797,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/avaliacoes/disc/candidato/:candidatoId - Histórico de avaliações do candidato
   app.get("/api/avaliacoes/disc/candidato/:candidatoId", async (req: Request, res: Response) => {
     try {
-      const { candidatoId } = req.params;
+      const candidatoId = req.params.candidatoId === "current" ? 
+        (req as any).session?.candidateId : req.params.candidatoId;
+      
+      if (!candidatoId) {
+        return res.status(400).json({ message: "candidatoId é obrigatório" });
+      }
 
       const { AvaliacaoService } = await import("./services/avaliacao-service.js");
       const historico = await AvaliacaoService.obterHistoricoCandidato(candidatoId);
       res.json(historico);
     } catch (error: any) {
       console.error("Erro ao obter histórico:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/avaliacoes/disc/:id/progresso - Buscar progresso de uma avaliação
+  app.get("/api/avaliacoes/disc/:id/progresso", async (req: Request, res: Response) => {
+    try {
+      const avaliacaoId = parseInt(req.params.id);
+      const { AvaliacaoService } = await import("./services/avaliacao-service.js");
+      const progresso = await AvaliacaoService.buscarProgressoAvaliacao(avaliacaoId);
+      res.json(progresso);
+    } catch (error: any) {
+      console.error("Erro ao buscar progresso da avaliação:", error);
       res.status(500).json({ message: error.message });
     }
   });
