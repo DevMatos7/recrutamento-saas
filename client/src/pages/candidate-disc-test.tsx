@@ -42,10 +42,32 @@ export default function CandidateDiscTest() {
     queryKey: ["/api/avaliacoes/disc/modelo"],
   });
 
-  // Iniciar nova avaliação
+  // Verificar se existe avaliação em andamento
+  const { data: avaliacaoExistente } = useQuery({
+    queryKey: ["/api/avaliacoes/disc/candidato", "current"],
+    enabled: etapa === "introducao",
+    staleTime: 0,
+  });
+
+  // Iniciar ou continuar teste
   const iniciarTeste = async () => {
     try {
       setIsLoading(true);
+      
+      // Verificar se há avaliação em andamento
+      if (avaliacaoExistente && avaliacaoExistente.length > 0) {
+        const avaliacaoAtiva = avaliacaoExistente.find((av: any) => av.status === "em_andamento");
+        if (avaliacaoAtiva) {
+          // Continuar avaliação existente
+          setAvaliacaoId(avaliacaoAtiva.id);
+          await carregarProgressoExistente(avaliacaoAtiva.id);
+          setEtapa("teste");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Criar nova avaliação
       const response = await fetch("/api/avaliacoes/disc/iniciar", {
         method: "POST",
         headers: {
@@ -73,6 +95,27 @@ export default function CandidateDiscTest() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Carregar progresso de avaliação existente
+  const carregarProgressoExistente = async (avaliacaoId: number) => {
+    try {
+      const response = await fetch(`/api/avaliacoes/disc/${avaliacaoId}/progresso`, {
+        credentials: "include",
+      });
+      
+      if (response.ok) {
+        const progresso = await response.json();
+        setRespostas(progresso.respostas || {});
+        setBlocoAtual(progresso.proximoBloco || 0);
+        toast({
+          title: "Teste Continuado",
+          description: "Continuando de onde você parou!",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar progresso:", error);
     }
   };
 
@@ -124,8 +167,22 @@ export default function CandidateDiscTest() {
   // Atualizar resposta de uma frase
   const atualizarResposta = (blocoId: string, indexFrase: number, valor: number) => {
     const respostasBloco = respostas[blocoId] || [0, 0, 0, 0];
-    respostasBloco[indexFrase] = valor;
-    setRespostas({ ...respostas, [blocoId]: respostasBloco });
+    const novasRespostas = [...respostasBloco];
+    
+    // Verificar se o valor já foi usado em outra frase
+    const valorJaUsado = novasRespostas.some((resp, idx) => resp === valor && idx !== indexFrase);
+    
+    if (valorJaUsado && valor > 0) {
+      toast({
+        title: "Valor já utilizado",
+        description: `O valor ${valor} já foi usado em outra frase deste bloco.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    novasRespostas[indexFrase] = valor;
+    setRespostas({ ...respostas, [blocoId]: novasRespostas });
   };
 
   // Verificar se bloco atual está completo
@@ -135,6 +192,12 @@ export default function CandidateDiscTest() {
     const respostasBloco = respostas[blocoId] || [];
     return respostasBloco.every(r => r > 0) && 
            new Set(respostasBloco).size === 4;
+  };
+
+  // Validar se as respostas são únicas
+  const validarRespostasUnicas = (blocoId: string, novasRespostas: number[]) => {
+    const respostasUnicas = new Set(novasRespostas.filter(r => r > 0));
+    return respostasUnicas.size === novasRespostas.filter(r => r > 0).length;
   };
 
   // Próximo bloco
@@ -207,7 +270,9 @@ export default function CandidateDiscTest() {
                 </p>
               </div>
               <Button onClick={iniciarTeste} disabled={isLoading} className="px-8">
-                {isLoading ? "Iniciando..." : "Iniciar Teste DISC"}
+                {isLoading ? "Carregando..." : 
+                 (avaliacaoExistente && avaliacaoExistente.some((av: any) => av.status === "em_andamento") ? 
+                  "Continuar Teste DISC" : "Iniciar Teste DISC")}
               </Button>
             </CardContent>
           </Card>
