@@ -227,8 +227,6 @@ export default function CandidateDiscTest() {
     } catch (error) {
       console.error("Erro ao salvar bloco:", error);
     }
-      await finalizarAvaliacaoMutation.mutateAsync();
-    }
   };
 
   // Bloco anterior
