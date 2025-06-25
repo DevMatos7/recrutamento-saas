@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Brain, ChevronLeft, ChevronRight, CheckCircle, BarChart3 } from "lucide-react";
+import { Brain, ChevronLeft, ChevronRight, CheckCircle, BarChart3, Settings } from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 

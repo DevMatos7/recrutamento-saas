@@ -1851,6 +1851,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/avaliacoes/disc/admin/update-block - Atualizar bloco DISC (admin only)
+  app.post("/api/avaliacoes/disc/admin/update-block", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { bloco, titulo, questions } = req.body;
+
+      if (!bloco || !titulo || !questions || !Array.isArray(questions)) {
+        return res.status(400).json({ error: "Dados inválidos" });
+      }
+
+      // Deletar questões existentes do bloco
+      await db
+        .delete(questoesDisc)
+        .where(eq(questoesDisc.bloco, bloco));
+
+      // Inserir novas questões
+      if (questions.length > 0) {
+        await db
+          .insert(questoesDisc)
+          .values(questions.map(q => ({
+            bloco,
+            ordem: q.ordem,
+            frase: q.frase,
+            fator: q.fator
+          })));
+      }
+
+      console.log(`Bloco ${bloco} atualizado com ${questions.length} questões`);
+      res.json({ success: true, message: "Bloco atualizado com sucesso" });
+    } catch (error) {
+      console.error("Erro ao atualizar bloco DISC:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
   // GET /api/avaliacoes/disc/resultados-todos - Obter resultados DISC de todos os candidatos
   app.get("/api/avaliacoes/disc/resultados-todos", requireAuth, async (req: Request, res: Response) => {
     try {
