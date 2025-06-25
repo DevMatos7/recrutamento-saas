@@ -15,6 +15,7 @@ import PipelinePage from "@/pages/pipeline";
 import TestesPage from "@/pages/testes";
 import AvaliacaoDiscPage from "@/pages/avaliacao-disc";
 import CandidateDiscTest from "@/pages/candidate-disc-test";
+import DiscEditor from "@/pages/disc-editor";
 import MatchingPage from "@/pages/matching";
 import VagaMatchingConfigPage from "@/pages/vaga-matching-config";
 import MatchingCriteriaInfo from "@/pages/matching-criteria-info";
@@ -35,6 +36,7 @@ function Router() {
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
       <ProtectedRoute path="/testes" component={TestesPage} />
       <ProtectedRoute path="/avaliacao-disc" component={AvaliacaoDiscPage} />
+      <ProtectedRoute path="/avaliacao-disc/editor" component={DiscEditor} />
       <ProtectedRoute path="/entrevistas" component={EntrevistasPage} />
       <ProtectedRoute path="/configuracoes/dashboard" component={Dashboard} />
       <ProtectedRoute path="/configuracoes/departamentos" component={DepartamentosPage} />
