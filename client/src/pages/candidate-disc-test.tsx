@@ -406,11 +406,13 @@ export default function CandidateDiscTest() {
               {blocos[blocoAtual] && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">
-                    Bloco {blocos[blocoAtual].bloco} - Ordene as frases de 1 a 4
+                    Bloco {blocos[blocoAtual].bloco}
                   </h3>
-                  <p className="text-sm text-gray-600">
-                    1 = Menos me descreve | 4 = Mais me descreve
-                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-blue-800 text-sm leading-relaxed">
+                      <strong>Instruções:</strong> Em cada bloco, você verá quatro frases. Sua tarefa é ordenar essas frases de acordo com o quanto elas descrevem você. Coloque o número <strong>4</strong> na frase que <strong>MAIS</strong> combina com você e o número <strong>1</strong> na que <strong>MENOS</strong> combina. Use cada número apenas uma vez por bloco.
+                    </p>
+                  </div>
 
                   <div className="grid gap-4">
                     {blocos[blocoAtual].frases.map((frase, index) => (
