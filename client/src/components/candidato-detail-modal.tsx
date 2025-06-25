@@ -1,5 +1,5 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -117,7 +117,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   }
 
   const renderStatusEtico = () => {
-    switch (candidato.statusEtico) {
+    switch ((candidato as any)?.statusEtico) {
       case "aprovado":
         return (
           <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   };
 
   const renderResultadoDisc = () => {
-    if (!resultadoDisc || resultadoDisc.length === 0) {
+    if (!resultadoDisc || (resultadoDisc as any)?.length === 0) {
       return (
         <Card>
           <CardHeader>
@@ -184,7 +184,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
     }
 
     // Procurar por avaliação finalizada
-    const avaliacaoFinalizada = resultadoDisc.find((av: any) => av.status === "finalizada");
+    const avaliacaoFinalizada = (resultadoDisc as any)?.find((av: any) => av.status === "finalizada");
     
     console.log("Dados DISC recebidos:", resultadoDisc);
     console.log("Avaliação finalizada encontrada:", avaliacaoFinalizada);
@@ -202,7 +202,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             <Badge variant="outline">
               {resultadoDisc.length > 0 ? "Teste em andamento" : "Teste não realizado"}
             </Badge>
-            {resultadoDisc.length > 0 && (
+            {(resultadoDisc as any)?.length > 0 && (
               <p className="text-xs text-gray-500 mt-2">
                 Debug: {resultadoDisc.length} avaliação(ões) encontrada(s)
               </p>
