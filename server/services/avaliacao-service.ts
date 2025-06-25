@@ -21,6 +21,34 @@ export class AvaliacaoService {
         .from(questoesDisc)
         .orderBy(questoesDisc.bloco, questoesDisc.ordem);
 
+      // Títulos dos blocos conforme definidos no seed
+      const titulosBloco = {
+        "A": "Tenho a agilidade de tornar...",
+        "B": "Confunde-me com...",
+        "C": "Desejo ser...",
+        "D": "Quando em conflito, esse estilo...",
+        "E": "Força aparente...",
+        "F": "Com erros...",
+        "G": "Sob estresse pode se tornar...",
+        "H": "Característica principal...",
+        "I": "Necessita de...",
+        "J": "Limitação desse perfil...",
+        "K": "Possui medo de...",
+        "L": "Abordagem principal...",
+        "M": "Outra limitação desse perfil...",
+        "N": "Ponto cego...",
+        "O": "Mensura desempenho com...",
+        "P": "Mensura desempenho com...",
+        "Q": "Com subalternos, costuma ser...",
+        "R": "Prefere tarefas...",
+        "S": "Em uma situação do...",
+        "T": "Quando muito comprar...",
+        "U": "Pode ser considerado...",
+        "V": "Pode ser considerado...",
+        "W": "Pode ser considerado...",
+        "X": "Pode ser considerado..."
+      };
+
       // Agrupar por bloco
       const blocos: { [key: string]: any[] } = {};
       
@@ -35,9 +63,10 @@ export class AvaliacaoService {
         });
       });
 
-      // Converter para array de blocos
+      // Converter para array de blocos com títulos
       const blocosArray = Object.keys(blocos).map(bloco => ({
         bloco,
+        titulo: titulosBloco[bloco as keyof typeof titulosBloco] || bloco,
         frases: blocos[bloco]
       }));
 
@@ -304,14 +333,30 @@ export class AvaliacaoService {
         .where(eq(avaliacoes.candidatoId, candidatoId))
         .orderBy(desc(avaliacoes.dataInicio));
 
-      return avaliacoesCandidato.map(avaliacao => ({
-        id: avaliacao.id,
-        dataInicio: avaliacao.dataInicio,
-        dataFim: avaliacao.dataFim,
-        status: avaliacao.status,
-        resultado: avaliacao.resultadoJson ? 
-          JSON.parse(avaliacao.resultadoJson as string) : null
-      }));
+      return avaliacoesCandidato.map(avaliacao => {
+        let resultado = null;
+        if (avaliacao.resultadoJson) {
+          try {
+            // Handle both string and object types
+            if (typeof avaliacao.resultadoJson === 'string') {
+              resultado = JSON.parse(avaliacao.resultadoJson);
+            } else {
+              resultado = avaliacao.resultadoJson;
+            }
+          } catch (error) {
+            console.error("Erro ao parsear JSON do resultado:", error);
+            resultado = null;
+          }
+        }
+        
+        return {
+          id: avaliacao.id,
+          dataInicio: avaliacao.dataInicio,
+          dataFim: avaliacao.dataFim,
+          status: avaliacao.status,
+          resultado
+        };
+      });
     } catch (error) {
       console.error("Erro ao obter histórico:", error);
       throw error;

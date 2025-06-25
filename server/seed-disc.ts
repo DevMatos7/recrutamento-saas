@@ -4,6 +4,7 @@ import { questoesDisc } from "@shared/schema";
 const blocosDisc = [
   {
     bloco: "A",
+    titulo: "Tenho a agilidade de tornar...",
     frases: [
       { texto: "Assertiva", fator: "D" },
       { texto: "Ser decisivo", fator: "I" },
@@ -13,6 +14,7 @@ const blocosDisc = [
   },
   {
     bloco: "B",
+    titulo: "Confunde-me com...",
     frases: [
       { texto: "Persuasiva", fator: "D" },
       { texto: "Amizade social", fator: "I" },
@@ -22,6 +24,7 @@ const blocosDisc = [
   },
   {
     bloco: "C",
+    titulo: "Desejo ser...",
     frases: [
       { texto: "Paciente", fator: "D" },
       { texto: "Companheirismo", fator: "I" },
@@ -31,6 +34,7 @@ const blocosDisc = [
   },
   {
     bloco: "D",
+    titulo: "Quando em conflito, esse estilo...",
     frases: [
       { texto: "Demanda ação", fator: "D" },
       { texto: "Solucionador de problemas", fator: "I" },
@@ -40,6 +44,7 @@ const blocosDisc = [
   },
   {
     bloco: "E",
+    titulo: "Força aparente...",
     frases: [
       { texto: "Ataca", fator: "D" },
       { texto: "Encorajador", fator: "I" },
@@ -49,6 +54,7 @@ const blocosDisc = [
   },
   {
     bloco: "F",
+    titulo: "Com erros...",
     frases: [
       { texto: "Reclama", fator: "D" },
       { texto: "Suporter", fator: "I" },
@@ -58,6 +64,7 @@ const blocosDisc = [
   },
   {
     bloco: "G",
+    titulo: "Sob estresse pode se tornar...",
     frases: [
       { texto: "Evita", fator: "D" },
       { texto: "Organizador", fator: "I" },
@@ -67,6 +74,7 @@ const blocosDisc = [
   },
   {
     bloco: "H",
+    titulo: "Característica principal...",
     frases: [
       { texto: "Competição", fator: "D" },
       { texto: "Direto", fator: "I" },
@@ -76,6 +84,7 @@ const blocosDisc = [
   },
   {
     bloco: "I",
+    titulo: "Necessita de...",
     frases: [
       { texto: "Aprovação", fator: "D" },
       { texto: "Desenganizado", fator: "I" },
@@ -85,6 +94,7 @@ const blocosDisc = [
   },
   {
     bloco: "J",
+    titulo: "Limitação desse perfil...",
     frases: [
       { texto: "Bolhas", fator: "D" },
       { texto: "Entusiasmo", fator: "I" },
@@ -94,6 +104,7 @@ const blocosDisc = [
   },
   {
     bloco: "K",
+    titulo: "Possui medo de...",
     frases: [
       { texto: "Padrão", fator: "D" },
       { texto: "Impacto", fator: "I" },
@@ -103,6 +114,7 @@ const blocosDisc = [
   },
   {
     bloco: "L",
+    titulo: "Abordagem principal...",
     frases: [
       { texto: "Independente", fator: "D" },
       { texto: "Intenso", fator: "I" },
@@ -112,6 +124,7 @@ const blocosDisc = [
   },
   {
     bloco: "M",
+    titulo: "Outra limitação desse perfil...",
     frases: [
       { texto: "Interativo", fator: "D" },
       { texto: "Não tradicional", fator: "I" },
@@ -121,6 +134,7 @@ const blocosDisc = [
   },
   {
     bloco: "N",
+    titulo: "Ponto cego...",
     frases: [
       { texto: "Estável", fator: "D" },
       { texto: "Indeciso", fator: "I" },
@@ -130,6 +144,7 @@ const blocosDisc = [
   },
   {
     bloco: "O",
+    titulo: "Mensura desempenho com...",
     frases: [
       { texto: "Corretivo", fator: "D" },
       { texto: "Impressivo", fator: "I" },
@@ -139,6 +154,7 @@ const blocosDisc = [
   },
   {
     bloco: "P",
+    titulo: "Mensura desempenho com...",
     frases: [
       { texto: "Se limita e confronta", fator: "D" },
       { texto: "Se preocupa demais com metas", fator: "I" },
@@ -148,6 +164,7 @@ const blocosDisc = [
   },
   {
     bloco: "Q",
+    titulo: "Com subalternos, costuma ser...",
     frases: [
       { texto: "Nem liga, está diabtraído", fator: "D" },
       { texto: "Tem que pensar", fator: "I" },
@@ -157,6 +174,7 @@ const blocosDisc = [
   },
   {
     bloco: "R",
+    titulo: "Prefere tarefas...",
     frases: [
       { texto: "Sabe do atraso, mas aceita", fator: "D" },
       { texto: "Procrastina ao invés de fazer", fator: "I" },
@@ -166,6 +184,7 @@ const blocosDisc = [
   },
   {
     bloco: "S",
+    titulo: "Em uma situação do...",
     frases: [
       { texto: "Reclama e critica a situação", fator: "D" },
       { texto: "Analisa demais", fator: "I" },
@@ -175,6 +194,7 @@ const blocosDisc = [
   },
   {
     bloco: "T",
+    titulo: "Quando muito comprar...",
     frases: [
       { texto: "Ambicioso", fator: "D" },
       { texto: "Afetivo", fator: "I" },
@@ -184,6 +204,7 @@ const blocosDisc = [
   },
   {
     bloco: "U",
+    titulo: "Pode ser considerado...",
     frases: [
       { texto: "Bem humorado", fator: "D" },
       { texto: "Bonzinho", fator: "I" },
@@ -193,6 +214,7 @@ const blocosDisc = [
   },
   {
     bloco: "V",
+    titulo: "Pode ser considerado...",
     frases: [
       { texto: "Confiante", fator: "D" },
       { texto: "Convincente", fator: "I" },
@@ -202,6 +224,7 @@ const blocosDisc = [
   },
   {
     bloco: "W",
+    titulo: "Pode ser considerado...",
     frases: [
       { texto: "Confiável", fator: "D" },
       { texto: "Entusiasta", fator: "I" },
@@ -211,6 +234,7 @@ const blocosDisc = [
   },
   {
     bloco: "X",
+    titulo: "Pode ser considerado...",
     frases: [
       { texto: "Esforçado", fator: "D" },
       { texto: "Expressivo", fator: "I" },
