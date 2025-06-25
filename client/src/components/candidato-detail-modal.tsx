@@ -97,7 +97,9 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   };
 
   const renderResultadoDisc = () => {
-    if (!resultadoDisc || (resultadoDisc as any)?.length === 0) {
+    console.log("Debug - resultadoDisc no modal:", resultadoDisc);
+    
+    if (!resultadoDisc || (Array.isArray(resultadoDisc) && resultadoDisc.length === 0)) {
       return (
         <Card>
           <CardHeader>
@@ -115,8 +117,16 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
       );
     }
 
-    // Procurar por avaliação finalizada
-    const avaliacaoFinalizada = (resultadoDisc as any)?.find((av: any) => av.status === "finalizada");
+    // Se resultadoDisc é um array, procurar por avaliação finalizada
+    let avaliacaoFinalizada;
+    if (Array.isArray(resultadoDisc)) {
+      avaliacaoFinalizada = resultadoDisc.find((av: any) => av.status === "finalizada");
+    } else {
+      // Se resultadoDisc é um objeto direto
+      avaliacaoFinalizada = resultadoDisc.status === "finalizada" ? resultadoDisc : null;
+    }
+    
+    console.log("Debug - avaliacaoFinalizada:", avaliacaoFinalizada);
     
     if (!avaliacaoFinalizada) {
       return (
@@ -129,7 +139,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
           </CardHeader>
           <CardContent>
             <Badge variant="outline">
-              {(resultadoDisc as any)?.length > 0 ? "Teste em andamento" : "Teste não realizado"}
+              {Array.isArray(resultadoDisc) && resultadoDisc.length > 0 ? "Teste em andamento" : "Teste não realizado"}
             </Badge>
           </CardContent>
         </Card>
@@ -144,43 +154,96 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
     };
 
     const profileName = tiposMapeamento[avaliacaoFinalizada.perfilPrincipal as keyof typeof tiposMapeamento] || avaliacaoFinalizada.perfilPrincipal;
+    
+    // Descrições dos perfis DISC
+    const descricoesPerfis = {
+      "dominante": "Pessoa assertiva, direta e focada em resultados. Gosta de desafios e tomar decisões rápidas.",
+      "influente": "Pessoa comunicativa, otimista e sociável. Gosta de trabalhar com pessoas e influenciar positivamente.",
+      "estavel": "Pessoa calma, paciente e confiável. Valoriza estabilidade e trabalho em equipe.",
+      "cauteloso": "Pessoa analítica, precisa e organizada. Valoriza qualidade e atenção aos detalhes."
+    };
+
+    const descricaoPerfil = descricoesPerfis[avaliacaoFinalizada.perfilPrincipal as keyof typeof descricoesPerfis] || "";
 
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            Resultado DISC
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            Avaliação DISC Concluída
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="font-medium text-lg text-center mb-3">
-              Perfil Principal: <span className="text-primary">{profileName}</span>
-            </h4>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex justify-between">
-                <span className="text-sm">Dominante (D):</span>
-                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoD}%</Badge>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Suas Pontuações */}
+            <div>
+              <h4 className="font-medium text-base mb-4">Suas Pontuações</h4>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium">D</span>
+                    <span className="text-sm">{avaliacaoFinalizada.pontuacaoD} pontos</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${(avaliacaoFinalizada.pontuacaoD / 100) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium">I</span>
+                    <span className="text-sm">{avaliacaoFinalizada.pontuacaoI} pontos</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${(avaliacaoFinalizada.pontuacaoI / 100) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium">S</span>
+                    <span className="text-sm">{avaliacaoFinalizada.pontuacaoS} pontos</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${(avaliacaoFinalizada.pontuacaoS / 100) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium">C</span>
+                    <span className="text-sm">{avaliacaoFinalizada.pontuacaoC} pontos</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${(avaliacaoFinalizada.pontuacaoC / 100) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Influente (I):</span>
-                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoI}%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Estável (S):</span>
-                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoS}%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Cauteloso (C):</span>
-                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoC}%</Badge>
-              </div>
+            </div>
+
+            {/* Perfil Principal */}
+            <div>
+              <h4 className="font-medium text-base mb-4">Perfil {profileName}: {avaliacaoFinalizada.perfilPrincipal.toUpperCase()}</h4>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {descricaoPerfil}
+              </p>
             </div>
           </div>
           
-          <div className="text-xs text-gray-500 text-center">
-            Teste realizado em: {new Date(avaliacaoFinalizada.dataFinalizacao).toLocaleDateString()}
+          <div className="text-xs text-gray-500 text-center border-t pt-4">
+            Teste realizado em: {new Date(avaliacaoFinalizada.dataFinalizacao).toLocaleDateString('pt-BR')}
           </div>
         </CardContent>
       </Card>
@@ -230,6 +293,18 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-gray-500" />
                     <span className="text-sm">{(candidato as any)?.pretensaoSalarial}</span>
+                  </div>
+                )}
+                {(candidato as any)?.cpf && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">CPF:</span>
+                    <span className="text-sm">{(candidato as any)?.cpf}</span>
+                  </div>
+                )}
+                {(candidato as any)?.endereco && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Endereço</h4>
+                    <p className="text-sm text-gray-600">{(candidato as any)?.endereco}</p>
                   </div>
                 )}
                 {(candidato as any)?.resumoProfissional && (
