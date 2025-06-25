@@ -144,7 +144,7 @@ export default function DiscEditor() {
       </div>
 
       <div className="grid gap-6">
-        {discModel?.map((block: DiscBlock) => (
+        {discModel && discModel.map((block: DiscBlock) => (
           <Card key={block.bloco} className="relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>

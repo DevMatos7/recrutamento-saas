@@ -278,10 +278,20 @@ export default function AvaliacaoDiscPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-6 w-6" />
-            Avaliação DISC
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-6 w-6" />
+              Avaliação DISC
+            </CardTitle>
+            {user?.perfil === 'admin' && (
+              <Link href="/avaliacao-disc/editor">
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Editor DISC
+                </Button>
+              </Link>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {!avaliacaoAtual ? (
