@@ -543,6 +543,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PUT /api/candidatos/:id/status-etico - Atualizar status ético do candidato
+  app.put("/api/candidatos/:id/status-etico", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { statusEtico, motivoReprovacaoEtica } = req.body;
+      
+      if (!["aprovado", "reprovado", "pendente"].includes(statusEtico)) {
+        return res.status(400).json({ message: "Status ético inválido" });
+      }
+      
+      const candidato = await storage.updateCandidato(id, { 
+        statusEtico, 
+        motivoReprovacaoEtica: statusEtico === "reprovado" ? motivoReprovacaoEtica : null 
+      });
+      
+      if (!candidato) {
+        return res.status(404).json({ message: "Candidato não encontrado" });
+      }
+      
+      res.json(candidato);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.delete("/api/candidatos/:id", requireAuth, async (req, res, next) => {
     try {
       // Only admin can delete candidates
