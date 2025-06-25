@@ -346,21 +346,23 @@ export default function CandidatosPage() {
     const perfil = resultado.perfilDominante;
     
     if (perfil) {
-      const getPerfilColor = (perfil: string) => {
+      const getPerfilInfo = (perfil: string) => {
         switch (perfil) {
-          case "D": return "bg-red-100 text-red-800";
-          case "I": return "bg-blue-100 text-blue-800";
-          case "S": return "bg-green-100 text-green-800";
-          case "C": return "bg-purple-100 text-purple-800";
-          default: return "bg-gray-100 text-gray-800";
+          case "D": return { nome: "Dominante", color: "bg-red-100 text-red-800" };
+          case "I": return { nome: "Influente", color: "bg-blue-100 text-blue-800" };
+          case "S": return { nome: "Estável", color: "bg-green-100 text-green-800" };
+          case "C": return { nome: "Cauteloso", color: "bg-purple-100 text-purple-800" };
+          default: return { nome: perfil, color: "bg-gray-100 text-gray-800" };
         }
       };
+      
+      const perfilInfo = getPerfilInfo(perfil);
       
       return (
         <div className="flex items-center gap-1">
           <Brain className="h-4 w-4 text-blue-500" />
-          <Badge className={getPerfilColor(perfil)}>
-            {perfil}
+          <Badge className={perfilInfo.color}>
+            {perfilInfo.nome}
           </Badge>
         </div>
       );
