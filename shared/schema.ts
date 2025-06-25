@@ -89,6 +89,8 @@ export const candidatos = pgTable("candidatos", {
   
   status: varchar("status", { length: 20 }).notNull().default("ativo"), // ativo, inativo
   origem: varchar("origem", { length: 20 }).notNull().default("manual"), // manual, portal_externo, importado
+  statusEtico: varchar("status_etico", { length: 20 }).default("pendente"), // aprovado, reprovado, pendente
+  motivoReprovacaoEtica: text("motivo_reprovacao_etica"),
   empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
   dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
   dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
