@@ -133,6 +133,25 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
       );
     }
 
+    // Procurar por avaliação finalizada
+    const avaliacaoFinalizada = resultadoDisc.find((av: any) => av.status === "finalizada");
+    
+    if (!avaliacaoFinalizada || !avaliacaoFinalizada.resultado) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Perfil DISC
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant="outline">Teste em andamento</Badge>
+          </CardContent>
+        </Card>
+      );
+    }
+
     const ultimo = resultadoDisc[resultadoDisc.length - 1];
     const fatores = ultimo.resultado?.fatores || {};
     

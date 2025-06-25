@@ -30,7 +30,7 @@ export class AvaliacaoService {
         }
         blocos[questao.bloco!].push({
           id: questao.id,
-          texto: questao.frase,
+          frase: questao.frase,
           fator: questao.fator
         });
       });
@@ -376,10 +376,19 @@ export class AvaliacaoService {
       
       todasAvaliacoes.forEach(avaliacao => {
         if (!resultadosPorCandidato[avaliacao.candidatoId!] && avaliacao.resultadoJson) {
-          resultadosPorCandidato[avaliacao.candidatoId!] = {
-            ...JSON.parse(avaliacao.resultadoJson as string),
-            dataAvaliacao: avaliacao.dataFim
-          };
+          try {
+            // Verificar se é string antes de fazer parse
+            const resultado = typeof avaliacao.resultadoJson === 'string' 
+              ? JSON.parse(avaliacao.resultadoJson) 
+              : avaliacao.resultadoJson;
+            
+            resultadosPorCandidato[avaliacao.candidatoId!] = {
+              ...resultado,
+              dataAvaliacao: avaliacao.dataFim
+            };
+          } catch (error) {
+            console.error("Erro ao fazer parse do resultado JSON:", error, avaliacao.resultadoJson);
+          }
         }
       });
 
