@@ -30,6 +30,9 @@ interface CandidatoDetailModalProps {
 }
 
 export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: CandidatoDetailModalProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
   const { data: candidato, isLoading } = useQuery({
     queryKey: ['/api/candidatos', candidatoId],
     enabled: !!candidatoId && isOpen,
@@ -42,7 +45,50 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   });
 
   console.log("Modal - candidatoId:", candidatoId);
-  console.log("Modal - resultadoDisc:", resultadoDisc);
+  console.log("Modal - resultadoDisc completo:", resultadoDisc);
+  console.log("Modal - tipo resultadoDisc:", typeof resultadoDisc, Array.isArray(resultadoDisc));
+  
+  // Estado para modal de edição de status ético
+  const [statusEticoModalOpen, setStatusEticoModalOpen] = useState(false);
+  const [statusEticoForm, setStatusEticoForm] = useState({
+    statusEtico: candidato?.statusEtico || "pendente",
+    motivoReprovacaoEtica: candidato?.motivoReprovacaoEtica || ""
+  });
+  
+  // Atualizar form quando candidato carrega
+  useEffect(() => {
+    if (candidato) {
+      setStatusEticoForm({
+        statusEtico: candidato.statusEtico || "pendente",
+        motivoReprovacaoEtica: candidato.motivoReprovacaoEtica || ""
+      });
+    }
+  }, [candidato]);
+  
+  // Mutation para atualizar status ético
+  const updateStatusEticoMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/candidatos/${candidatoId}/status-etico`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) throw new Error('Erro ao atualizar status ético');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/candidatos'] });
+      setStatusEticoModalOpen(false);
+      toast({ title: "Status ético atualizado com sucesso!" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao atualizar status ético", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
 
   if (!isOpen || !candidatoId) return null;
 
@@ -143,7 +189,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
     console.log("Dados DISC recebidos:", resultadoDisc);
     console.log("Avaliação finalizada encontrada:", avaliacaoFinalizada);
     
-    if (!avaliacaoFinalizada || !avaliacaoFinalizada.resultado) {
+    if (!avaliacaoFinalizada) {
       return (
         <Card>
           <CardHeader>
@@ -166,7 +212,30 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
       );
     }
 
-    const resultado = avaliacaoFinalizada.resultado;
+    // Parse do JSON se necessário
+    let resultado;
+    try {
+      if (typeof avaliacaoFinalizada.resultado === 'string') {
+        resultado = JSON.parse(avaliacaoFinalizada.resultado);
+      } else {
+        resultado = avaliacaoFinalizada.resultado;
+      }
+    } catch (error) {
+      console.error("Erro ao fazer parse do resultado DISC:", error);
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Perfil DISC
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant="destructive">Erro no resultado</Badge>
+          </CardContent>
+        </Card>
+      );
+    }
     
     return (
       <Card>
@@ -274,10 +343,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      // Implementar edição do status ético
-                      alert("Funcionalidade de edição do Status Ético será implementada aqui.\n\nPara configurar o status ético:\n1. Clique neste botão\n2. Selecione: Aprovado, Reprovado ou Pendente\n3. Se reprovado, informe o motivo\n4. Salve as alterações");
-                    }}
+                    onClick={() => setStatusEticoModalOpen(true)}
                   >
                     Editar Status
                   </Button>
@@ -434,5 +500,62 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
         </ScrollArea>
       </DialogContent>
     </Dialog>
+
+    {/* Modal de edição de Status Ético */}
+    <Dialog open={statusEticoModalOpen} onOpenChange={setStatusEticoModalOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar Status Ético</DialogTitle>
+          <DialogDescription>
+            Configure o status da verificação ética para {candidato?.nome}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Status Ético</label>
+            <Select 
+              value={statusEticoForm.statusEtico} 
+              onValueChange={(value) => setStatusEticoForm(prev => ({ ...prev, statusEtico: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="aprovado">Aprovado</SelectItem>
+                <SelectItem value="reprovado">Reprovado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {statusEticoForm.statusEtico === "reprovado" && (
+            <div>
+              <label className="text-sm font-medium">Motivo da Reprovação</label>
+              <textarea
+                className="w-full mt-1 p-2 border rounded-md"
+                rows={3}
+                value={statusEticoForm.motivoReprovacaoEtica}
+                onChange={(e) => setStatusEticoForm(prev => ({ ...prev, motivoReprovacaoEtica: e.target.value }))}
+                placeholder="Descreva o motivo da reprovação ética..."
+              />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setStatusEticoModalOpen(false)}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={() => updateStatusEticoMutation.mutate(statusEticoForm)}
+            disabled={updateStatusEticoMutation.isPending}
+          >
+            {updateStatusEticoMutation.isPending ? "Salvando..." : "Salvar"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
