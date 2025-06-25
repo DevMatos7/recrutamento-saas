@@ -332,7 +332,7 @@ export default function CandidatosPage() {
     }
     
     // resultadosDisc é um objeto onde as chaves são candidatoId
-    const resultado = resultadosDisc[candidatoId];
+    const resultado = (resultadosDisc as any)[candidatoId];
     
     if (!resultado) {
       return (
