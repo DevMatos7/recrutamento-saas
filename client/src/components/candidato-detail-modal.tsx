@@ -2,26 +2,9 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  GraduationCap, 
-  Award, 
-  Languages, 
-  Brain,
-  Shield,
-  ShieldCheck,
-  ShieldX,
-  AlertTriangle,
-  DollarSign,
-  Calendar
-} from "lucide-react";
+import { User, Mail, Phone, MapPin, DollarSign, Briefcase, GraduationCap, Languages, Award, Shield, CheckCircle, XCircle, Clock, Brain } from "lucide-react";
 
 interface CandidatoDetailModalProps {
   isOpen: boolean;
@@ -30,64 +13,16 @@ interface CandidatoDetailModalProps {
 }
 
 export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: CandidatoDetailModalProps) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  
   const { data: candidato, isLoading } = useQuery({
     queryKey: ['/api/candidatos', candidatoId],
     enabled: !!candidatoId && isOpen,
   });
 
+  // Query para buscar dados DISC do candidato
   const { data: resultadoDisc } = useQuery({
     queryKey: ['/api/avaliacoes/disc/candidato', candidatoId],
     enabled: !!candidatoId && isOpen,
     staleTime: 0,
-  });
-
-  console.log("Modal - candidatoId:", candidatoId);
-  console.log("Modal - resultadoDisc completo:", resultadoDisc);
-  console.log("Modal - tipo resultadoDisc:", typeof resultadoDisc, Array.isArray(resultadoDisc));
-  
-  // Estado para modal de edição de status ético
-  const [statusEticoModalOpen, setStatusEticoModalOpen] = useState(false);
-  const [statusEticoForm, setStatusEticoForm] = useState({
-    statusEtico: candidato?.statusEtico || "pendente",
-    motivoReprovacaoEtica: candidato?.motivoReprovacaoEtica || ""
-  });
-  
-  // Atualizar form quando candidato carrega
-  useEffect(() => {
-    if (candidato) {
-      setStatusEticoForm({
-        statusEtico: candidato.statusEtico || "pendente",
-        motivoReprovacaoEtica: candidato.motivoReprovacaoEtica || ""
-      });
-    }
-  }, [candidato]);
-  
-  // Mutation para atualizar status ético
-  const updateStatusEticoMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`/api/candidatos/${candidatoId}/status-etico`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error('Erro ao atualizar status ético');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/candidatos'] });
-      setStatusEticoModalOpen(false);
-      toast({ title: "Status ético atualizado com sucesso!" });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Erro ao atualizar status ético", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    }
   });
 
   if (!isOpen || !candidatoId) return null;
@@ -95,9 +30,12 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   if (isLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <DialogContent className="max-w-4xl">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p>Carregando dados do candidato...</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -108,8 +46,8 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl">
-          <div className="text-center py-8">
-            <p className="text-destructive">Candidato não encontrado</p>
+          <div className="flex items-center justify-center p-8">
+            <p>Candidato não encontrado.</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -121,46 +59,38 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
       case "aprovado":
         return (
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-green-500" />
             <Badge variant="default" className="bg-green-100 text-green-800">
-              Aprovado Eticamente
+              Aprovado
             </Badge>
           </div>
         );
       case "reprovado":
         return (
-          <div className="space-y-2">
+          <div>
             <div className="flex items-center gap-2">
-              <ShieldX className="h-5 w-5 text-red-500" />
+              <XCircle className="h-4 w-4 text-red-500" />
               <Badge variant="destructive">
-                Reprovado Eticamente
+                Reprovado
               </Badge>
             </div>
-            {candidato.motivoReprovacaoEtica && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800">
-                  <strong>Motivo:</strong> {candidato.motivoReprovacaoEtica}
-                </p>
-              </div>
+            {(candidato as any)?.motivoReprovacaoEtica && (
+              <p className="text-sm text-gray-600 mt-1">{(candidato as any)?.motivoReprovacaoEtica}</p>
             )}
-          </div>
-        );
-      case "pendente":
-        return (
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
-            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-              Avaliação Ética Pendente
-            </Badge>
           </div>
         );
       default:
         return (
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-gray-500" />
-            <Badge variant="outline">
-              Não Avaliado
-            </Badge>
+          <div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-yellow-500" />
+              <Badge variant="outline" className="border-yellow-200 text-yellow-800">
+                Pendente
+              </Badge>
+            </div>
+            {(candidato as any)?.motivoReprovacaoEtica && (
+              <p className="text-sm text-gray-600 mt-1">{(candidato as any)?.motivoReprovacaoEtica}</p>
+            )}
           </div>
         );
     }
@@ -173,11 +103,13 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5" />
-              Perfil DISC
+              Resultado DISC
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge variant="outline">Teste não realizado</Badge>
+            <Badge variant="outline">
+              Teste não realizado
+            </Badge>
           </CardContent>
         </Card>
       );
@@ -186,96 +118,69 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
     // Procurar por avaliação finalizada
     const avaliacaoFinalizada = (resultadoDisc as any)?.find((av: any) => av.status === "finalizada");
     
-    console.log("Dados DISC recebidos:", resultadoDisc);
-    console.log("Avaliação finalizada encontrada:", avaliacaoFinalizada);
-    
     if (!avaliacaoFinalizada) {
       return (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5" />
-              Perfil DISC
+              Resultado DISC
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Badge variant="outline">
-              {resultadoDisc.length > 0 ? "Teste em andamento" : "Teste não realizado"}
+              {(resultadoDisc as any)?.length > 0 ? "Teste em andamento" : "Teste não realizado"}
             </Badge>
-            {(resultadoDisc as any)?.length > 0 && (
-              <p className="text-xs text-gray-500 mt-2">
-                Debug: {resultadoDisc.length} avaliação(ões) encontrada(s)
-              </p>
-            )}
           </CardContent>
         </Card>
       );
     }
 
-    // Parse do JSON se necessário
-    let resultado;
-    try {
-      if (typeof avaliacaoFinalizada.resultado === 'string') {
-        resultado = JSON.parse(avaliacaoFinalizada.resultado);
-      } else {
-        resultado = avaliacaoFinalizada.resultado;
-      }
-    } catch (error) {
-      console.error("Erro ao fazer parse do resultado DISC:", error);
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5" />
-              Perfil DISC
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="destructive">Erro no resultado</Badge>
-          </CardContent>
-        </Card>
-      );
-    }
-    
+    const tiposMapeamento = {
+      "dominante": "Dominante",
+      "influente": "Influente", 
+      "estavel": "Estável",
+      "cauteloso": "Cauteloso"
+    };
+
+    const profileName = tiposMapeamento[avaliacaoFinalizada.perfilPrincipal as keyof typeof tiposMapeamento] || avaliacaoFinalizada.perfilPrincipal;
+
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5" />
-            Perfil DISC
+            Resultado DISC
           </CardTitle>
-          <CardDescription>
-            Perfil comportamental identificado: <strong>{resultado.perfilDominante}</strong>
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Dominância (D)</span>
-                <Badge variant="destructive">{resultado.D || 0}</Badge>
+          <div>
+            <h4 className="font-medium text-lg text-center mb-3">
+              Perfil Principal: <span className="text-primary">{profileName}</span>
+            </h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex justify-between">
+                <span className="text-sm">Dominante (D):</span>
+                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoD}%</Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Influência (I)</span>
-                <Badge variant="default">{resultado.I || 0}</Badge>
+              <div className="flex justify-between">
+                <span className="text-sm">Influente (I):</span>
+                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoI}%</Badge>
               </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Estabilidade (S)</span>
-                <Badge variant="secondary">{resultado.S || 0}</Badge>
+              <div className="flex justify-between">
+                <span className="text-sm">Estável (S):</span>
+                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoS}%</Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Conformidade (C)</span>
-                <Badge variant="outline">{resultado.C || 0}</Badge>
+              <div className="flex justify-between">
+                <span className="text-sm">Cauteloso (C):</span>
+                <Badge variant="outline">{avaliacaoFinalizada.pontuacaoC}%</Badge>
               </div>
             </div>
           </div>
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">{resultado.descricaoCompleta}</p>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Realizado em: {new Date(avaliacaoFinalizada.dataFim).toLocaleDateString('pt-BR')}
+          
+          <div className="text-xs text-gray-500 text-center">
+            Teste realizado em: {new Date(avaliacaoFinalizada.dataFinalizacao).toLocaleDateString()}
           </div>
         </CardContent>
       </Card>
@@ -283,75 +188,66 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            {candidato.nome}
+            {(candidato as any)?.nome}
           </DialogTitle>
           <DialogDescription>
             Informações completas do candidato
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[calc(90vh-120px)]">
+        <ScrollArea className="max-h-[70vh] pr-4">
           <div className="space-y-6">
-            {/* Informações Básicas */}
+            
+            {/* Informações Pessoais */}
             <Card>
               <CardHeader>
-                <CardTitle>Informações Pessoais</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Informações Pessoais
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{candidato.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{candidato.telefone}</span>
-                  </div>
-                  {candidato.localizacao && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{candidato.localizacao}</span>
-                    </div>
-                  )}
-                  {candidato.pretensaoSalarial && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">R$ {candidato.pretensaoSalarial}</span>
-                    </div>
-                  )}
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">{(candidato as any)?.email}</span>
                 </div>
-
-                {candidato.resumoProfissional && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">{(candidato as any)?.telefone}</span>
+                </div>
+                {(candidato as any)?.localizacao && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">{(candidato as any)?.localizacao}</span>
+                  </div>
+                )}
+                {(candidato as any)?.pretensaoSalarial && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">{(candidato as any)?.pretensaoSalarial}</span>
+                  </div>
+                )}
+                {(candidato as any)?.resumoProfissional && (
                   <div>
-                    <h4 className="font-medium mb-2">Resumo Profissional</h4>
-                    <p className="text-sm text-muted-foreground">{candidato.resumoProfissional}</p>
+                    <h4 className="font-medium text-sm mb-1">Resumo Profissional</h4>
+                    <p className="text-sm text-gray-600">{(candidato as any)?.resumoProfissional}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Status Ético */}
+            {/* Status Ético Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
                   Status Ético
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setStatusEticoModalOpen(true)}
-                  >
-                    Editar Status
-                  </Button>
                 </CardTitle>
-                <CardDescription>
-                  Configure aqui se o candidato foi aprovado ou reprovado na verificação ética
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {renderStatusEtico()}
@@ -362,7 +258,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             {renderResultadoDisc()}
 
             {/* Experiência Profissional */}
-            {candidato.experienciaProfissional && candidato.experienciaProfissional.length > 0 && (
+            {(candidato as any)?.experienciaProfissional && (candidato as any)?.experienciaProfissional.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -371,24 +267,14 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {candidato.experienciaProfissional.map((exp: any, index: number) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium">{exp.cargo}</h4>
-                          <p className="text-sm text-muted-foreground">{exp.empresa}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {exp.dataInicio} - {exp.dataFim || 'Atual'}
-                          </div>
-                        </div>
-                      </div>
+                  {(candidato as any)?.experienciaProfissional.map((exp: any, index: number) => (
+                    <div key={index} className="border-l-2 border-blue-200 pl-4">
+                      <h4 className="font-medium text-sm">{exp.cargo}</h4>
+                      <p className="text-sm text-gray-600">{exp.empresa}</p>
+                      <p className="text-xs text-gray-500">{exp.periodo}</p>
                       {exp.descricao && (
-                        <p className="text-sm">{exp.descricao}</p>
+                        <p className="text-sm text-gray-600 mt-1">{exp.descricao}</p>
                       )}
-                      {index < candidato.experienciaProfissional.length - 1 && <Separator />}
                     </div>
                   ))}
                 </CardContent>
@@ -396,30 +282,20 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             )}
 
             {/* Educação */}
-            {candidato.educacao && candidato.educacao.length > 0 && (
+            {(candidato as any)?.educacao && (candidato as any)?.educacao.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <GraduationCap className="h-5 w-5" />
-                    Formação Acadêmica
+                    Educação
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {candidato.educacao.map((edu: any, index: number) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium">{edu.curso}</h4>
-                          <p className="text-sm text-muted-foreground">{edu.instituicao}</p>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant="outline">{edu.status}</Badge>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {edu.anoInicio} - {edu.anoFim || 'Em andamento'}
-                          </div>
-                        </div>
-                      </div>
-                      {index < candidato.educacao.length - 1 && <Separator />}
+                <CardContent className="space-y-3">
+                  {(candidato as any)?.educacao.map((edu: any, index: number) => (
+                    <div key={index}>
+                      <h4 className="font-medium text-sm">{edu.curso}</h4>
+                      <p className="text-sm text-gray-600">{edu.instituicao}</p>
+                      <p className="text-xs text-gray-500">{edu.periodo}</p>
                     </div>
                   ))}
                 </CardContent>
@@ -427,17 +303,15 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             )}
 
             {/* Habilidades */}
-            {candidato.habilidades && candidato.habilidades.length > 0 && (
+            {(candidato as any)?.habilidades && (candidato as any)?.habilidades.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Habilidades e Competências</CardTitle>
+                  <CardTitle>Habilidades</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {candidato.habilidades.map((habilidade: any, index: number) => (
-                      <Badge key={index} variant="secondary">
-                        {habilidade.nome} {habilidade.nivel && `(${habilidade.nivel})`}
-                      </Badge>
+                    {(candidato as any)?.habilidades.map((habilidade: string, index: number) => (
+                      <Badge key={index} variant="secondary">{habilidade}</Badge>
                     ))}
                   </div>
                 </CardContent>
@@ -445,7 +319,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             )}
 
             {/* Idiomas */}
-            {candidato.idiomas && candidato.idiomas.length > 0 && (
+            {(candidato as any)?.idiomas && (candidato as any)?.idiomas.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -455,7 +329,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {candidato.idiomas.map((idioma: any, index: number) => (
+                    {(candidato as any)?.idiomas.map((idioma: any, index: number) => (
                       <div key={index} className="flex justify-between">
                         <span className="text-sm">{idioma.idioma}</span>
                         <Badge variant="outline">{idioma.nivel}</Badge>
@@ -467,7 +341,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             )}
 
             {/* Certificações */}
-            {candidato.certificacoes && candidato.certificacoes.length > 0 && (
+            {(candidato as any)?.certificacoes && (candidato as any)?.certificacoes.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -476,22 +350,11 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {candidato.certificacoes.map((cert: any, index: number) => (
-                    <div key={index} className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-sm">{cert.nome}</h4>
-                        <p className="text-xs text-muted-foreground">{cert.instituicao}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-muted-foreground">
-                          {cert.dataObtencao}
-                        </div>
-                        {cert.validade && (
-                          <div className="text-xs text-muted-foreground">
-                            Válido até: {cert.validade}
-                          </div>
-                        )}
-                      </div>
+                  {(candidato as any)?.certificacoes.map((cert: any, index: number) => (
+                    <div key={index}>
+                      <h4 className="font-medium text-sm">{cert.nome}</h4>
+                      <p className="text-sm text-gray-600">{cert.instituicao}</p>
+                      <p className="text-xs text-gray-500">{cert.dataObtencao}</p>
                     </div>
                   ))}
                 </CardContent>
@@ -501,6 +364,5 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
         </ScrollArea>
       </DialogContent>
     </Dialog>
-  </>
   );
 }

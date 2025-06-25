@@ -1974,6 +1974,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para atualizar status ético do candidato
+  app.put("/api/candidatos/:id/status-etico", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { statusEtico, motivoReprovacaoEtica } = req.body;
+
+      const updateData: any = { statusEtico };
+      if (statusEtico === "reprovado" && motivoReprovacaoEtica) {
+        updateData.motivoReprovacaoEtica = motivoReprovacaoEtica;
+      } else if (statusEtico !== "reprovado") {
+        updateData.motivoReprovacaoEtica = null;
+      }
+
+      const [updatedCandidato] = await db
+        .update(candidatos)
+        .set(updateData)
+        .where(eq(candidatos.id, id))
+        .returning();
+
+      if (!updatedCandidato) {
+        return res.status(404).json({ error: "Candidato não encontrado" });
+      }
+
+      res.json(updatedCandidato);
+    } catch (error) {
+      console.error("Erro ao atualizar status ético:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
