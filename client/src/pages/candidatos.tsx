@@ -316,14 +316,22 @@ export default function CandidatosPage() {
   };
 
   const renderStatusDisc = (candidatoId: string) => {
-    console.log("renderStatusDisc - candidatoId:", candidatoId);
-    console.log("renderStatusDisc - resultadosDisc completo:", resultadosDisc);
+    // Verificar se resultadosDisc existe e não é vazio
+    if (!resultadosDisc || typeof resultadosDisc !== 'object') {
+      return (
+        <div className="flex items-center gap-1">
+          <Brain className="h-4 w-4 text-gray-500" />
+          <Badge variant="outline">
+            Não realizado
+          </Badge>
+        </div>
+      );
+    }
     
     // resultadosDisc é um objeto onde as chaves são candidatoId
     const resultado = resultadosDisc[candidatoId];
-    console.log("renderStatusDisc - resultado encontrado:", resultado);
     
-    if (!resultado || resultado.length === 0) {
+    if (!resultado) {
       return (
         <div className="flex items-center gap-1">
           <Brain className="h-4 w-4 text-gray-500" />
@@ -334,24 +342,10 @@ export default function CandidatosPage() {
       );
     }
 
-    // Pegar a avaliação mais recente finalizada
-    const avaliacaoFinalizada = resultado.find((av: any) => av.status === "finalizada");
+    // resultado deve ter as propriedades do perfil DISC diretamente
+    const perfil = resultado.perfilDominante;
     
-    if (avaliacaoFinalizada) {
-      let perfil = "N/A";
-      
-      // Parse do resultado se necessário
-      if (avaliacaoFinalizada.resultado) {
-        try {
-          const resultadoParsed = typeof avaliacaoFinalizada.resultado === 'string' 
-            ? JSON.parse(avaliacaoFinalizada.resultado) 
-            : avaliacaoFinalizada.resultado;
-          perfil = resultadoParsed.perfilDominante || "N/A";
-        } catch (error) {
-          console.error("Erro ao fazer parse do resultado DISC:", error);
-        }
-      }
-      
+    if (perfil) {
       const getPerfilColor = (perfil: string) => {
         switch (perfil) {
           case "D": return "bg-red-100 text-red-800";
@@ -370,17 +364,16 @@ export default function CandidatosPage() {
           </Badge>
         </div>
       );
-    } else {
-      // Tem avaliação mas não finalizada
-      return (
-        <div className="flex items-center gap-1">
-          <Brain className="h-4 w-4 text-orange-500" />
-          <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-            Em andamento
-          </Badge>
-        </div>
-      );
     }
+
+    return (
+      <div className="flex items-center gap-1">
+        <Brain className="h-4 w-4 text-gray-500" />
+        <Badge variant="outline">
+          Não realizado
+        </Badge>
+      </div>
+    );
   };
 
   const getStatusColor = (status: string) => {
