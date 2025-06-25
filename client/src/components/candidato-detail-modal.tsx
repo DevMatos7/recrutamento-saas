@@ -152,8 +152,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
       );
     }
 
-    const ultimo = resultadoDisc[resultadoDisc.length - 1];
-    const fatores = ultimo.resultado?.fatores || {};
+    const resultado = avaliacaoFinalizada.resultado;
     
     return (
       <Card>
@@ -163,7 +162,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             Perfil DISC
           </CardTitle>
           <CardDescription>
-            Perfil comportamental identificado: <strong>{ultimo.perfilPrincipal}</strong>
+            Perfil comportamental identificado: <strong>{resultado.perfilDominante}</strong>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -171,27 +170,29 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Dominância (D)</span>
-                <Badge variant="destructive">{fatores.D || 0}</Badge>
+                <Badge variant="destructive">{resultado.D || 0}</Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Influência (I)</span>
-                <Badge variant="default">{fatores.I || 0}</Badge>
+                <Badge variant="default">{resultado.I || 0}</Badge>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Estabilidade (S)</span>
-                <Badge variant="secondary">{fatores.S || 0}</Badge>
+                <Badge variant="secondary">{resultado.S || 0}</Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Conformidade (C)</span>
-                <Badge variant="outline">{fatores.C || 0}</Badge>
+                <Badge variant="outline">{resultado.C || 0}</Badge>
               </div>
             </div>
           </div>
-          
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">{resultado.descricaoCompleta}</p>
+          </div>
           <div className="text-xs text-muted-foreground">
-            Realizado em: {new Date(ultimo.dataFinalizacao).toLocaleDateString('pt-BR')}
+            Realizado em: {new Date(avaliacaoFinalizada.dataFim).toLocaleDateString('pt-BR')}
           </div>
         </CardContent>
       </Card>
