@@ -1,10 +1,13 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { 
   User, 
   Mail, 
@@ -500,7 +503,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
         </ScrollArea>
       </DialogContent>
     </Dialog>
-
+    
     {/* Modal de edição de Status Ético */}
     <Dialog open={statusEticoModalOpen} onOpenChange={setStatusEticoModalOpen}>
       <DialogContent>
@@ -556,6 +559,6 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
         </div>
       </DialogContent>
     </Dialog>
-    </>
+  </>
   );
 }

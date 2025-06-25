@@ -518,6 +518,14 @@ export default function CandidatosPage() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedCandidatoId(candidato.id);
+                              setShowDetailModal(true);
+                            }}>
+                              <Shield className="h-4 w-4 mr-2" />
+                              Status Ético
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               onClick={() => handleDeleteCandidato(candidato.id)}
                               className="text-destructive"
@@ -549,6 +557,16 @@ export default function CandidatosPage() {
               setEditingCandidato(null);
             }}
             editingCandidato={editingCandidato}
+          />
+
+          {/* Modal de detalhes do candidato */}
+          <CandidatoDetailModal
+            isOpen={showDetailModal}
+            onClose={() => {
+              setShowDetailModal(false);
+              setSelectedCandidatoId(null);
+            }}
+            candidatoId={selectedCandidatoId}
           />
     </div>
   );
