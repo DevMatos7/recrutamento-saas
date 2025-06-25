@@ -41,6 +41,9 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
     staleTime: 0,
   });
 
+  console.log("Modal - candidatoId:", candidatoId);
+  console.log("Modal - resultadoDisc:", resultadoDisc);
+
   if (!isOpen || !candidatoId) return null;
 
   if (isLoading) {
@@ -137,6 +140,9 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
     // Procurar por avaliação finalizada
     const avaliacaoFinalizada = resultadoDisc.find((av: any) => av.status === "finalizada");
     
+    console.log("Dados DISC recebidos:", resultadoDisc);
+    console.log("Avaliação finalizada encontrada:", avaliacaoFinalizada);
+    
     if (!avaliacaoFinalizada || !avaliacaoFinalizada.resultado) {
       return (
         <Card>
@@ -147,7 +153,14 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge variant="outline">Teste em andamento</Badge>
+            <Badge variant="outline">
+              {resultadoDisc.length > 0 ? "Teste em andamento" : "Teste não realizado"}
+            </Badge>
+            {resultadoDisc.length > 0 && (
+              <p className="text-xs text-gray-500 mt-2">
+                Debug: {resultadoDisc.length} avaliação(ões) encontrada(s)
+              </p>
+            )}
           </CardContent>
         </Card>
       );
@@ -256,7 +269,22 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
             {/* Status Ético */}
             <Card>
               <CardHeader>
-                <CardTitle>Status Ético</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Status Ético
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      // Implementar edição do status ético
+                      alert("Funcionalidade de edição do Status Ético será implementada aqui.\n\nPara configurar o status ético:\n1. Clique neste botão\n2. Selecione: Aprovado, Reprovado ou Pendente\n3. Se reprovado, informe o motivo\n4. Salve as alterações");
+                    }}
+                  >
+                    Editar Status
+                  </Button>
+                </CardTitle>
+                <CardDescription>
+                  Configure aqui se o candidato foi aprovado ou reprovado na verificação ética
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {renderStatusEtico()}
