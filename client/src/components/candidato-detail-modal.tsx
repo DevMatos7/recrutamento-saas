@@ -38,6 +38,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   const { data: resultadoDisc } = useQuery({
     queryKey: ['/api/avaliacoes/disc/candidato', candidatoId],
     enabled: !!candidatoId && isOpen,
+    staleTime: 0,
   });
 
   if (!isOpen || !candidatoId) return null;
