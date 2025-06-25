@@ -316,45 +316,71 @@ export default function CandidatosPage() {
   };
 
   const renderStatusDisc = (candidatoId: string) => {
-    // Verificar se resultadosDisc é um array ou objeto
-    let resultadosArray: any[] = [];
+    console.log("renderStatusDisc - candidatoId:", candidatoId);
+    console.log("renderStatusDisc - resultadosDisc completo:", resultadosDisc);
     
-    if (Array.isArray(resultadosDisc)) {
-      resultadosArray = resultadosDisc;
-    } else if (resultadosDisc && typeof resultadosDisc === 'object') {
-      // Se for um objeto, tentar extrair valores ou criar array vazio
-      resultadosArray = Object.values(resultadosDisc).filter(item => item && typeof item === 'object');
-    }
+    // resultadosDisc é um objeto onde as chaves são candidatoId
+    const resultado = resultadosDisc[candidatoId];
+    console.log("renderStatusDisc - resultado encontrado:", resultado);
     
-    const resultado = resultadosArray.find(r => r?.candidatoId === candidatoId);
-    
-    if (!resultado) {
+    if (!resultado || resultado.length === 0) {
       return (
-        <Badge variant="outline" className="text-gray-500">
-          Pendente
-        </Badge>
+        <div className="flex items-center gap-1">
+          <Brain className="h-4 w-4 text-gray-500" />
+          <Badge variant="outline">
+            Não realizado
+          </Badge>
+        </div>
       );
     }
 
-    const perfil = resultado.perfilPrincipal;
-    const getPerfilColor = (perfil: string) => {
-      switch (perfil) {
-        case "D": return "bg-red-100 text-red-800";
-        case "I": return "bg-blue-100 text-blue-800";
-        case "S": return "bg-green-100 text-green-800";
-        case "C": return "bg-purple-100 text-purple-800";
-        default: return "bg-gray-100 text-gray-800";
+    // Pegar a avaliação mais recente finalizada
+    const avaliacaoFinalizada = resultado.find((av: any) => av.status === "finalizada");
+    
+    if (avaliacaoFinalizada) {
+      let perfil = "N/A";
+      
+      // Parse do resultado se necessário
+      if (avaliacaoFinalizada.resultado) {
+        try {
+          const resultadoParsed = typeof avaliacaoFinalizada.resultado === 'string' 
+            ? JSON.parse(avaliacaoFinalizada.resultado) 
+            : avaliacaoFinalizada.resultado;
+          perfil = resultadoParsed.perfilDominante || "N/A";
+        } catch (error) {
+          console.error("Erro ao fazer parse do resultado DISC:", error);
+        }
       }
-    };
-
-    return (
-      <div className="flex items-center gap-1">
-        <Brain className="h-4 w-4 text-gray-500" />
-        <Badge className={getPerfilColor(perfil)} title={`Perfil DISC: ${perfil}`}>
-          {perfil}
-        </Badge>
-      </div>
-    );
+      
+      const getPerfilColor = (perfil: string) => {
+        switch (perfil) {
+          case "D": return "bg-red-100 text-red-800";
+          case "I": return "bg-blue-100 text-blue-800";
+          case "S": return "bg-green-100 text-green-800";
+          case "C": return "bg-purple-100 text-purple-800";
+          default: return "bg-gray-100 text-gray-800";
+        }
+      };
+      
+      return (
+        <div className="flex items-center gap-1">
+          <Brain className="h-4 w-4 text-blue-500" />
+          <Badge className={getPerfilColor(perfil)}>
+            {perfil}
+          </Badge>
+        </div>
+      );
+    } else {
+      // Tem avaliação mas não finalizada
+      return (
+        <div className="flex items-center gap-1">
+          <Brain className="h-4 w-4 text-orange-500" />
+          <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+            Em andamento
+          </Badge>
+        </div>
+      );
+    }
   };
 
   const getStatusColor = (status: string) => {
