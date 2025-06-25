@@ -919,7 +919,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     enabled: isAuthenticated
   });
 
-  const { data: profileData } = useQuery({
+  const { data: profileData } = useQuery<any>({
     queryKey: ["/api/candidate-portal/profile"],
     enabled: isAuthenticated
   });
@@ -1126,12 +1126,12 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
     });
 
     // Verificar se precisa fazer o teste DISC
-    const { data: historicoDisc = [] } = useQuery({
+    const { data: historicoDisc = [] } = useQuery<any[]>({
       queryKey: ["/api/avaliacoes/disc/candidato/current"],
       staleTime: 0,
     });
 
-    const precisaFazerTesteDISC = historicoDisc.length === 0 || 
+    const precisaFazerTesteDISC = !Array.isArray(historicoDisc) || historicoDisc.length === 0 || 
       !historicoDisc.some((av: any) => av.status === "finalizada");
 
     const logoutMutation = useMutation({
@@ -1215,7 +1215,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {candidateData?.candidaturas?.length || 0}
+                      {Array.isArray(candidateData?.candidaturas) ? candidateData.candidaturas.length : 0}
                     </div>
                   </CardContent>
                 </Card>
@@ -1266,24 +1266,26 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
             <TabsContent value="applications">
               <div className="space-y-4">
-                {candidateData?.candidaturas?.map((candidatura: any) => (
-                  <Card key={candidatura.id}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold">{candidatura.vaga?.titulo}</h4>
-                          <p className="text-sm text-gray-600">{candidatura.vaga?.empresa}</p>
-                          <p className="text-sm text-gray-500">
-                            Aplicado em: {new Date(candidatura.dataInscricao).toLocaleDateString()}
-                          </p>
+                {Array.isArray(candidateData?.candidaturas) && candidateData.candidaturas.length > 0 ? (
+                  candidateData.candidaturas.map((candidatura: any) => (
+                    <Card key={candidatura.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold">{candidatura.vaga?.titulo}</h4>
+                            <p className="text-sm text-gray-600">{candidatura.vaga?.empresa}</p>
+                            <p className="text-sm text-gray-500">
+                              Aplicado em: {new Date(candidatura.dataInscricao).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge variant="secondary">
+                            {candidatura.etapa || 'Recebido'}
+                          </Badge>
                         </div>
-                        <Badge variant="secondary">
-                          {candidatura.etapa || 'Recebido'}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )) || (
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
                   <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">

@@ -12,6 +12,7 @@ import { Brain, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface BlocoDisc {
   bloco: string;
+  titulo?: string;
   frases: {
     id: number;
     frase: string;
@@ -405,9 +406,16 @@ export default function CandidateDiscTest() {
               {/* Bloco atual */}
               {blocos[blocoAtual] && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    Bloco {blocos[blocoAtual].bloco}
-                  </h3>
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold mb-2">
+                      Bloco {blocos[blocoAtual].bloco}
+                    </h3>
+                    {blocos[blocoAtual].titulo && (
+                      <p className="text-blue-700 font-medium text-base">
+                        {blocos[blocoAtual].titulo}
+                      </p>
+                    )}
+                  </div>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                     <p className="text-blue-800 text-sm leading-relaxed">
                       <strong>Instruções:</strong> Em cada bloco, você verá quatro frases. Sua tarefa é ordenar essas frases de acordo com o quanto elas descrevem você. Coloque o número <strong>4</strong> na frase que <strong>MAIS</strong> combina com você e o número <strong>1</strong> na que <strong>MENOS</strong> combina. Use cada número apenas uma vez por bloco.
