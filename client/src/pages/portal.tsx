@@ -1127,8 +1127,8 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
     // Verificar se precisa fazer o teste DISC
     const { data: historicoDisc = [] } = useQuery({
-      queryKey: ["/api/avaliacoes/disc/candidato", candidateData?.candidaturas?.[0]?.candidatoId],
-      enabled: !!candidateData?.candidaturas?.[0]?.candidatoId,
+      queryKey: ["/api/avaliacoes/disc/candidato/current"],
+      staleTime: 0,
     });
 
     const precisaFazerTesteDISC = historicoDisc.length === 0 || 
