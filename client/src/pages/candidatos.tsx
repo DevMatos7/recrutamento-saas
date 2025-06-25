@@ -13,6 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CandidatoDetailModal } from "@/components/candidato-detail-modal";
+import { StatusEticoModal } from "@/components/status-etico-modal";
 
 // Candidate Modal Component
 function CandidatoModal({ isOpen, onClose, editingCandidato }: { isOpen: boolean; onClose: () => void; editingCandidato?: any | null }) {
@@ -219,6 +220,8 @@ export default function CandidatosPage() {
   const [editingCandidato, setEditingCandidato] = useState<any | null>(null);
   const [selectedCandidatoId, setSelectedCandidatoId] = useState<string | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showStatusEticoModal, setShowStatusEticoModal] = useState(false);
+  const [selectedCandidato, setSelectedCandidato] = useState<any>(null);
   
   // Query para obter resultados DISC de todos os candidatos
   const { data: resultadosDisc } = useQuery({
@@ -519,8 +522,8 @@ export default function CandidatosPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => {
-                              setSelectedCandidatoId(candidato.id);
-                              setShowDetailModal(true);
+                              setSelectedCandidato(candidato);
+                              setShowStatusEticoModal(true);
                             }}>
                               <Shield className="h-4 w-4 mr-2" />
                               Status Ético
@@ -567,6 +570,16 @@ export default function CandidatosPage() {
               setSelectedCandidatoId(null);
             }}
             candidatoId={selectedCandidatoId}
+          />
+
+          {/* Modal de status ético */}
+          <StatusEticoModal
+            isOpen={showStatusEticoModal}
+            onClose={() => {
+              setShowStatusEticoModal(false);
+              setSelectedCandidato(null);
+            }}
+            candidato={selectedCandidato}
           />
     </div>
   );
