@@ -88,10 +88,10 @@ export default function AIRecommendationsPage() {
     return "text-red-600";
   };
 
-  const getScoreBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
-    if (score >= 80) return "default";
-    if (score >= 60) return "secondary";
-    return "destructive";
+  const getScoreBadgeVariant = (score: number) => {
+    if (score >= 80) return "default" as const;
+    if (score >= 60) return "secondary" as const;
+    return "destructive" as const;
   };
 
   if (!user || !["admin", "recrutador"].includes(user.perfil)) {
@@ -307,7 +307,7 @@ export default function AIRecommendationsPage() {
                 </Button>
               </CardContent>
             </Card>
-          )}
+          ) : null}
         </div>
       )}
 

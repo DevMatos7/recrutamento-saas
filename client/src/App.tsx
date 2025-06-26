@@ -50,6 +50,7 @@ function Router() {
       <ProtectedRoute path="/vagas/:vagaId/configurar-matching" component={VagaMatchingConfigPage} />
       <ProtectedRoute path="/matching/criterios" component={MatchingCriteriaInfo} />
       <ProtectedRoute path="/candidaturas-pendentes" component={CandidaturasPendentesPage} />
+      <ProtectedRoute path="/ai-recommendations" component={AIRecommendationsPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/portal/disc" component={CandidateDiscTest} />
       <Route path="/auth" component={AuthPage} />
