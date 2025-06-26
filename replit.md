@@ -261,6 +261,13 @@ Preferred communication style: Simple, everyday language.
   - Added AI recommendations to sidebar navigation with proper authentication and role-based access
   - Successfully tested system with both AI-powered and fallback analysis modes ensuring continuous functionality
 
+- **June 26, 2025**: Reorganized Navigation Menu Structure for Better UX
+  - Moved "Editor DISC" from main menu to submenu under "Avaliações"
+  - Created collapsible "Avaliações" menu with "Gerenciar Avaliações" and "Editor DISC" submenus
+  - Changed button text from "Criar Avaliação DISC" to "Criar Avaliação" for better genericity
+  - Improved navigation organization with logical grouping of assessment-related features
+  - Maintained role-based access controls for all menu items and submenus
+
 ## Key Features
 
 ### Candidate Assessment Module (Avaliações)
