@@ -265,8 +265,10 @@ Preferred communication style: Simple, everyday language.
   - Moved "Editor DISC" from main menu to submenu under "Avaliações"
   - Created collapsible "Avaliações" menu with "Gerenciar Avaliações" and "Editor DISC" submenus
   - Changed button text from "Criar Avaliação DISC" to "Criar Avaliação" for better genericity
-  - Improved navigation organization with logical grouping of assessment-related features
+  - Created collapsible "Vagas" menu with "Gerenciar Vagas", "Recomendações IA" and "Candidaturas Pendentes" submenus
+  - Improved navigation organization with logical grouping of job-related and assessment-related features
   - Maintained role-based access controls for all menu items and submenus
+  - Enhanced user experience with cleaner, more organized menu structure
 
 ## Key Features
 
