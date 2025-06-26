@@ -19,6 +19,7 @@ import {
   MessageSquare,
   BarChart3,
   Globe,
+  Clock,
   ChevronDown,
   ChevronRight
 } from "lucide-react";
@@ -64,10 +65,22 @@ export function Sidebar() {
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
+      name: "Candidaturas Pendentes",
+      href: "/candidaturas-pendentes",
+      icon: Clock,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+    },
+    {
       name: "Avaliações",
       href: "/testes",
       icon: Brain,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Editor DISC",
+      href: "/avaliacao-disc/editor",
+      icon: Brain,
+      show: user?.perfil === "admin",
     },
     {
       name: "Teste DISC",

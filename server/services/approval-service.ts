@@ -1,13 +1,13 @@
 import { db } from "../db";
-import { vagaCandidatos, candidatos, vagas, usuarios } from "../../shared/schema";
+import { vagaCandidatos, candidatos, vagas, empresas } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 
 export class ApprovalService {
-  // Submeter candidatura para aprovação (etapa "pendente")
+  // Submeter candidatura (criar com status pendente)
   static async submitApplication(candidateId: string, jobId: string) {
     try {
       // Verificar se já existe candidatura
-      const existingApplication = await db
+      const existing = await db
         .select()
         .from(vagaCandidatos)
         .where(and(
@@ -16,29 +16,29 @@ export class ApprovalService {
         ))
         .limit(1);
 
-      if (existingApplication.length > 0) {
-        throw new Error('Você já se candidatou a esta vaga');
+      if (existing.length > 0) {
+        throw new Error('Candidatura já existe para esta vaga');
       }
 
-      // Criar nova candidatura em status "pendente"
-      const application = await db
+      // Criar candidatura pendente
+      const [application] = await db
         .insert(vagaCandidatos)
         .values({
           candidatoId: candidateId,
           vagaId: jobId,
-          etapa: "pendente", // Aguardando aprovação
-          comentarios: "Candidatura submetida - aguardando aprovação do recrutador"
+          etapa: 'pendente',
+          comentarios: 'Candidatura submetida - aguardando aprovação do recrutador'
         })
         .returning();
 
-      return application[0];
+      return application;
     } catch (error) {
       console.error('Erro ao submeter candidatura:', error);
       throw error;
     }
   }
 
-  // Listar candidaturas pendentes de aprovação
+  // Obter candidaturas pendentes
   static async getPendingApplications(empresaId: string) {
     try {
       const pendingApplications = await db
@@ -55,10 +55,12 @@ export class ApprovalService {
         .from(vagaCandidatos)
         .innerJoin(candidatos, eq(vagaCandidatos.candidatoId, candidatos.id))
         .innerJoin(vagas, eq(vagaCandidatos.vagaId, vagas.id))
+        .innerJoin(empresas, eq(vagas.empresaId, empresas.id))
         .where(and(
-          eq(vagaCandidatos.etapa, "pendente"),
-          eq(vagas.empresaId, empresaId)
-        ));
+          eq(vagaCandidatos.etapa, 'pendente'),
+          eq(empresas.id, empresaId)
+        ))
+        .orderBy(vagaCandidatos.dataInscricao);
 
       return pendingApplications;
     } catch (error) {
@@ -70,22 +72,22 @@ export class ApprovalService {
   // Aprovar candidatura
   static async approveApplication(applicationId: string, approverId: string, comments?: string) {
     try {
-      const updatedApplication = await db
+      const [updatedApplication] = await db
         .update(vagaCandidatos)
         .set({
-          etapa: "recebido", // Move para o pipeline normal
+          etapa: 'recebido', // Move para a primeira etapa do pipeline
+          comentarios: comments || 'Candidatura aprovada pelo recrutador',
           responsavelId: approverId,
-          comentarios: comments || "Candidatura aprovada pelo recrutador",
           dataMovimentacao: new Date()
         })
         .where(eq(vagaCandidatos.id, applicationId))
         .returning();
 
-      if (updatedApplication.length === 0) {
+      if (!updatedApplication) {
         throw new Error('Candidatura não encontrada');
       }
 
-      return updatedApplication[0];
+      return updatedApplication;
     } catch (error) {
       console.error('Erro ao aprovar candidatura:', error);
       throw error;
@@ -95,22 +97,22 @@ export class ApprovalService {
   // Rejeitar candidatura
   static async rejectApplication(applicationId: string, approverId: string, comments?: string) {
     try {
-      const updatedApplication = await db
+      const [updatedApplication] = await db
         .update(vagaCandidatos)
         .set({
-          etapa: "reprovado",
+          etapa: 'reprovado',
+          comentarios: comments || 'Candidatura rejeitada pelo recrutador',
           responsavelId: approverId,
-          comentarios: comments || "Candidatura rejeitada pelo recrutador",
           dataMovimentacao: new Date()
         })
         .where(eq(vagaCandidatos.id, applicationId))
         .returning();
 
-      if (updatedApplication.length === 0) {
+      if (!updatedApplication) {
         throw new Error('Candidatura não encontrada');
       }
 
-      return updatedApplication[0];
+      return updatedApplication;
     } catch (error) {
       console.error('Erro ao rejeitar candidatura:', error);
       throw error;
