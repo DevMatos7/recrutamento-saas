@@ -218,7 +218,9 @@ Retorne apenas um JSON válido no seguinte formato:
 
     } catch (error) {
       console.error('Erro na análise AI:', error);
-      throw new Error('Falha na análise de candidatos com IA');
+      
+      // Fallback: Use rule-based analysis when AI is unavailable
+      return this.fallbackAnalysis(job, candidates, limit);
     }
   }
 
