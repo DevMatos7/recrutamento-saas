@@ -2008,6 +2008,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Recommendation Routes
+  
+  // GET /api/vagas/:vagaId/ai-recommendations - Get AI-powered candidate recommendations
+  app.get("/api/vagas/:vagaId/ai-recommendations", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const vagaId = req.params.vagaId;
+      const limit = parseInt(req.query.limit as string) || 5;
+
+      if (!["admin", "recrutador"].includes(req.user?.perfil || "")) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { AIRecommendationService } = await import("./services/ai-recommendation-service.js");
+      const recommendations = await AIRecommendationService.getAIRecommendations(vagaId, limit);
+      
+      res.json(recommendations);
+    } catch (error: any) {
+      console.error("Erro ao gerar recomendações AI:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/candidatos/:candidatoId/ai-insights/:vagaId - Get detailed AI insights for a candidate
+  app.get("/api/candidatos/:candidatoId/ai-insights/:vagaId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const candidatoId = req.params.candidatoId;
+      const vagaId = req.params.vagaId;
+
+      if (!["admin", "recrutador", "gestor"].includes(req.user?.perfil || "")) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { AIRecommendationService } = await import("./services/ai-recommendation-service.js");
+      const insights = await AIRecommendationService.getCandidateInsights(candidatoId, vagaId);
+      
+      res.json(insights);
+    } catch (error: any) {
+      console.error("Erro ao gerar insights do candidato:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Endpoint para atualizar status ético do candidato
   app.put("/api/candidatos/:id/status-etico", requireAuth, async (req: Request, res: Response) => {
     try {
