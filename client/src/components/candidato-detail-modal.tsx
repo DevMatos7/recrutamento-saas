@@ -29,7 +29,19 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
   console.log("Modal Debug - candidato data:", candidato);
   console.log("Modal Debug - resultadoDisc data:", resultadoDisc);
 
-  if (!isOpen || !candidatoId) return null;
+  if (!isOpen) return null;
+
+  if (!candidatoId) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl">
+          <div className="flex items-center justify-center p-8">
+            <p>Erro: ID do candidato não fornecido.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (isLoading) {
     return (
