@@ -31,7 +31,7 @@ export const usuarios = pgTable("usuarios", {
   perfil: varchar("perfil", { length: 50 }).notNull(), // admin, recrutador, gestor, candidato
   empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
   departamentoId: uuid("departamento_id").references(() => departamentos.id),
-  ativo: serial("ativo").notNull(),
+  ativo: integer("ativo").notNull().default(1),
   dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
   dataAtualizacao: timestamp("data_atualizacao").defaultNow(),
 });

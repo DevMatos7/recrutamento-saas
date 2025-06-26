@@ -374,6 +374,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Change user status - admin only
+  app.patch("/api/usuarios/:id/status", requireAdmin, async (req, res, next) => {
+    try {
+      const { ativo } = req.body;
+      
+      if (typeof ativo !== "number" || ![0, 1].includes(ativo)) {
+        return res.status(400).json({ message: "Status inválido. Use 0 para inativo ou 1 para ativo" });
+      }
+      
+      const usuario = await storage.updateUsuario(req.params.id, { ativo });
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const { password, ...usuarioSemSenha } = usuario;
+      res.json(usuarioSemSenha);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Job management routes
   app.get("/api/vagas", requireAuth, async (req, res, next) => {
     try {

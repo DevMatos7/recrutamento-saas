@@ -278,6 +278,15 @@ Preferred communication style: Simple, everyday language.
   - Enhanced security by preventing public user registration while preserving admin capabilities
   - Streamlined initial user experience with focused login interface
 
+- **June 26, 2025**: Implemented User Status Management and Reactivation System
+  - Added comprehensive user status toggle functionality for admin users
+  - Created backend API endpoint PATCH `/api/usuarios/:id/status` for status changes
+  - Implemented frontend status change mutation with confirmation dialogs
+  - Replaced delete button with intelligent status toggle (trash icon for deactivation, check circle for reactivation)
+  - Added proper permission controls ensuring only admin users can change user status
+  - Enhanced user experience with clear visual indicators and action confirmations
+  - Fixed departments screen date field display issue with proper database schema updates
+
 ## Key Features
 
 ### Candidate Assessment Module (Avaliações)
