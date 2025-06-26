@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Edit, UserPlus, Search, Shield, Users, Building, Filter } from "lucide-react";
+import { Trash2, Edit, UserPlus, Search, Shield, Users, Building, Filter, CheckCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -80,6 +80,28 @@ export default function UsuariosPage() {
     },
   });
 
+  // Change status mutation
+  const changeStatusMutation = useMutation({
+    mutationFn: async ({ userId, ativo }: { userId: string; ativo: number }) => {
+      const res = await apiRequest("PATCH", `/api/usuarios/${userId}/status`, { ativo });
+      return await res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/usuarios"] });
+      toast({
+        title: "Status alterado",
+        description: `Usuário ${variables.ativo === 1 ? 'ativado' : 'inativado'} com sucesso.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao alterar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter users
   const filteredUsuarios = usuarios.filter((usuario) => {
     const matchesSearch = usuario.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,6 +128,14 @@ export default function UsuariosPage() {
   const handleChangeRole = (userId: string, newRole: string) => {
     if (confirm(`Tem certeza que deseja alterar o perfil para ${newRole}?`)) {
       changeRoleMutation.mutate({ userId, perfil: newRole });
+    }
+  };
+
+  const handleChangeStatus = (userId: string, currentStatus: number) => {
+    const newStatus = currentStatus === 1 ? 0 : 1;
+    const action = newStatus === 1 ? "ativar" : "inativar";
+    if (confirm(`Tem certeza que deseja ${action} este usuário?`)) {
+      changeStatusMutation.mutate({ userId, ativo: newStatus });
     }
   };
 
@@ -343,11 +373,15 @@ export default function UsuariosPage() {
                                   </Select>
                                   <Button
                                     size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleDeleteUser(usuario.id)}
-                                    disabled={usuario.ativo === 0}
+                                    variant={usuario.ativo === 1 ? "destructive" : "default"}
+                                    onClick={() => handleChangeStatus(usuario.id, usuario.ativo)}
+                                    title={usuario.ativo === 1 ? "Inativar usuário" : "Reativar usuário"}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    {usuario.ativo === 1 ? (
+                                      <Trash2 className="h-4 w-4" />
+                                    ) : (
+                                      <CheckCircle className="h-4 w-4" />
+                                    )}
                                   </Button>
                                 </>
                               )}
