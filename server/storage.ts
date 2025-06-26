@@ -31,7 +31,7 @@ import {
   type InsertComunicacao
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, asc, lte, isNull } from "drizzle-orm";
+import { eq, desc, and, or, asc, lte, isNull, sql } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
 
@@ -332,30 +332,28 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCandidato(id: string): Promise<boolean> {
     try {
-      // Use transaction to ensure all deletes succeed or fail together
-      await db.transaction(async (tx) => {
-        // Delete related records first to avoid foreign key constraints
-        // Delete DISC responses first (references avaliacoes)
-        await tx.execute(sql`DELETE FROM respostas_disc WHERE avaliacao_id IN (SELECT id FROM avaliacoes WHERE candidato_id = ${id})`);
-        
-        // Delete DISC evaluations
-        await tx.execute(sql`DELETE FROM avaliacoes WHERE candidato_id = ${id}`);
-        
-        // Delete pipeline entries
-        await tx.execute(sql`DELETE FROM vaga_candidatos WHERE candidato_id = ${id}`);
-        
-        // Delete test results
-        await tx.execute(sql`DELETE FROM testes_resultados WHERE candidato_id = ${id}`);
-        
-        // Delete interviews
-        await tx.execute(sql`DELETE FROM entrevistas WHERE candidato_id = ${id}`);
-        
-        // Delete communications
-        await tx.execute(sql`DELETE FROM comunicacoes WHERE candidato_id = ${id}`);
-        
-        // Finally delete the candidate
-        await tx.execute(sql`DELETE FROM candidatos WHERE id = ${id}`);
-      });
+      // Delete all related records step by step to ensure proper deletion order
+      
+      // 1. First, delete DISC responses that reference avaliacoes
+      await db.execute(sql`DELETE FROM respostas_disc WHERE avaliacao_id IN (SELECT id FROM avaliacoes WHERE candidato_id = ${id})`);
+      
+      // 2. Delete DISC evaluations
+      await db.execute(sql`DELETE FROM avaliacoes WHERE candidato_id = ${id}`);
+      
+      // 3. Delete pipeline entries
+      await db.execute(sql`DELETE FROM vaga_candidatos WHERE candidato_id = ${id}`);
+      
+      // 4. Delete test results
+      await db.execute(sql`DELETE FROM testes_resultados WHERE candidato_id = ${id}`);
+      
+      // 5. Delete interviews
+      await db.execute(sql`DELETE FROM entrevistas WHERE candidato_id = ${id}`);
+      
+      // 6. Delete communications
+      await db.execute(sql`DELETE FROM comunicacoes WHERE candidato_id = ${id}`);
+      
+      // 7. Finally, delete the candidate
+      const result = await db.execute(sql`DELETE FROM candidatos WHERE id = ${id}`);
       
       return true;
     } catch (error) {
