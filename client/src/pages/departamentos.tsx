@@ -276,7 +276,7 @@ export default function DepartamentosPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        {new Date(departamento.dataCreacao).toLocaleDateString('pt-BR')}
+                        {departamento.dataCriacao ? new Date(departamento.dataCriacao).toLocaleDateString('pt-BR') : 'Data não disponível'}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
