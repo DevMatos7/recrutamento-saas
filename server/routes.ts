@@ -1516,7 +1516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const application = await candidatePortalService.applyToJob(candidateId, vagaId);
       
       res.status(201).json({
-        message: "Candidatura realizada com sucesso",
+        message: "Candidatura submetida com sucesso! Aguarde a aprovação do recrutador.",
         application
       });
     } catch (error: any) {
@@ -2035,6 +2035,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao atualizar status ético:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Application approval workflow endpoints
+  app.get("/api/candidaturas-pendentes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || !['admin', 'recrutador'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { ApprovalService } = await import('./services/approval-service');
+      const pendingApplications = await ApprovalService.getPendingApplications(user.empresaId);
+      
+      res.json(pendingApplications);
+    } catch (error) {
+      console.error("Erro ao buscar candidaturas pendentes:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/candidaturas/:id/aprovar", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || !['admin', 'recrutador'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { comentarios } = req.body;
+      const { ApprovalService } = await import('./services/approval-service');
+      const approvedApplication = await ApprovalService.approveApplication(
+        req.params.id, 
+        user.id, 
+        comentarios
+      );
+      
+      res.json({
+        message: "Candidatura aprovada com sucesso",
+        application: approvedApplication
+      });
+    } catch (error) {
+      console.error("Erro ao aprovar candidatura:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/candidaturas/:id/rejeitar", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user || !['admin', 'recrutador'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { comentarios } = req.body;
+      const { ApprovalService } = await import('./services/approval-service');
+      const rejectedApplication = await ApprovalService.rejectApplication(
+        req.params.id, 
+        user.id, 
+        comentarios
+      );
+      
+      res.json({
+        message: "Candidatura rejeitada",
+        application: rejectedApplication
+      });
+    } catch (error) {
+      console.error("Erro ao rejeitar candidatura:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 
