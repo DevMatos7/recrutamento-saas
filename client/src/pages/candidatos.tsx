@@ -249,107 +249,450 @@ function CandidatoModal({ isOpen, onClose, editingCandidato }: { isOpen: boolean
           {editingCandidato ? "Editar Candidato" : "Novo Candidato"}
         </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Nome *</label>
-              <input
-                type="text"
-                value={formData.nome}
-                onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                className="w-full p-2 border rounded"
-                placeholder="Nome completo"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Email *</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full p-2 border rounded"
-                placeholder="email@exemplo.com"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Telefone *</label>
-              <input
-                type="tel"
-                value={formData.telefone}
-                onChange={(e) => setFormData({...formData, telefone: e.target.value})}
-                className="w-full p-2 border rounded"
-                placeholder="(11) 99999-9999"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="ativo">Ativo</option>
-                <option value="inativo">Inativo</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">LinkedIn</label>
-              <input
-                type="url"
-                value={formData.linkedin}
-                onChange={(e) => setFormData({...formData, linkedin: e.target.value})}
-                className="w-full p-2 border rounded"
-                placeholder="https://linkedin.com/in/usuario"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Origem</label>
-              <select
-                value={formData.origem}
-                onChange={(e) => setFormData({...formData, origem: e.target.value})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="manual">Manual</option>
-                <option value="portal_externo">Portal Externo</option>
-                <option value="importado">Importado</option>
-              </select>
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Tabs defaultValue="basico" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basico">Dados Básicos</TabsTrigger>
+              <TabsTrigger value="pessoais">Dados Pessoais</TabsTrigger>
+              <TabsTrigger value="profissional">Profissional</TabsTrigger>
+              <TabsTrigger value="experiencia">Experiência</TabsTrigger>
+            </TabsList>
+
+            {/* Aba Dados Básicos */}
+            <TabsContent value="basico" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nome *</label>
+                  <Input
+                    value={formData.nome}
+                    onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                    placeholder="Nome completo"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email *</label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="email@exemplo.com"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Telefone *</label>
+                  <Input
+                    type="tel"
+                    value={formData.telefone}
+                    onChange={(e) => setFormData({...formData, telefone: e.target.value})}
+                    placeholder="(11) 99999-9999"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Origem</label>
+                  <Select value={formData.origem} onValueChange={(value) => setFormData({...formData, origem: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual</SelectItem>
+                      <SelectItem value="portal_externo">Portal Externo</SelectItem>
+                      <SelectItem value="importado">Importado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">LinkedIn</label>
+                  <Input
+                    type="url"
+                    value={formData.linkedin}
+                    onChange={(e) => setFormData({...formData, linkedin: e.target.value})}
+                    placeholder="https://linkedin.com/in/usuario"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">URL do Currículo</label>
+                <Input
+                  type="url"
+                  value={formData.curriculoUrl}
+                  onChange={(e) => setFormData({...formData, curriculoUrl: e.target.value})}
+                  placeholder="https://exemplo.com/curriculo.pdf"
+                />
+              </div>
+            </TabsContent>
+
+            {/* Aba Dados Pessoais */}
+            <TabsContent value="pessoais" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">CPF</label>
+                  <Input
+                    value={formData.cpf}
+                    onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Data de Nascimento</label>
+                  <Input
+                    type="date"
+                    value={formData.dataNascimento}
+                    onChange={(e) => setFormData({...formData, dataNascimento: e.target.value})}
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Endereço</label>
+                  <Input
+                    value={formData.endereco}
+                    onChange={(e) => setFormData({...formData, endereco: e.target.value})}
+                    placeholder="Rua, número, bairro"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Cidade</label>
+                  <Input
+                    value={formData.cidade}
+                    onChange={(e) => setFormData({...formData, cidade: e.target.value})}
+                    placeholder="São Paulo"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Estado</label>
+                  <Input
+                    value={formData.estado}
+                    onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                    placeholder="SP"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">CEP</label>
+                  <Input
+                    value={formData.cep}
+                    onChange={(e) => setFormData({...formData, cep: e.target.value})}
+                    placeholder="00000-000"
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Aba Profissional */}
+            <TabsContent value="profissional" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Cargo Desejado</label>
+                  <Input
+                    value={formData.cargo}
+                    onChange={(e) => setFormData({...formData, cargo: e.target.value})}
+                    placeholder="Desenvolvedor Full Stack"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Pretensão Salarial</label>
+                  <Input
+                    value={formData.pretensoSalarial}
+                    onChange={(e) => setFormData({...formData, pretensoSalarial: e.target.value})}
+                    placeholder="R$ 5.000"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Disponibilidade</label>
+                  <Select value={formData.disponibilidade} onValueChange={(value) => setFormData({...formData, disponibilidade: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="imediata">Imediata</SelectItem>
+                      <SelectItem value="15_dias">15 dias</SelectItem>
+                      <SelectItem value="30_dias">30 dias</SelectItem>
+                      <SelectItem value="60_dias">60 dias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Modalidade de Trabalho</label>
+                  <Select value={formData.modalidadeTrabalho} onValueChange={(value) => setFormData({...formData, modalidadeTrabalho: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="presencial">Presencial</SelectItem>
+                      <SelectItem value="remoto">Remoto</SelectItem>
+                      <SelectItem value="hibrido">Híbrido</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Portfólio</label>
+                  <Input
+                    type="url"
+                    value={formData.portfolio}
+                    onChange={(e) => setFormData({...formData, portfolio: e.target.value})}
+                    placeholder="https://meuportfolio.com"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Resumo Profissional</label>
+                <Textarea
+                  value={formData.resumoProfissional}
+                  onChange={(e) => setFormData({...formData, resumoProfissional: e.target.value})}
+                  placeholder="Descreva brevemente sua experiência e objetivos profissionais..."
+                  rows={4}
+                />
+              </div>
+              
+              {/* Habilidades */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Habilidades</h3>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Digite uma habilidade e pressione Enter"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addHabilidade(e.currentTarget.value);
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.habilidades.map((habilidade, index) => (
+                      <Badge key={index} variant="secondary" className="px-3 py-1">
+                        {habilidade}
+                        <Button
+                          type="button"
+                          onClick={() => removeHabilidade(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="ml-2 h-4 w-4 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Aba Experiência */}
+            <TabsContent value="experiencia" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Experiências Profissionais</h3>
+                <Button type="button" onClick={addExperiencia} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Experiência
+                </Button>
+              </div>
+              
+              {formData.experienciaProfissional.map((exp, index) => (
+                <Card key={index}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <h4 className="font-medium">Experiência {index + 1}</h4>
+                      <Button
+                        type="button"
+                        onClick={() => removeExperiencia(index)}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Empresa</label>
+                        <Input
+                          value={exp.empresa}
+                          onChange={(e) => updateExperiencia(index, 'empresa', e.target.value)}
+                          placeholder="Nome da empresa"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Cargo</label>
+                        <Input
+                          value={exp.cargo}
+                          onChange={(e) => updateExperiencia(index, 'cargo', e.target.value)}
+                          placeholder="Cargo ocupado"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Data de Início</label>
+                        <Input
+                          type="date"
+                          value={exp.dataInicio}
+                          onChange={(e) => updateExperiencia(index, 'dataInicio', e.target.value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Data de Fim</label>
+                        <Input
+                          type="date"
+                          value={exp.dataFim}
+                          onChange={(e) => updateExperiencia(index, 'dataFim', e.target.value)}
+                          disabled={exp.atual}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={exp.atual}
+                          onChange={(e) => updateExperiencia(index, 'atual', e.target.checked)}
+                        />
+                        <span className="text-sm">Trabalho atual</span>
+                      </label>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium mb-1">Descrição</label>
+                      <Textarea
+                        value={exp.descricao}
+                        onChange={(e) => updateExperiencia(index, 'descricao', e.target.value)}
+                        placeholder="Descreva suas principais atividades e responsabilidades..."
+                        rows={3}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {/* Educação */}
+              <div className="mt-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Educação</h3>
+                  <Button type="button" onClick={addEducacao} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Educação
+                  </Button>
+                </div>
+                
+                {formData.educacao.map((edu, index) => (
+                  <Card key={index} className="mb-4">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <h4 className="font-medium">Educação {index + 1}</h4>
+                        <Button
+                          type="button"
+                          onClick={() => removeEducacao(index)}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Instituição</label>
+                          <Input
+                            value={edu.instituicao}
+                            onChange={(e) => updateEducacao(index, 'instituicao', e.target.value)}
+                            placeholder="Nome da instituição"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Curso</label>
+                          <Input
+                            value={edu.curso}
+                            onChange={(e) => updateEducacao(index, 'curso', e.target.value)}
+                            placeholder="Nome do curso"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Nível</label>
+                          <Select value={edu.nivel} onValueChange={(value) => updateEducacao(index, 'nivel', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ensino_medio">Ensino Médio</SelectItem>
+                              <SelectItem value="tecnico">Técnico</SelectItem>
+                              <SelectItem value="graduacao">Graduação</SelectItem>
+                              <SelectItem value="pos_graduacao">Pós-graduação</SelectItem>
+                              <SelectItem value="mestrado">Mestrado</SelectItem>
+                              <SelectItem value="doutorado">Doutorado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Status</label>
+                          <Select value={edu.status} onValueChange={(value) => updateEducacao(index, 'status', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="concluido">Concluído</SelectItem>
+                              <SelectItem value="cursando">Cursando</SelectItem>
+                              <SelectItem value="trancado">Trancado</SelectItem>
+                              <SelectItem value="incompleto">Incompleto</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
           
-          <div>
-            <label className="block text-sm font-medium mb-1">URL do Currículo</label>
-            <input
-              type="url"
-              value={formData.curriculoUrl}
-              onChange={(e) => setFormData({...formData, curriculoUrl: e.target.value})}
-              className="w-full p-2 border rounded"
-              placeholder="https://exemplo.com/curriculo.pdf"
-            />
-          </div>
-          
-          <div className="flex justify-end gap-3 pt-4">
-            <button
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border rounded hover:bg-gray-50"
+              variant="outline"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={createMutation.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {createMutation.isPending ? "Salvando..." : editingCandidato ? "Atualizar" : "Criar Candidato"}
-            </button>
+              {createMutation.isPending ? "Salvando..." : (editingCandidato ? "Atualizar" : "Criar")}
+            </Button>
           </div>
         </form>
       </div>
