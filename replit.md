@@ -270,6 +270,14 @@ Preferred communication style: Simple, everyday language.
   - Maintained role-based access controls for all menu items and submenus
   - Enhanced user experience with cleaner, more organized menu structure
 
+- **June 26, 2025**: Secured Login Interface for Admin-Only User Registration
+  - Removed "Cadastro" tab from login page to restrict user registration to admin-only access
+  - Eliminated default user credentials display for improved security
+  - Created clean login-only interface with professional presentation
+  - Maintained full registration functionality accessible only through admin panel in Configurações > Usuários
+  - Enhanced security by preventing public user registration while preserving admin capabilities
+  - Streamlined initial user experience with focused login interface
+
 ## Key Features
 
 ### Candidate Assessment Module (Avaliações)
