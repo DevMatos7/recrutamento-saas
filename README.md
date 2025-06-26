@@ -1,20 +1,18 @@
-# GentePRO - Sistema SaaS de Recrutamento e Seleção
+# GentePRO - Sistema de Gestão de RH
 
-Sistema completo de gestão de recrutamento e seleção para empresas, desenvolvido como SaaS multiempresa.
+Uma plataforma SaaS completa de recrutamento e seleção que combina gestão avançada de candidatos, rastreamento inteligente de pipeline e ferramentas abrangentes de perfilagem para otimizar processos de contratação.
 
-## Funcionalidades
+## Funcionalidades Principais
 
-### Módulos Principais
-- **Gestão de Empresas e Departamentos**
-- **Gestão de Usuários** com controle de acesso baseado em perfis
-- **Gestão de Vagas** com publicação e controle de status
-- **Gestão de Candidatos** com perfis completos
-- **Pipeline de Seleção** visual em formato Kanban
-- **Testes DISC e Técnicos** com avaliação automática
-- **Agendamento de Entrevistas** com controle de status
-- **Comunicação Automatizada** via WhatsApp e Email
-- **Analytics e Relatórios** com dashboards e KPIs
-- **Portal do Candidato** público para candidaturas
+- 🏢 **Gestão Multiempresa** - Isolamento completo de dados por empresa
+- 👥 **Portal do Candidato** - Interface pública para candidaturas e testes
+- 📊 **Teste DISC Obrigatório** - Avaliação comportamental automática
+- 🤖 **Recomendações IA** - Matching inteligente candidato-vaga com OpenAI
+- 📋 **Pipeline de Seleção** - Kanban de 6 etapas para acompanhamento
+- 📅 **Gestão de Entrevistas** - Agendamento e controle completo
+- 📧 **Comunicações** - WhatsApp e Email automatizados com templates
+- 📈 **Analytics** - Relatórios e métricas detalhadas com KPIs
+- 👤 **Gestão de Status** - Ativação/desativação de usuários pelo admin
 
 ### Tecnologias
 
@@ -33,36 +31,49 @@ Sistema completo de gestão de recrutamento e seleção para empresas, desenvolv
 - Drizzle ORM (banco de dados)
 - PostgreSQL (Neon Database)
 
-## Configuração
+## Instalação Rápida
 
 ### Pré-requisitos
-- Node.js >= 18.0.0
-- npm >= 9.0.0
-- PostgreSQL
+- Node.js 18+ 
+- PostgreSQL 13+
+- Git
 
-### Instalação
-
-1. Clone o repositório
-2. Instale as dependências:
+### Instalação Automatizada (Recomendado)
 ```bash
+# Clonar repositório
+git clone [URL_DO_REPOSITORIO]
+cd gentepro
+
+# Executar script de instalação
+chmod +x install.sh
+./install.sh
+```
+
+### Instalação Manual
+```bash
+# Instalar dependências
 npm install
-```
 
-3. Configure as variáveis de ambiente:
-```bash
+# Configurar ambiente
 cp .env.example .env
-# Edite o arquivo .env com suas configurações
-```
+# Editar .env com suas configurações
 
-4. Configure o banco de dados:
-```bash
+# Configurar banco de dados
 npm run db:push
-```
 
-5. Inicie o servidor de desenvolvimento:
-```bash
+# Iniciar aplicação
 npm run dev
 ```
+
+**Acesse:** `http://localhost:5000`
+
+## Usuários Padrão
+
+Após a primeira execução, os seguintes usuários são criados automaticamente:
+
+- **Admin:** admin@gentepro.com / admin123
+- **Recrutador:** recrutador@gentepro.com / recrutador123  
+- **Gestor:** gestor@gentepro.com / gestor123
 
 ### Variáveis de Ambiente
 
@@ -104,6 +115,25 @@ npm run db:push      # Aplicar schema do banco
 
 MIT
 
+## Documentação
+
+- 📖 [Guia de Instalação Completo](INSTALLATION_GUIDE.md) - Instruções detalhadas passo-a-passo
+- 📦 [Dependências Detalhadas](DEPENDENCIES.md) - Lista completa de requisitos
+- ⚙️ [Configurações e Arquitetura](replit.md) - Documentação técnica
+- 🚀 [Script de Instalação](install.sh) - Instalação automatizada
+
+## Configurações Opcionais
+
+### APIs Externas
+- **OpenAI:** Para recomendações inteligentes (https://platform.openai.com/api-keys)
+- **SendGrid:** Para envio de emails (https://sendgrid.com/)
+
+### Configuração SMTP Personalizada
+Alternativamente ao SendGrid, configure SMTP em Configurações > Credenciais
+
 ## Suporte
 
-Para suporte técnico, consulte a documentação em `DEPENDENCIES.md` ou entre em contato com a equipe de desenvolvimento.
+Para suporte técnico:
+1. Consulte [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
+2. Verifique [DEPENDENCIES.md](DEPENDENCIES.md) 
+3. Execute `./install.sh` para diagnóstico automático
