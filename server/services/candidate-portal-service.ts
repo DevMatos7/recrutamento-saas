@@ -212,13 +212,14 @@ export class CandidatePortalService {
         throw new Error('Você já se candidatou a esta vaga');
       }
 
-      // Criar candidatura
+      // Usar o sistema de aprovação - candidatura fica pendente
       const application = await db
         .insert(vagaCandidatos)
         .values({
           candidatoId: candidateId,
           vagaId: jobId,
-          etapa: 'recebido'
+          etapa: 'pendente', // Aguarda aprovação do recrutador
+          comentarios: 'Candidatura submetida - aguardando aprovação do recrutador'
         })
         .returning();
 
