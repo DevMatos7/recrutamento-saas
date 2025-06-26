@@ -184,7 +184,7 @@ export class CandidatePortalService {
     }
   }
 
-  // Candidatar-se a uma vaga
+  // Candidatar-se a uma vaga (com aprovação)
   async applyToJob(candidateId: string, jobId: string) {
     try {
       // Verificar se a vaga está aberta
