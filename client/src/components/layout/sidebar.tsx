@@ -40,6 +40,12 @@ export function Sidebar() {
     location.startsWith("/testes") || 
     location.startsWith("/avaliacao-disc")
   );
+  
+  const [vagasOpen, setVagasOpen] = useState(
+    location.startsWith("/vagas") || 
+    location.startsWith("/ai-recommendations") ||
+    location.startsWith("/candidaturas-pendentes")
+  );
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -53,12 +59,6 @@ export function Sidebar() {
       show: true,
     },
     {
-      name: "Vagas",
-      href: "/vagas",
-      icon: Briefcase,
-      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
-    },
-    {
       name: "Candidatos",
       href: "/candidatos",
       icon: UserCheck,
@@ -69,12 +69,6 @@ export function Sidebar() {
       href: "/pipeline",
       icon: GitBranch,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
-    },
-    {
-      name: "Candidaturas Pendentes",
-      href: "/candidaturas-pendentes",
-      icon: Clock,
-      show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
 
     {
@@ -88,12 +82,6 @@ export function Sidebar() {
       href: "/entrevistas",
       icon: Calendar,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
-    },
-    {
-      name: "Recomendações IA",
-      href: "/ai-recommendations",
-      icon: Brain,
-      show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
     {
       name: "Portal do Candidato",
@@ -160,8 +148,31 @@ export function Sidebar() {
     },
   ];
 
+  // Submenus de vagas
+  const vagasSubmenus = [
+    {
+      name: "Gerenciar Vagas",
+      href: "/vagas",
+      icon: Briefcase,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Recomendações IA",
+      href: "/ai-recommendations",
+      icon: Brain,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Candidaturas Pendentes",
+      href: "/candidaturas-pendentes",
+      icon: Clock,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+    },
+  ];
+
   const hasConfigAccess = configuracoesSubmenus.some(item => item.show);
   const hasAvaliacoesAccess = avaliacoesSubmenus.some(item => item.show);
+  const hasVagasAccess = vagasSubmenus.some(item => item.show);
 
   return (
     <div className="flex h-screen w-64 flex-col bg-gray-50 border-r">
@@ -203,6 +214,45 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+        {/* Menu Vagas com submenu */}
+        {hasVagasAccess && (
+          <Collapsible open={vagasOpen} onOpenChange={setVagasOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant={location.startsWith("/vagas") || location.startsWith("/ai-recommendations") || location.startsWith("/candidaturas-pendentes") ? "default" : "ghost"}
+                className="w-full justify-start gap-3"
+              >
+                <Briefcase className="h-5 w-5" />
+                Vagas
+                {vagasOpen ? (
+                  <ChevronDown className="ml-auto h-4 w-4" />
+                ) : (
+                  <ChevronRight className="ml-auto h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 pl-4 pt-1">
+              {vagasSubmenus.filter(item => item.show).map((item) => {
+                const isActive = location === item.href;
+                const IconComponent = item.icon;
+                
+                return (
+                  <Link key={item.name} href={item.href}>
+                    <Button
+                      variant={isActive ? "default" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start gap-3"
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      {item.name}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
         {/* Menu Avaliações com submenu */}
         {hasAvaliacoesAccess && (
