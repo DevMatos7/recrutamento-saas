@@ -1,0 +1,77 @@
+# Docker Compose para GentePRO (Opcional)
+# Para usar com Docker ao invés de instalação nativa
+
+version: '3.8'
+
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: gentepro-postgres
+    environment:
+      POSTGRES_DB: gentepro
+      POSTGRES_USER: gentepro_user
+      POSTGRES_PASSWORD: gentepro123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gentepro_user -d gentepro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicação GentePRO
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gentepro-app
+    environment:
+      - DATABASE_URL=postgresql://gentepro_user:gentepro123@postgres:5432/gentepro
+      - SESSION_SECRET=sua_chave_secreta_muito_forte_aqui_docker
+      - NODE_ENV=development
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped
+    command: npm run dev
+
+  # PgAdmin (interface gráfica para PostgreSQL - opcional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: gentepro-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gentepro.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    restart: unless-stopped
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  default:
+    name: gentepro-network
