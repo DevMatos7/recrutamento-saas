@@ -21,7 +21,8 @@ import {
   Globe,
   Clock,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Edit
 } from "lucide-react";
 
 export function Sidebar() {
@@ -33,6 +34,11 @@ export function Sidebar() {
     location === "/empresas" || 
     location === "/usuarios" || 
     location === "/departamentos"
+  );
+  
+  const [avaliacoesOpen, setAvaliacoesOpen] = useState(
+    location.startsWith("/testes") || 
+    location.startsWith("/avaliacao-disc")
   );
 
   const handleLogout = () => {
@@ -70,18 +76,7 @@ export function Sidebar() {
       icon: Clock,
       show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
-    {
-      name: "Avaliações",
-      href: "/testes",
-      icon: Brain,
-      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
-    },
-    {
-      name: "Editor DISC",
-      href: "/avaliacao-disc/editor",
-      icon: Brain,
-      show: user?.perfil === "admin",
-    },
+
     {
       name: "Teste DISC",
       href: "/avaliacao-disc",
@@ -149,7 +144,24 @@ export function Sidebar() {
     },
   ];
 
+  // Submenus de avaliações
+  const avaliacoesSubmenus = [
+    {
+      name: "Gerenciar Avaliações",
+      href: "/testes",
+      icon: Brain,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Editor DISC",
+      href: "/avaliacao-disc/editor",
+      icon: Edit,
+      show: user?.perfil === "admin",
+    },
+  ];
+
   const hasConfigAccess = configuracoesSubmenus.some(item => item.show);
+  const hasAvaliacoesAccess = avaliacoesSubmenus.some(item => item.show);
 
   return (
     <div className="flex h-screen w-64 flex-col bg-gray-50 border-r">
@@ -191,6 +203,45 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+        {/* Menu Avaliações com submenu */}
+        {hasAvaliacoesAccess && (
+          <Collapsible open={avaliacoesOpen} onOpenChange={setAvaliacoesOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant={location.startsWith("/testes") || location.startsWith("/avaliacao-disc") ? "default" : "ghost"}
+                className="w-full justify-start gap-3"
+              >
+                <Brain className="h-5 w-5" />
+                Avaliações
+                {avaliacoesOpen ? (
+                  <ChevronDown className="ml-auto h-4 w-4" />
+                ) : (
+                  <ChevronRight className="ml-auto h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 pl-4 pt-1">
+              {avaliacoesSubmenus.filter(item => item.show).map((item) => {
+                const isActive = location === item.href;
+                const IconComponent = item.icon;
+                
+                return (
+                  <Link key={item.name} href={item.href}>
+                    <Button
+                      variant={isActive ? "default" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start gap-3"
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      {item.name}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
         {/* Menu Configurações com submenu */}
         {hasConfigAccess && (

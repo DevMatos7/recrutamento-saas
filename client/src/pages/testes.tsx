@@ -231,7 +231,7 @@ export default function TestesPage() {
           <div className="flex gap-2">
             <Button onClick={handleCreateDISC} variant="outline">
               <Brain className="w-4 h-4 mr-2" />
-              Criar Avaliação DISC
+              Criar Avaliação
             </Button>
             <Button onClick={handleCreateTecnico}>
               <FileText className="w-4 h-4 mr-2" />
