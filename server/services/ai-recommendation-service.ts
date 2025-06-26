@@ -224,6 +224,96 @@ Retorne apenas um JSON válido no seguinte formato:
     }
   }
 
+  private static fallbackAnalysis(job: JobProfile, candidates: CandidateProfile[], limit: number): AIRecommendation[] {
+    console.log('Usando análise de fallback - AI indisponível');
+    
+    const scored = candidates.map(candidate => {
+      let score = 50; // Base score
+      let technicalFit = 50;
+      let culturalFit = 50;
+      let experienceFit = 50;
+      const strengths: string[] = [];
+      const concerns: string[] = [];
+      const recommendations: string[] = [];
+
+      // Technical compatibility
+      if (candidate.habilidades && candidate.habilidades.length > 0) {
+        technicalFit += 20;
+        strengths.push("Possui habilidades técnicas documentadas");
+      } else {
+        concerns.push("Habilidades técnicas não especificadas");
+      }
+
+      // Experience analysis
+      if (candidate.experienciaProfissional && candidate.experienciaProfissional.length > 0) {
+        experienceFit += 25;
+        strengths.push("Experiência profissional documentada");
+      } else {
+        concerns.push("Experiência profissional limitada");
+      }
+
+      // DISC profile analysis
+      if (candidate.discProfile) {
+        culturalFit += 20;
+        strengths.push(`Perfil DISC avaliado: ${candidate.discProfile.perfil}`);
+      } else {
+        concerns.push("Perfil comportamental não avaliado");
+        culturalFit -= 10;
+      }
+
+      // Salary compatibility
+      if (candidate.pretensoSalarial && job.salario) {
+        const jobSalary = parseFloat(job.salario.toString().replace(/[^\d]/g, ''));
+        const candidateSalary = candidate.pretensoSalarial;
+        
+        if (candidateSalary <= jobSalary * 1.2) {
+          score += 10;
+          strengths.push("Pretensão salarial compatível");
+        } else {
+          score -= 15;
+          concerns.push("Pretensão salarial acima do orçamento");
+        }
+      }
+
+      // Work modality compatibility  
+      if (candidate.modalidadeTrabalho === job.modalidade) {
+        score += 10;
+        strengths.push("Modalidade de trabalho compatível");
+      }
+
+      // Generate recommendations
+      if (concerns.length > 0) {
+        recommendations.push("Recomenda-se entrevista detalhada para esclarecer pontos de atenção");
+      }
+      if (candidate.discProfile) {
+        recommendations.push("Considerar fit cultural baseado no perfil DISC");
+      } else {
+        recommendations.push("Aplicar teste DISC antes da contratação");
+      }
+
+      // Final score calculation
+      score = Math.min(100, Math.max(0, (technicalFit + culturalFit + experienceFit) / 3));
+
+      return {
+        candidateId: candidate.id,
+        candidateName: candidate.nome,
+        compatibilityScore: Math.round(score),
+        reasoning: `Análise baseada em critérios objetivos: experiência profissional, habilidades técnicas, perfil comportamental e compatibilidade salarial. Score calculado automaticamente.`,
+        strengths,
+        concerns,
+        recommendations,
+        culturalFit: Math.round(culturalFit),
+        technicalFit: Math.round(technicalFit),
+        experienceFit: Math.round(experienceFit)
+      };
+    });
+
+    // Sort by compatibility score and return top candidates
+    return scored
+      .sort((a, b) => b.compatibilityScore - a.compatibilityScore)
+      .slice(0, limit);
+  }
+
   static async getCandidateInsights(candidateId: string, jobId: string): Promise<any> {
     try {
       // Get candidate details
@@ -309,7 +399,80 @@ Formato JSON:
 
     } catch (error) {
       console.error('Erro ao gerar insights do candidato:', error);
-      throw error;
+      
+      // Fallback: Generate basic insights when AI is unavailable
+      return this.generateFallbackInsights(candidate, job);
     }
+  }
+
+  private static generateFallbackInsights(candidate: any, job: any): any {
+    console.log('Gerando insights de fallback - AI indisponível');
+    
+    const insights = {
+      overallCompatibility: 60,
+      technicalAnalysis: "Análise técnica baseada em dados objetivos disponíveis no perfil do candidato.",
+      experienceAnalysis: "Avaliação da experiência profissional com base no histórico documentado.",
+      salaryAnalysis: "Análise da compatibilidade salarial considerando pretensão e orçamento da vaga.",
+      strengths: [] as string[],
+      developmentAreas: [] as string[],
+      interviewRecommendations: [] as string[],
+      successProbability: 60
+    };
+
+    // Technical analysis
+    if (candidate.habilidades && candidate.habilidades.length > 0) {
+      insights.strengths.push("Habilidades técnicas documentadas");
+      insights.overallCompatibility += 10;
+    } else {
+      insights.developmentAreas.push("Documentar habilidades técnicas específicas");
+    }
+
+    // Experience analysis
+    if (candidate.experienciaProfissional && candidate.experienciaProfissional.length > 0) {
+      insights.strengths.push("Experiência profissional comprovada");
+      insights.overallCompatibility += 15;
+    } else {
+      insights.developmentAreas.push("Experiência profissional limitada");
+    }
+
+    // Education analysis
+    if (candidate.educacao && candidate.educacao.length > 0) {
+      insights.strengths.push("Formação educacional adequada");
+      insights.overallCompatibility += 5;
+    }
+
+    // DISC profile analysis
+    if (candidate.discProfile) {
+      insights.strengths.push(`Perfil comportamental avaliado: ${candidate.discProfile.perfil}`);
+      insights.overallCompatibility += 10;
+    } else {
+      insights.developmentAreas.push("Realizar avaliação comportamental DISC");
+      insights.interviewRecommendations.push("Aplicar teste DISC antes da decisão final");
+    }
+
+    // Salary compatibility
+    if (candidate.pretensoSalarial && job.salario) {
+      const jobSalary = parseFloat(job.salario.toString().replace(/[^\d]/g, ''));
+      const candidateSalary = candidate.pretensoSalarial;
+      
+      if (candidateSalary <= jobSalary) {
+        insights.strengths.push("Pretensão salarial dentro do orçamento");
+        insights.salaryAnalysis = "Pretensão salarial compatível com o orçamento da vaga.";
+      } else {
+        insights.developmentAreas.push("Negociar expectativas salariais");
+        insights.salaryAnalysis = "Pretensão salarial acima do orçamento - requer negociação.";
+      }
+    }
+
+    // Generate interview recommendations
+    insights.interviewRecommendations.push("Explorar motivações e objetivos de carreira");
+    insights.interviewRecommendations.push("Validar experiências práticas relevantes");
+    insights.interviewRecommendations.push("Avaliar fit cultural com a equipe");
+
+    // Adjust overall compatibility
+    insights.overallCompatibility = Math.min(100, Math.max(30, insights.overallCompatibility));
+    insights.successProbability = insights.overallCompatibility;
+
+    return insights;
   }
 }
