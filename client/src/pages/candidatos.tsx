@@ -7,7 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Eye, Mail, Phone, LinkedinIcon, FileText, MoreHorizontal, Shield, ShieldCheck, ShieldX, AlertTriangle, Brain } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Edit, Trash2, Eye, Mail, Phone, LinkedinIcon, FileText, MoreHorizontal, Shield, ShieldCheck, ShieldX, AlertTriangle, Brain, X } from "lucide-react";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +30,48 @@ function CandidatoModal({ isOpen, onClose, editingCandidato }: { isOpen: boolean
     status: "ativo",
     origem: "manual",
     empresaId: user?.empresaId || "",
+    // Informações pessoais
+    cpf: "",
+    dataNascimento: "",
+    endereco: "",
+    cidade: "",
+    estado: "",
+    cep: "",
+    // Informações profissionais
+    cargo: "",
+    resumoProfissional: "",
+    pretensoSalarial: "",
+    disponibilidade: "",
+    modalidadeTrabalho: "",
+    portfolio: "",
+    // Arrays para dados complexos
+    experienciaProfissional: [] as Array<{
+      empresa: string;
+      cargo: string;
+      dataInicio: string;
+      dataFim: string;
+      descricao: string;
+      atual: boolean;
+    }>,
+    educacao: [] as Array<{
+      instituicao: string;
+      curso: string;
+      nivel: string;
+      dataInicio: string;
+      dataConclusao: string;
+      status: string;
+    }>,
+    habilidades: [] as string[],
+    idiomas: [] as Array<{
+      idioma: string;
+      nivel: string;
+    }>,
+    certificacoes: [] as Array<{
+      nome: string;
+      instituicao: string;
+      dataEmissao: string;
+      dataVencimento: string;
+    }>,
   });
 
   const createMutation = useMutation({
@@ -65,6 +109,26 @@ function CandidatoModal({ isOpen, onClose, editingCandidato }: { isOpen: boolean
         status: editingCandidato.status,
         origem: editingCandidato.origem,
         empresaId: editingCandidato.empresaId,
+        // Informações pessoais
+        cpf: editingCandidato.cpf || "",
+        dataNascimento: editingCandidato.dataNascimento || "",
+        endereco: editingCandidato.endereco || "",
+        cidade: editingCandidato.cidade || "",
+        estado: editingCandidato.estado || "",
+        cep: editingCandidato.cep || "",
+        // Informações profissionais
+        cargo: editingCandidato.cargo || "",
+        resumoProfissional: editingCandidato.resumoProfissional || "",
+        pretensoSalarial: editingCandidato.pretensoSalarial || "",
+        disponibilidade: editingCandidato.disponibilidade || "",
+        modalidadeTrabalho: editingCandidato.modalidadeTrabalho || "",
+        portfolio: editingCandidato.portfolio || "",
+        // Arrays para dados complexos
+        experienciaProfissional: editingCandidato.experienciaProfissional || [],
+        educacao: editingCandidato.educacao || [],
+        habilidades: editingCandidato.habilidades || [],
+        idiomas: editingCandidato.idiomas || [],
+        certificacoes: editingCandidato.certificacoes || [],
       });
     } else if (isOpen) {
       setFormData({
@@ -76,6 +140,26 @@ function CandidatoModal({ isOpen, onClose, editingCandidato }: { isOpen: boolean
         status: "ativo",
         origem: "manual",
         empresaId: user?.empresaId || "",
+        // Informações pessoais
+        cpf: "",
+        dataNascimento: "",
+        endereco: "",
+        cidade: "",
+        estado: "",
+        cep: "",
+        // Informações profissionais
+        cargo: "",
+        resumoProfissional: "",
+        pretensoSalarial: "",
+        disponibilidade: "",
+        modalidadeTrabalho: "",
+        portfolio: "",
+        // Arrays para dados complexos
+        experienciaProfissional: [],
+        educacao: [],
+        habilidades: [],
+        idiomas: [],
+        certificacoes: [],
       });
     }
   }, [editingCandidato, isOpen, user]);
@@ -93,11 +177,74 @@ function CandidatoModal({ isOpen, onClose, editingCandidato }: { isOpen: boolean
     createMutation.mutate(formData);
   };
 
+  // Helper functions para gerenciar arrays
+  const addExperiencia = () => {
+    setFormData({
+      ...formData,
+      experienciaProfissional: [
+        ...formData.experienciaProfissional,
+        { empresa: "", cargo: "", dataInicio: "", dataFim: "", descricao: "", atual: false }
+      ]
+    });
+  };
+
+  const removeExperiencia = (index: number) => {
+    setFormData({
+      ...formData,
+      experienciaProfissional: formData.experienciaProfissional.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateExperiencia = (index: number, field: string, value: any) => {
+    const updated = [...formData.experienciaProfissional];
+    updated[index] = { ...updated[index], [field]: value };
+    setFormData({ ...formData, experienciaProfissional: updated });
+  };
+
+  const addEducacao = () => {
+    setFormData({
+      ...formData,
+      educacao: [
+        ...formData.educacao,
+        { instituicao: "", curso: "", nivel: "", dataInicio: "", dataConclusao: "", status: "" }
+      ]
+    });
+  };
+
+  const removeEducacao = (index: number) => {
+    setFormData({
+      ...formData,
+      educacao: formData.educacao.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateEducacao = (index: number, field: string, value: string) => {
+    const updated = [...formData.educacao];
+    updated[index] = { ...updated[index], [field]: value };
+    setFormData({ ...formData, educacao: updated });
+  };
+
+  const addHabilidade = (habilidade: string) => {
+    if (habilidade && !formData.habilidades.includes(habilidade)) {
+      setFormData({
+        ...formData,
+        habilidades: [...formData.habilidades, habilidade]
+      });
+    }
+  };
+
+  const removeHabilidade = (index: number) => {
+    setFormData({
+      ...formData,
+      habilidades: formData.habilidades.filter((_, i) => i !== index)
+    });
+  };
+
   if (!isOpen) return null;
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold mb-4">
           {editingCandidato ? "Editar Candidato" : "Novo Candidato"}
         </h2>
