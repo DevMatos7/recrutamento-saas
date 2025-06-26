@@ -24,6 +24,7 @@ import ComunicacoesPage from "@/pages/comunicacoes";
 import CredenciaisPage from "@/pages/credenciais";
 import CandidatePortalPage from "@/pages/candidate-portal";
 import CandidaturasPendentesPage from "@/pages/candidaturas-pendentes";
+import AIRecommendationsPage from "@/pages/ai-recommendations";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
