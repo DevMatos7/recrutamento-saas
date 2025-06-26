@@ -148,6 +148,10 @@ export default function CandidateDiscTest() {
       return await res.json();
     },
     onSuccess: (data: ResultadoDisc) => {
+      // Redirecionar automaticamente para o dashboard após completar o teste
+      setTimeout(() => {
+        window.location.href = "/portal";
+      }, 3000);
       setResultado(data);
       setEtapa("finalizado");
       toast({
