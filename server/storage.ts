@@ -199,7 +199,7 @@ export class DatabaseStorage implements IStorage {
 
   // Department methods
   async getAllDepartamentos(): Promise<Departamento[]> {
-    return db.select().from(departamentos).orderBy(departamentos.nome);
+    return db.select().from(departamentos).orderBy(desc(departamentos.dataCriacao));
   }
 
   async getDepartamentosByEmpresa(empresaId: string): Promise<Departamento[]> {
@@ -224,7 +224,7 @@ export class DatabaseStorage implements IStorage {
   async updateDepartamento(id: string, departamento: Partial<InsertDepartamento>): Promise<Departamento | undefined> {
     const [updated] = await db
       .update(departamentos)
-      .set(departamento)
+      .set({ ...departamento, dataAtualizacao: new Date() })
       .where(eq(departamentos.id, id))
       .returning();
     return updated || undefined;

@@ -19,6 +19,8 @@ export const departamentos = pgTable("departamentos", {
   id: uuid("id").primaryKey().defaultRandom(),
   nome: varchar("nome", { length: 255 }).notNull(),
   empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
 });
 
 export const usuarios = pgTable("usuarios", {
