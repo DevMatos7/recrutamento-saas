@@ -95,6 +95,12 @@ export function Sidebar() {
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {
+      name: "Recomendações IA",
+      href: "/ai-recommendations",
+      icon: Brain,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+    },
+    {
       name: "Portal do Candidato",
       href: "/portal",
       icon: Globe,
