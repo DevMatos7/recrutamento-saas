@@ -332,8 +332,32 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCandidato(id: string): Promise<boolean> {
     try {
-      const [deleted] = await db.delete(candidatos).where(eq(candidatos.id, id)).returning();
-      return !!deleted;
+      // Use transaction to ensure all deletes succeed or fail together
+      await db.transaction(async (tx) => {
+        // Delete related records first to avoid foreign key constraints
+        // Delete DISC responses first (references avaliacoes)
+        await tx.execute(sql`DELETE FROM respostas_disc WHERE avaliacao_id IN (SELECT id FROM avaliacoes WHERE candidato_id = ${id})`);
+        
+        // Delete DISC evaluations
+        await tx.execute(sql`DELETE FROM avaliacoes WHERE candidato_id = ${id}`);
+        
+        // Delete pipeline entries
+        await tx.execute(sql`DELETE FROM vaga_candidatos WHERE candidato_id = ${id}`);
+        
+        // Delete test results
+        await tx.execute(sql`DELETE FROM testes_resultados WHERE candidato_id = ${id}`);
+        
+        // Delete interviews
+        await tx.execute(sql`DELETE FROM entrevistas WHERE candidato_id = ${id}`);
+        
+        // Delete communications
+        await tx.execute(sql`DELETE FROM comunicacoes WHERE candidato_id = ${id}`);
+        
+        // Finally delete the candidate
+        await tx.execute(sql`DELETE FROM candidatos WHERE id = ${id}`);
+      });
+      
+      return true;
     } catch (error) {
       console.error("Error deleting candidato:", error);
       return false;
