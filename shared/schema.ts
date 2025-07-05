@@ -148,6 +148,16 @@ export const entrevistas = pgTable("entrevistas", {
   dataHora: timestamp("data_hora").notNull(),
   local: varchar("local", { length: 255 }),
   status: varchar("status", { length: 20 }).notNull().default("agendada"), // agendada, realizada, cancelada, faltou
+  plataforma: varchar("plataforma", { length: 20 }), // zoom, meet, jitsi, presencial
+  linkEntrevista: varchar("link_entrevista", { length: 500 }),
+  confirmado: boolean("confirmado").default(false),
+  confirmadoCandidato: boolean("confirmado_candidato").default(false),
+  confirmadoEntrevistador: boolean("confirmado_entrevistador").default(false),
+  tokenConfirmacaoCandidato: varchar("token_confirmacao_candidato", { length: 100 }),
+  tokenConfirmacaoEntrevistador: varchar("token_confirmacao_entrevistador", { length: 100 }),
+  dataConfirmacaoCandidato: timestamp("data_confirmacao_candidato"),
+  dataConfirmacaoEntrevistador: timestamp("data_confirmacao_entrevistador"),
+  avaliacaoPosterior: jsonb("avaliacao_posterior"), // { notas, comentarios, avaliadorId, data }
   observacoes: text("observacoes"),
   dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
   dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
@@ -469,9 +479,6 @@ export const insertEntrevistaSchema = createInsertSchema(entrevistas).omit({
   id: true,
   dataCriacao: true,
   dataAtualizacao: true,
-}).extend({
-  status: z.enum(["agendada", "realizada", "cancelada", "faltou"]).default("agendada"),
-  dataHora: z.string().transform((str) => new Date(str)),
 });
 
 export type Entrevista = typeof entrevistas.$inferSelect;

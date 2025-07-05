@@ -2,8 +2,16 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { apiLimiter } from "./middleware/rate-limit.middleware";
+import cron from "node-cron";
+import { EntrevistaService } from "./services/entrevista-service";
+import { CommunicationService } from "./services/communication-service";
 
 const app = express();
+
+// Aplicar rate limiting global para APIs
+app.use("/api", apiLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -73,5 +81,56 @@ app.use((req, res, next) => {
     } catch (error) {
       console.error("Failed to seed database, but server will continue:", error);
     }
+
+    // Job de lembrete automático de entrevistas
+    cron.schedule("*/15 * * * *", async () => {
+      try {
+        const agora = new Date();
+        const entrevistas = await EntrevistaService.listarEntrevistas({ status: "agendada" }, { perfil: "admin" });
+        const communicationService = new CommunicationService();
+        for (const entrevista of entrevistas) {
+          if (!entrevista.dataHora) continue;
+          const dataEntrevista = new Date(entrevista.dataHora);
+          const diffMs = dataEntrevista.getTime() - agora.getTime();
+          const diffH = diffMs / (1000 * 60 * 60);
+          // Lembrete 24h antes
+          if (diffH > 23.5 && diffH < 24.5) {
+            if (!entrevista.confirmadoCandidato) {
+              const link = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/confirmar-presenca?id=${entrevista.id}&token=${entrevista.tokenConfirmacaoCandidato}&tipo=candidato`;
+              const mensagem = `Olá ${entrevista.candidato?.nome},\n\nLembrete: sua entrevista para a vaga "${entrevista.vaga?.titulo}" é amanhã às ${dataEntrevista.toLocaleString('pt-BR')}.\nPor favor, confirme sua presença: ${link}`;
+              if (entrevista.candidato?.email) {
+                await communicationService.enviarComunicacao('email', entrevista.candidato, mensagem, `Lembrete de Entrevista - ${entrevista.vaga?.titulo}`);
+              }
+            }
+            if (!entrevista.confirmadoEntrevistador) {
+              const link = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/confirmar-presenca?id=${entrevista.id}&token=${entrevista.tokenConfirmacaoEntrevistador}&tipo=entrevistador`;
+              const mensagem = `Olá ${entrevista.entrevistador?.nome},\n\nLembrete: você irá entrevistar "${entrevista.candidato?.nome}" amanhã às ${dataEntrevista.toLocaleString('pt-BR')} para a vaga "${entrevista.vaga?.titulo}".\nPor favor, confirme sua presença: ${link}`;
+              if (entrevista.entrevistador?.email) {
+                await communicationService.enviarComunicacao('email', entrevista.entrevistador, mensagem, `Lembrete de Entrevista - ${entrevista.vaga?.titulo}`);
+              }
+            }
+          }
+          // Lembrete 1h antes
+          if (diffH > 0.5 && diffH < 1.5) {
+            if (!entrevista.confirmadoCandidato) {
+              const link = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/confirmar-presenca?id=${entrevista.id}&token=${entrevista.tokenConfirmacaoCandidato}&tipo=candidato`;
+              const mensagem = `Olá ${entrevista.candidato?.nome},\n\nLembrete: sua entrevista para a vaga "${entrevista.vaga?.titulo}" é em 1 hora (${dataEntrevista.toLocaleString('pt-BR')}).\nPor favor, confirme sua presença: ${link}`;
+              if (entrevista.candidato?.email) {
+                await communicationService.enviarComunicacao('email', entrevista.candidato, mensagem, `Lembrete de Entrevista - ${entrevista.vaga?.titulo}`);
+              }
+            }
+            if (!entrevista.confirmadoEntrevistador) {
+              const link = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/confirmar-presenca?id=${entrevista.id}&token=${entrevista.tokenConfirmacaoEntrevistador}&tipo=entrevistador`;
+              const mensagem = `Olá ${entrevista.entrevistador?.nome},\n\nLembrete: você irá entrevistar "${entrevista.candidato?.nome}" em 1 hora (${dataEntrevista.toLocaleString('pt-BR')}) para a vaga "${entrevista.vaga?.titulo}".\nPor favor, confirme sua presença: ${link}`;
+              if (entrevista.entrevistador?.email) {
+                await communicationService.enviarComunicacao('email', entrevista.entrevistador, mensagem, `Lembrete de Entrevista - ${entrevista.vaga?.titulo}`);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro no job de lembrete de entrevistas:', err);
+      }
+    });
   });
 })();

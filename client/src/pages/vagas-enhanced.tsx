@@ -500,15 +500,14 @@ export default function VagasEnhancedPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-64">
-          <Card className="p-6">
-            <CardHeader>
-              <CardTitle className="text-red-600">Erro ao carregar vagas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Ocorreu um erro ao carregar as vagas. Tente novamente.</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="p-6">
+          <CardHeader>
+            <CardTitle className="text-red-600">Erro ao carregar vagas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Ocorreu um erro ao carregar as vagas. Tente novamente.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
