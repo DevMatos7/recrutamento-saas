@@ -2,6 +2,10 @@ import { eq, and, gte, desc, ne, lte } from "drizzle-orm";
 import { db } from "../db.js";
 import { entrevistas, candidatos, vagas, usuarios } from "../../shared/schema.js";
 import type { InsertEntrevista, Entrevista, Usuario } from "../../shared/schema.js";
+import { randomBytes } from "crypto";
+import { CommunicationService } from "./communication-service";
+
+const communicationService = new CommunicationService();
 
 export class EntrevistaServiceError extends Error {
   constructor(message: string, public code: string) {
@@ -150,14 +154,44 @@ export class EntrevistaService {
     this.validateDataFutura(entrevista.dataHora);
     await this.validateEntrevistaUnica(entrevista.vagaId, entrevista.candidatoId);
     
+    // Gerar tokens de confirmação
+    const tokenConfirmacaoCandidato = randomBytes(16).toString('hex');
+    const tokenConfirmacaoEntrevistador = randomBytes(16).toString('hex');
+    
     const [novaEntrevista] = await db.insert(entrevistas)
       .values({
         ...entrevista,
         dataCriacao: new Date(),
-        dataAtualizacao: new Date()
+        dataAtualizacao: new Date(),
+        tokenConfirmacaoCandidato,
+        tokenConfirmacaoEntrevistador
       })
       .returning();
     
+    // Enviar e-mail/WhatsApp para candidato e entrevistador
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const linkCandidato = `${frontendUrl}/confirmar-presenca?id=${novaEntrevista.id}&token=${tokenConfirmacaoCandidato}&tipo=candidato`;
+    const linkEntrevistador = `${frontendUrl}/confirmar-presenca?id=${novaEntrevista.id}&token=${tokenConfirmacaoEntrevistador}&tipo=entrevistador`;
+    // Buscar dados completos
+    const candidato = await db.query.candidatos.findFirst({ where: eq(candidatos.id, novaEntrevista.candidatoId) });
+    const entrevistador = await db.query.usuarios.findFirst({ where: eq(usuarios.id, novaEntrevista.entrevistadorId) });
+    const vaga = await db.query.vagas.findFirst({ where: eq(vagas.id, novaEntrevista.vagaId) });
+    const dataEntrevista = new Date(novaEntrevista.dataHora).toLocaleString('pt-BR');
+    // Mensagem padrão
+    const mensagemCandidato = `Olá ${candidato?.nome},\n\nSua entrevista para a vaga "${vaga?.titulo}" está agendada para ${dataEntrevista}.\n\nPor favor, confirme sua presença clicando no link: ${linkCandidato}`;
+    const mensagemEntrevistador = `Olá ${entrevistador?.nome},\n\nVocê está agendado para entrevistar o candidato "${candidato?.nome}" na vaga "${vaga?.titulo}" em ${dataEntrevista}.\n\nPor favor, confirme sua presença clicando no link: ${linkEntrevistador}`;
+    // E-mail para candidato
+    if (candidato?.email) {
+      await communicationService.enviarComunicacao('email', candidato, mensagemCandidato, `Entrevista agendada - ${vaga?.titulo}`);
+    }
+    // WhatsApp para candidato (se implementado)
+    // await communicationService.enviarComunicacao('whatsapp', candidato, mensagemCandidato);
+    // E-mail para entrevistador
+    if (entrevistador?.email) {
+      await communicationService.enviarComunicacao('email', entrevistador, mensagemEntrevistador, `Entrevista agendada - ${vaga?.titulo}`);
+    }
+    // WhatsApp para entrevistador (se implementado)
+    // await communicationService.enviarComunicacao('whatsapp', entrevistador, mensagemEntrevistador);
     return novaEntrevista;
   }
 
@@ -435,5 +469,144 @@ export class EntrevistaService {
     
     return stats;
   }
+
+  /**
+   * Buscar slots livres para agendamento inteligente
+   */
+  static async buscarSlotsLivres({ entrevistadorId, candidatoId, dataInicio, dataFim }: {
+    entrevistadorId: string;
+    candidatoId: string;
+    dataInicio: Date;
+    dataFim: Date;
+  }): Promise<{ inicio: Date; fim: Date }[]> {
+    // Buscar entrevistas do recrutador e candidato no período
+    const entrevistasRecrutador = await db.query.entrevistas.findMany({
+      where: and(
+        eq(entrevistas.entrevistadorId, entrevistadorId),
+        gte(entrevistas.dataHora, dataInicio),
+        lte(entrevistas.dataHora, dataFim),
+        eq(entrevistas.status, 'agendada')
+      )
+    });
+    const entrevistasCandidato = await db.query.entrevistas.findMany({
+      where: and(
+        eq(entrevistas.candidatoId, candidatoId),
+        gte(entrevistas.dataHora, dataInicio),
+        lte(entrevistas.dataHora, dataFim),
+        eq(entrevistas.status, 'agendada')
+      )
+    });
+    // Exemplo: slots de 1h das 8h às 18h
+    const slots: { inicio: Date; fim: Date }[] = [];
+    for (let dia = new Date(dataInicio); dia <= dataFim; dia.setDate(dia.getDate() + 1)) {
+      for (let hora = 8; hora < 18; hora++) {
+        const inicio = new Date(dia);
+        inicio.setHours(hora, 0, 0, 0);
+        const fim = new Date(inicio);
+        fim.setHours(hora + 1);
+        // Verifica conflito
+        const conflito = [...entrevistasRecrutador, ...entrevistasCandidato].some(e => {
+          const eInicio = new Date(e.dataHora);
+          const eFim = new Date(eInicio);
+          eFim.setHours(eInicio.getHours() + 1);
+          return (inicio < eFim && fim > eInicio);
+        });
+        if (!conflito) {
+          slots.push({ inicio: new Date(inicio), fim: new Date(fim) });
+        }
+      }
+    }
+    return slots;
+  }
+
+  /**
+   * Reagendar entrevista (marca como remarcado e salva histórico)
+   */
+  static async reagendarEntrevista(
+    id: string,
+    novaDataHora: Date,
+    usuarioLogado: Usuario
+  ): Promise<Entrevista | null> {
+    this.validateUserPermissions(usuarioLogado, 'edit');
+    const entrevista = await db.query.entrevistas.findFirst({ where: eq(entrevistas.id, id) });
+    if (!entrevista) throw new EntrevistaServiceError("Entrevista não encontrada", "INTERVIEW_NOT_FOUND");
+    this.validatePodeEditar(entrevista);
+    this.validateDataFutura(novaDataHora);
+    // Marcar como remarcado e atualizar data
+    const [atualizada] = await db.update(entrevistas)
+      .set({
+        dataHora: novaDataHora,
+        remarcado: true,
+        dataAtualizacao: new Date()
+      })
+      .where(eq(entrevistas.id, id))
+      .returning();
+    return atualizada || null;
+  }
+
+  /**
+   * Confirmar presença na entrevista
+   */
+  static async confirmarPresenca(id: string): Promise<Entrevista | null> {
+    const [atualizada] = await db.update(entrevistas)
+      .set({ confirmado: true, dataAtualizacao: new Date() })
+      .where(eq(entrevistas.id, id))
+      .returning();
+    return atualizada || null;
+  }
+
+  /**
+   * Registrar feedback pós-entrevista
+   */
+  static async registrarFeedback(
+    id: string,
+    avaliadorId: string,
+    notas: number,
+    comentarios: string
+  ): Promise<Entrevista | null> {
+    // Feedback obrigatório antes de liberar próxima etapa
+    const feedback = {
+      avaliadorId,
+      notas,
+      comentarios,
+      data: new Date()
+    };
+    const [atualizada] = await db.update(entrevistas)
+      .set({ avaliacaoPosterior: feedback, dataAtualizacao: new Date() })
+      .where(eq(entrevistas.id, id))
+      .returning();
+    return atualizada || null;
+  }
+
+  /**
+   * Gerar link de vídeo para entrevista (stub)
+   */
+  static async gerarLinkVideo(id: string, plataforma: string): Promise<string> {
+    // Aqui seria feita a integração real com Zoom/Meet/Jitsi
+    // Por enquanto, retorna um link fake
+    const link = `https://video.${plataforma}.com/room/${id}`;
+    await db.update(entrevistas)
+      .set({ linkEntrevista: link, plataforma, dataAtualizacao: new Date() })
+      .where(eq(entrevistas.id, id));
+    return link;
+  }
+
+  /**
+   * Integração futura: Google Calendar
+   * - Ao agendar, editar ou cancelar entrevista, sincronizar evento no Google Calendar do recrutador
+   * - Usar OAuth2 e API do Google
+   */
+  // static async sincronizarGoogleCalendar(entrevista: Entrevista, acao: 'criar' | 'editar' | 'cancelar') {
+  //   // Implementação futura
+  // }
+
+  /**
+   * Integração futura: Notificações (WhatsApp/Email)
+   * - Ao agendar, reagendar ou cancelar, enviar notificação para candidato e recrutador
+   * - Usar Twilio, Z-API ou serviço de email
+   */
+  // static async enviarNotificacao(entrevista: Entrevista, tipo: 'agendamento' | 'reagendamento' | 'cancelamento') {
+  //   // Implementação futura
+  // }
 }
 

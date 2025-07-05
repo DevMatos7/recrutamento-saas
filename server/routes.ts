@@ -8,8 +8,16 @@ import { EntrevistaService } from "./services/entrevista-service.js";
 import { z } from "zod";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { authLimiter, candidatePortalLimiter } from "./middleware/rate-limit.middleware";
+import multer from 'multer';
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
+import { HfInference } from '@huggingface/inference';
+import fs from 'fs';
 
 const scryptAsync = promisify(scrypt);
+const upload = multer({ dest: '/tmp' });
+const hf = new HfInference(process.env.HF_API_KEY || undefined);
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -508,14 +516,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { empresaId } = req.query;
       let candidatos;
-      
       if (empresaId) {
         candidatos = await storage.getCandidatosByEmpresa(empresaId as string);
       } else {
         candidatos = await storage.getAllCandidatos();
       }
-      
-      res.json(candidatos);
+      console.log('[DEBUG] Candidatos encontrados no banco:', candidatos.length);
+
+      // DECLARE AS VARIÁVEIS DE FILTRO AQUI, ANTES DE QUALQUER USO
+      const status = Array.isArray(req.query.status) ? req.query.status : req.query.status ? [req.query.status] : [];
+      const statusEtico = Array.isArray(req.query.statusEtico) ? req.query.statusEtico : req.query.statusEtico ? [req.query.statusEtico] : [];
+      const origem = Array.isArray(req.query.origem) ? req.query.origem : req.query.origem ? [req.query.origem] : [];
+      const perfilDisc = Array.isArray(req.query.perfilDisc) ? req.query.perfilDisc : req.query.perfilDisc ? [req.query.perfilDisc] : [];
+
+      const algumFiltro = status.length > 0 || statusEtico.length > 0 || origem.length > 0 || perfilDisc.length > 0;
+      if (!algumFiltro) {
+        // Nenhum filtro: retorna todos os candidatos
+        console.log('[DEBUG] Retornando candidatos:', candidatos.length);
+        return res.json(candidatos);
+      }
+      // Se houver filtro, aplica normalmente
+      const norm = (v) => (v || '').toString().trim().toLowerCase();
+      const arrNorm = (arr) => arr.map(norm);
+      if (status.length > 0) {
+        const statusNorm = arrNorm(status);
+        candidatos = candidatos.filter(c => statusNorm.includes(norm(c.status)));
+      }
+      if (statusEtico.length > 0) {
+        const statusEticoNorm = arrNorm(statusEtico);
+        candidatos = candidatos.filter(c => statusEticoNorm.includes(norm(c.statusEtico)));
+      }
+      if (origem.length > 0) {
+        const origemNorm = arrNorm(origem);
+        candidatos = candidatos.filter(c => origemNorm.includes(norm(c.origem)));
+      }
+      if (perfilDisc.length > 0) {
+        const perfilDiscNorm = arrNorm(perfilDisc);
+        candidatos = candidatos.filter(c => perfilDiscNorm.includes(norm(c.perfilDisc)));
+      }
+      console.log('[DEBUG] Retornando candidatos filtrados:', candidatos.length);
+      return res.json(candidatos);
     } catch (error) {
       next(error);
     }
@@ -951,6 +991,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =================== ENTREVISTAS ===================
+
+  // Buscar slots livres para agendamento inteligente
+  app.get("/api/entrevistas/slots-livres", requireAuth, async (req, res, next) => {
+    try {
+      const { entrevistadorId, candidatoId, dataInicio, dataFim } = req.query;
+      if (!entrevistadorId || !candidatoId || !dataInicio || !dataFim) {
+        return res.status(400).json({ message: "Parâmetros obrigatórios: entrevistadorId, candidatoId, dataInicio, dataFim" });
+      }
+      const slots = await EntrevistaService.buscarSlotsLivres({
+        entrevistadorId: String(entrevistadorId),
+        candidatoId: String(candidatoId),
+        dataInicio: new Date(String(dataInicio)),
+        dataFim: new Date(String(dataFim)),
+      });
+      res.json(slots);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reagendar entrevista
+  app.patch("/api/entrevistas/:id/reagendar", requireAuth, async (req, res, next) => {
+    try {
+      const { novaDataHora } = req.body;
+      if (!novaDataHora) return res.status(400).json({ message: "novaDataHora é obrigatório" });
+      const entrevista = await EntrevistaService.reagendarEntrevista(
+        req.params.id,
+        new Date(novaDataHora),
+        req.user
+      );
+      res.json(entrevista);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Confirmar presença
+  app.patch("/api/entrevistas/:id/confirmar", async (req, res, next) => {
+    try {
+      const entrevista = await EntrevistaService.confirmarPresenca(req.params.id);
+      res.json(entrevista);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Registrar feedback pós-entrevista
+  app.patch("/api/entrevistas/:id/feedback", requireAuth, async (req, res, next) => {
+    try {
+      const { notas, comentarios } = req.body;
+      if (notas === undefined || comentarios === undefined) {
+        return res.status(400).json({ message: "notas e comentarios são obrigatórios" });
+      }
+      const entrevista = await EntrevistaService.registrarFeedback(
+        req.params.id,
+        req.user.id,
+        notas,
+        comentarios
+      );
+      res.json(entrevista);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Gerar link de vídeo para entrevista
+  app.post("/api/entrevistas/:id/link-video", requireAuth, async (req, res, next) => {
+    try {
+      const { plataforma } = req.body;
+      if (!plataforma) return res.status(400).json({ message: "plataforma é obrigatória" });
+      const link = await EntrevistaService.gerarLinkVideo(req.params.id, plataforma);
+      res.json({ link });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Get all interviews with filters
   app.get("/api/entrevistas", requireAuth, async (req, res, next) => {
@@ -1392,7 +1508,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Candidate Portal routes
-  app.post("/api/candidate-portal/register", async (req, res, next) => {
+  app.post("/api/candidate-portal/register", candidatePortalLimiter, async (req, res, next) => {
+    // Força o uso do ID da empresa padrão GentePRO
+    req.body.empresaId = "98f2fed8-b7fb-44ab-ac53-7a51f1c9e6ff";
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1428,7 +1546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/candidate-portal/login", async (req, res, next) => {
+  app.post("/api/candidate-portal/login", authLimiter, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -1519,7 +1637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/candidate-portal/apply", requireCandidateAuth, async (req, res, next) => {
+  app.post("/api/candidate-portal/apply", candidatePortalLimiter, requireCandidateAuth, async (req, res, next) => {
     try {
       const { candidatePortalService } = await import('./services/candidate-portal-service');
       
@@ -2166,6 +2284,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao rejeitar candidatura:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Confirmação de presença via link/token
+  app.get("/api/entrevistas/:id/confirmar-presenca", async (req, res, next) => {
+    try {
+      const { token, tipo } = req.query;
+      const { id } = req.params;
+      if (!token || !tipo || !["candidato", "entrevistador"].includes(tipo)) {
+        return res.status(400).json({ message: "Token e tipo (candidato|entrevistador) são obrigatórios" });
+      }
+      const entrevista = await storage.getEntrevista(id);
+      if (!entrevista) {
+        return res.status(404).json({ message: "Entrevista não encontrada" });
+      }
+      if (tipo === "candidato") {
+        if (entrevista.tokenConfirmacaoCandidato !== token) {
+          return res.status(400).json({ message: "Token inválido para candidato" });
+        }
+        if (entrevista.confirmadoCandidato) {
+          return res.json({ message: "Presença já confirmada pelo candidato" });
+        }
+        await storage.updateEntrevista(id, {
+          confirmadoCandidato: true,
+          dataConfirmacaoCandidato: new Date()
+        });
+        return res.json({ message: "Presença confirmada com sucesso (candidato)!" });
+      } else {
+        if (entrevista.tokenConfirmacaoEntrevistador !== token) {
+          return res.status(400).json({ message: "Token inválido para entrevistador" });
+        }
+        if (entrevista.confirmadoEntrevistador) {
+          return res.json({ message: "Presença já confirmada pelo entrevistador" });
+        }
+        await storage.updateEntrevista(id, {
+          confirmadoEntrevistador: true,
+          dataConfirmacaoEntrevistador: new Date()
+        });
+        return res.json({ message: "Presença confirmada com sucesso (entrevistador)!" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Upload de currículo com extração automática
+  app.post('/api/curriculos/upload', requireAuth, upload.single('file'), async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Arquivo não enviado.' });
+      }
+      // Declarar campos no início
+      const campos = { nome: '', email: '', telefone: '', formacao: '', experiencia: '', cpf: '', linkedin: '' };
+      // Extrair texto do arquivo
+      let text = '';
+      if (req.file.mimetype === 'application/pdf') {
+        const pdfParse = (await import('pdf-parse')).default;
+        const dataBuffer = fs.readFileSync(req.file.path);
+        const data = await pdfParse(dataBuffer);
+        text = data.text;
+      } else if (
+        req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        req.file.mimetype === 'application/msword'
+      ) {
+        const data = await mammoth.extractRawText({ path: req.file.path });
+        text = data.value;
+      } else {
+        return res.status(400).json({ message: 'Formato de arquivo não suportado.' });
+      }
+      fs.unlinkSync(req.file.path); // Remove arquivo temporário
+
+      // Chamar modelo HuggingFace para NER em português
+      let nomeExtraido = '';
+      try {
+        const nerResult = await hf.tokenClassification({
+          model: 'pucpr/ner-bert-base-portuguese-cased',
+          inputs: text,
+        });
+        for (const ent of nerResult) {
+          if (ent.entity_group === 'PER') {
+            nomeExtraido += ent.word + ' ';
+          }
+        }
+      } catch (e) {
+        // fallback se modelo não funcionar
+      }
+      // Heurística: se não encontrou nome, pega a primeira linha grande
+      if (!nomeExtraido.trim()) {
+        const linhas = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 8 && !/telefone|e-mail|email|cpf|nasc|data/i.test(l));
+        if (linhas.length > 0) nomeExtraido = linhas[0];
+      }
+      campos.nome = nomeExtraido.trim();
+
+      // Regex para email (mais robusto)
+      const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+      if (emailMatch) campos.email = emailMatch[0];
+      // Regex para telefone (aceita formatos nacionais e internacionais)
+      const telMatch = text.match(/(\+\d{1,3}[\s-]?)?(\(?\d{2,3}\)?[\s-]?)?\d{4,5}[\s-]?\d{4}/g);
+      if (telMatch) campos.telefone = telMatch[0];
+      // Regex para CPF
+      const cpfMatch = text.match(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/);
+      if (cpfMatch) campos.cpf = cpfMatch[0];
+      // Regex para LinkedIn
+      const linkedinMatch = text.match(/https?:\/\/(www\.)?linkedin\.com\/[a-zA-Z0-9\-_/]+/);
+      if (linkedinMatch) campos.linkedin = linkedinMatch[0];
+
+      // Formação: bloco entre "FORMAÇÃO" e próximo título
+      let formacaoBloco = '';
+      const formacaoRegex = /FORMA[ÇC][AÃ]O[\s\S]*?(?=\n[A-Z][A-ZÇÃÕÉÍÓÚÂÊÎÔÛÀÈÌÒÙÜ\s]{4,}|$)/i;
+      const formacaoMatch = text.match(formacaoRegex);
+      if (formacaoMatch) formacaoBloco = formacaoMatch[0];
+      if (!formacaoBloco) {
+        // fallback: busca por palavras-chave
+        const formacaoMatch2 = text.match(/(Formação|Educação|Graduação|Ensino Superior|Universidade|Faculdade|Bacharelado|Licenciatura|Tecnólogo)[\s\S]{0,400}/i);
+        if (formacaoMatch2) formacaoBloco = formacaoMatch2[0];
+      }
+      campos.formacao = formacaoBloco.trim();
+
+      // Experiência: bloco entre "EXPERIÊNCIA" e próximo título
+      let expBloco = '';
+      const expRegex = /EXPERI[ÊE]NCIA[\s\S]*?(?=\n[A-Z][A-ZÇÃÕÉÍÓÚÂÊÎÔÛÀÈÌÒÙÜ\s]{4,}|$)/i;
+      const expMatch = text.match(expRegex);
+      if (expMatch) expBloco = expMatch[0];
+      if (!expBloco) {
+        // fallback: busca por palavras-chave
+        const expMatch2 = text.match(/(Experiência|Atuação|Histórico Profissional|Emprego|Trabalho|Cargo)[\s\S]{0,600}/i);
+        if (expMatch2) expBloco = expMatch2[0];
+      }
+      campos.experiencia = expBloco.trim();
+
+      // Limpar nome
+      campos.nome = campos.nome.trim();
+
+      // Se nenhum campo relevante foi extraído, sinalizar
+      const nenhumDadoExtraido = !campos.nome && !campos.email && !campos.telefone && !campos.formacao && !campos.experiencia;
+      if (nenhumDadoExtraido) {
+        return res.json({ nenhumDadoExtraido: true });
+      }
+
+      return res.json(campos);
+    } catch (error) {
+      next(error);
     }
   });
 
