@@ -10,7 +10,6 @@ import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { authLimiter, candidatePortalLimiter } from "./middleware/rate-limit.middleware";
 import multer from 'multer';
-import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import { HfInference } from '@huggingface/inference';
 import fs from 'fs';
@@ -2340,89 +2339,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extrair texto do arquivo
       let text = '';
       if (req.file.mimetype === 'application/pdf') {
-        const pdfParse = (await import('pdf-parse')).default;
-        const dataBuffer = fs.readFileSync(req.file.path);
-        const data = await pdfParse(dataBuffer);
-        text = data.text;
+        try {
+          const pdfParse = (await import('pdf-parse')).default;
+          const dataBuffer = fs.readFileSync(req.file.path);
+          const data = await pdfParse(dataBuffer);
+          text = data.text;
+        } catch (error) {
+          console.error('Erro ao processar PDF:', error);
+          return res.status(400).json({ message: 'Erro ao processar arquivo PDF.' });
+        }
       } else if (
         req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         req.file.mimetype === 'application/msword'
       ) {
-        const data = await mammoth.extractRawText({ path: req.file.path });
-        text = data.value;
+        try {
+          const data = await mammoth.extractRawText({ path: req.file.path });
+          text = data.value;
+        } catch (error) {
+          console.error('Erro ao processar DOCX:', error);
+          return res.status(400).json({ message: 'Erro ao processar arquivo DOCX.' });
+        }
+      } else if (req.file.mimetype === 'text/plain') {
+        // Aceitar arquivos de texto para testes
+        try {
+          text = fs.readFileSync(req.file.path, 'utf-8');
+        } catch (error) {
+          console.error('Erro ao processar arquivo de texto:', error);
+          return res.status(400).json({ message: 'Erro ao processar arquivo de texto.' });
+        }
       } else {
         return res.status(400).json({ message: 'Formato de arquivo não suportado.' });
       }
       fs.unlinkSync(req.file.path); // Remove arquivo temporário
 
-      // Chamar modelo HuggingFace para NER em português
-      let nomeExtraido = '';
-      try {
-        const nerResult = await hf.tokenClassification({
-          model: 'pucpr/ner-bert-base-portuguese-cased',
-          inputs: text,
-        });
-        for (const ent of nerResult) {
-          if (ent.entity_group === 'PER') {
-            nomeExtraido += ent.word + ' ';
-          }
-        }
-      } catch (e) {
-        // fallback se modelo não funcionar
-      }
-      // Heurística: se não encontrou nome, pega a primeira linha grande
-      if (!nomeExtraido.trim()) {
-        const linhas = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 8 && !/telefone|e-mail|email|cpf|nasc|data/i.test(l));
-        if (linhas.length > 0) nomeExtraido = linhas[0];
-      }
-      campos.nome = nomeExtraido.trim();
+      // LOG do texto extraído para debug
+      console.log('[DEBUG] Texto extraído do currículo:', text);
 
-      // Regex para email (mais robusto)
-      const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
-      if (emailMatch) campos.email = emailMatch[0];
-      // Regex para telefone (aceita formatos nacionais e internacionais)
-      const telMatch = text.match(/(\+\d{1,3}[\s-]?)?(\(?\d{2,3}\)?[\s-]?)?\d{4,5}[\s-]?\d{4}/g);
+      // CPF: aceita prefixos e espaços
+      let cpfMatch = text.match(/CPF[:\s.]*([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})/i);
+      if (cpfMatch) campos.cpf = cpfMatch[1];
+      else {
+        // fallback: qualquer CPF no texto
+        const cpfFallback = text.replace(/\s+/g, '').match(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/);
+        if (cpfFallback) campos.cpf = cpfFallback[0];
+      }
+      // Data de Nascimento: aceita prefixo
+      const nascMatch = text.match(/Data de Nascimento[:\s]*([0-9]{2}\/[0-9]{2}\/[0-9]{4})/i);
+      if (nascMatch) campos.dataNascimento = nascMatch[1];
+      // E-mail: aceita prefixo e fallback global
+      let emailMatch = text.match(/E-?mail[:\s]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+      if (emailMatch) campos.email = emailMatch[1];
+      else {
+        // fallback: qualquer e-mail no texto
+        const emailFallback = text.replace(/\s+/g, '').match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+        if (emailFallback) campos.email = emailFallback[0];
+      }
+      // Regex para telefone: buscar linhas com 'Telefone' ou 'Tel' prioritariamente
+      let telMatch = null;
+      const telLinha = text.split(/\r?\n/).find(l => /tel|telefone/i.test(l));
+      if (telLinha) {
+        telMatch = telLinha.match(/(\+\d{1,3}[\s-]?)?(\(?\d{2,3}\)?[\s-]?)?\d{4,5}[\s-]?\d{4}/g);
+      }
+      if (!telMatch) {
+        telMatch = text.match(/(\+\d{1,3}[\s-]?)?(\(?\d{2,3}\)?[\s-]?)?\d{4,5}[\s-]?\d{4}/g);
+      }
       if (telMatch) campos.telefone = telMatch[0];
-      // Regex para CPF
-      const cpfMatch = text.match(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/);
-      if (cpfMatch) campos.cpf = cpfMatch[0];
       // Regex para LinkedIn
       const linkedinMatch = text.match(/https?:\/\/(www\.)?linkedin\.com\/[a-zA-Z0-9\-_/]+/);
       if (linkedinMatch) campos.linkedin = linkedinMatch[0];
 
-      // Formação: bloco entre "FORMAÇÃO" e próximo título
+      // Formação: bloco entre 'FORMAÇÃO', 'ESCOLARIDADE' e próximo título
       let formacaoBloco = '';
-      const formacaoRegex = /FORMA[ÇC][AÃ]O[\s\S]*?(?=\n[A-Z][A-ZÇÃÕÉÍÓÚÂÊÎÔÛÀÈÌÒÙÜ\s]{4,}|$)/i;
+      const formacaoRegex = /(FORMA[ÇC][AÃ]O|ESCOLARIDADE)[\s\S]*?(?=\n[A-Z][A-ZÇÃÕÉÍÓÚÂÊÎÔÛÀÈÌÒÙÜ\s]{4,}|$)/i;
       const formacaoMatch = text.match(formacaoRegex);
       if (formacaoMatch) formacaoBloco = formacaoMatch[0];
       if (!formacaoBloco) {
         // fallback: busca por palavras-chave
-        const formacaoMatch2 = text.match(/(Formação|Educação|Graduação|Ensino Superior|Universidade|Faculdade|Bacharelado|Licenciatura|Tecnólogo)[\s\S]{0,400}/i);
+        const formacaoMatch2 = text.match(/(Formação|Educação|Graduação|Ensino Superior|Universidade|Faculdade|Bacharelado|Licenciatura|Tecnólogo|Escolaridade)[\s\S]{0,400}/i);
         if (formacaoMatch2) formacaoBloco = formacaoMatch2[0];
       }
       campos.formacao = formacaoBloco.trim();
 
-      // Experiência: bloco entre "EXPERIÊNCIA" e próximo título
+      // Experiência: bloco entre 'EXPERIÊNCIA', 'EXPERIÊNCIAS PROFISSIONAIS' e próximo título
       let expBloco = '';
-      const expRegex = /EXPERI[ÊE]NCIA[\s\S]*?(?=\n[A-Z][A-ZÇÃÕÉÍÓÚÂÊÎÔÛÀÈÌÒÙÜ\s]{4,}|$)/i;
+      const expRegex = /(EXPERI[ÊE]NCIA(S)?( PROFISSIONAIS)?)[\s\S]*?(?=\n[A-Z][A-ZÇÃÕÉÍÓÚÂÊÎÔÛÀÈÌÒÙÜ\s]{4,}|$)/i;
       const expMatch = text.match(expRegex);
       if (expMatch) expBloco = expMatch[0];
       if (!expBloco) {
         // fallback: busca por palavras-chave
-        const expMatch2 = text.match(/(Experiência|Atuação|Histórico Profissional|Emprego|Trabalho|Cargo)[\s\S]{0,600}/i);
+        const expMatch2 = text.match(/(Experiência|Experiências Profissionais|Atuação|Histórico Profissional|Emprego|Trabalho|Cargo)[\s\S]{0,600}/i);
         if (expMatch2) expBloco = expMatch2[0];
       }
       campos.experiencia = expBloco.trim();
 
-      // Limpar nome
       campos.nome = campos.nome.trim();
 
-      // Se nenhum campo relevante foi extraído, sinalizar
       const nenhumDadoExtraido = !campos.nome && !campos.email && !campos.telefone && !campos.formacao && !campos.experiencia;
+      if (!text.trim() && req.file.mimetype === 'application/pdf') {
+        return res.status(400).json({ message: 'O PDF enviado não contém texto extraível. Provavelmente é um arquivo escaneado. Use um PDF gerado digitalmente.' });
+      }
       if (nenhumDadoExtraido) {
         return res.json({ nenhumDadoExtraido: true });
       }
-
       return res.json(campos);
     } catch (error) {
       next(error);
