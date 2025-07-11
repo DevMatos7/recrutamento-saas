@@ -520,3 +520,45 @@ export const insertUserSchema = insertUsuarioSchema.pick({
   email: true,
   password: true,
 });
+
+export const vagaAuditoria = pgTable('vaga_auditoria', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  vagaId: uuid('vaga_id').notNull().references(() => vagas.id),
+  usuarioId: uuid('usuario_id').notNull().references(() => usuarios.id),
+  acao: varchar('acao', { length: 32 }).notNull(),
+  data: timestamp('data').notNull().defaultNow(),
+  detalhes: text('detalhes'),
+});
+
+export const pipelineEtapas = pgTable("pipeline_etapas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nome: varchar("nome", { length: 100 }).notNull(),
+  ordem: integer("ordem").notNull(),
+  cor: varchar("cor", { length: 10 }).default("#df7826"),
+  empresaId: uuid("empresa_id").references(() => empresas.id),
+  vagaId: uuid("vaga_id").references(() => vagas.id),
+  camposObrigatorios: jsonb("campos_obrigatorios").default([]),
+  responsaveis: jsonb("responsaveis").default([]), // NOVO: array de UUIDs de usuários
+});
+
+export const insertPipelineEtapaSchema = createInsertSchema(pipelineEtapas).omit({
+  id: true,
+});
+
+export type PipelineEtapa = typeof pipelineEtapas.$inferSelect;
+export type InsertPipelineEtapa = z.infer<typeof insertPipelineEtapaSchema>;
+
+export const pipelineAuditoria = pgTable('pipeline_auditoria', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  vagaId: uuid('vaga_id').notNull().references(() => vagas.id),
+  candidatoId: uuid('candidato_id').notNull().references(() => candidatos.id),
+  usuarioId: uuid('usuario_id').notNull().references(() => usuarios.id),
+  acao: varchar('acao', { length: 32 }).notNull(),
+  etapaAnterior: varchar('etapa_anterior', { length: 50 }),
+  etapaNova: varchar('etapa_nova', { length: 50 }),
+  nota: varchar('nota', { length: 10 }),
+  comentarios: text('comentarios'),
+  dataMovimentacao: timestamp('data_movimentacao').defaultNow().notNull(),
+  ip: varchar('ip', { length: 64 }),
+  detalhes: jsonb('detalhes'),
+});

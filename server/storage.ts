@@ -9,6 +9,7 @@ import {
   testesResultados,
   entrevistas,
   comunicacoes,
+  pipelineEtapas,
   type Empresa, 
   type InsertEmpresa,
   type Departamento, 
@@ -28,7 +29,10 @@ import {
   type Entrevista,
   type InsertEntrevista,
   type Comunicacao,
-  type InsertComunicacao
+  type InsertComunicacao,
+  vagaAuditoria,
+  type PipelineEtapa,
+  type InsertPipelineEtapa
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, asc, lte, isNull, sql } from "drizzle-orm";
@@ -133,6 +137,13 @@ export interface IStorage {
   getAnaliseTestesVaga(vagaId: string, empresaId: string): Promise<any>;
   getAnaliseOrigens(empresaId: string): Promise<any>;
   getTemposPorEtapa(empresaId: string): Promise<any>;
+  
+  // Pipeline etapas methods
+  getEtapasByVaga(vagaId: string): Promise<PipelineEtapa[]>;
+  createEtapa(etapa: InsertPipelineEtapa): Promise<PipelineEtapa>;
+  updateEtapa(id: string, etapa: Partial<InsertPipelineEtapa>): Promise<PipelineEtapa | undefined>;
+  deleteEtapa(id: string): Promise<boolean>;
+  reorderEtapas(vagaId: string, etapas: {id: string, ordem: number}[]): Promise<void>;
   
   sessionStore: any;
 }
@@ -313,7 +324,15 @@ export class DatabaseStorage implements IStorage {
 
   async getCandidato(id: string): Promise<Candidato | undefined> {
     const [candidato] = await db.select().from(candidatos).where(eq(candidatos.id, id));
-    return candidato || undefined;
+    if (!candidato) return undefined;
+    return {
+      ...candidato,
+      experienciaProfissional: candidato.experienciaProfissional || [],
+      educacao: candidato.educacao || [],
+      habilidades: candidato.habilidades || [],
+      idiomas: candidato.idiomas || [],
+      certificacoes: candidato.certificacoes || [],
+    };
   }
 
   async createCandidato(candidato: InsertCandidato): Promise<Candidato> {
@@ -438,15 +457,15 @@ export class DatabaseStorage implements IStorage {
   // Pipeline specific methods
   async getPipelineByVaga(vagaId: string): Promise<any> {
     const candidatos = await this.getCandidatosByVaga(vagaId);
+    const etapas = await this.getEtapasByVaga(vagaId);
     
-    const pipeline = {
-      recebido: candidatos.filter(c => c.etapa === 'recebido'),
-      triagem: candidatos.filter(c => c.etapa === 'triagem'),
-      entrevista: candidatos.filter(c => c.etapa === 'entrevista'),
-      avaliacao: candidatos.filter(c => c.etapa === 'avaliacao'),
-      aprovado: candidatos.filter(c => c.etapa === 'aprovado'),
-      reprovado: candidatos.filter(c => c.etapa === 'reprovado'),
-    };
+    // Criar objeto pipeline agrupando candidatos por id da etapa personalizada
+    const pipeline: any = {};
+    
+    // Para cada etapa personalizada, criar uma chave com o id da etapa
+    etapas.forEach(etapa => {
+      pipeline[etapa.id] = candidatos.filter(c => c.etapa === etapa.id);
+    });
     
     return pipeline;
   }
@@ -756,6 +775,41 @@ export class DatabaseStorage implements IStorage {
   async getTemposPorEtapa(empresaId: string): Promise<any> {
     const { analyticsService } = await import('./services/analytics-service');
     return await analyticsService.getTemposPorEtapa(empresaId);
+  }
+
+  async createVagaAuditoria(auditoria: { vagaId: string, usuarioId: string, acao: string, detalhes: string | null }) {
+    const [registro] = await db.insert(vagaAuditoria).values(auditoria).returning();
+    return registro;
+  }
+
+  async getAuditoriaByVaga(vagaId: string) {
+    return db.select().from(vagaAuditoria).where(eq(vagaAuditoria.vagaId, vagaId)).orderBy(desc(vagaAuditoria.data));
+  }
+
+  // Pipeline etapas methods
+  async getEtapasByVaga(vagaId: string): Promise<PipelineEtapa[]> {
+    return db.select().from(pipelineEtapas).where(eq(pipelineEtapas.vagaId, vagaId)).orderBy(pipelineEtapas.ordem);
+  }
+
+  async createEtapa(etapa: InsertPipelineEtapa): Promise<PipelineEtapa> {
+    const [created] = await db.insert(pipelineEtapas).values(etapa).returning();
+    return created;
+  }
+
+  async updateEtapa(id: string, etapa: Partial<InsertPipelineEtapa>): Promise<PipelineEtapa | undefined> {
+    const [updated] = await db.update(pipelineEtapas).set(etapa).where(eq(pipelineEtapas.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteEtapa(id: string): Promise<boolean> {
+    const deleted = await db.delete(pipelineEtapas).where(eq(pipelineEtapas.id, id)).returning();
+    return deleted.length > 0;
+  }
+
+  async reorderEtapas(vagaId: string, etapas: {id: string, ordem: number}[]): Promise<void> {
+    for (const etapa of etapas) {
+      await db.update(pipelineEtapas).set({ ordem: etapa.ordem }).where(eq(pipelineEtapas.id, etapa.id));
+    }
   }
 }
 

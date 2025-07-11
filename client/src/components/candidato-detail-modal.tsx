@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { User, Mail, Phone, MapPin, DollarSign, Briefcase, GraduationCap, Languages, Award, Shield, CheckCircle, XCircle, Clock, Brain } from "lucide-react";
+import { useCandidato } from "@/pages/candidatos/hooks/useCandidatos";
 
 interface CandidatoDetailModalProps {
   isOpen: boolean;
@@ -13,10 +14,7 @@ interface CandidatoDetailModalProps {
 }
 
 export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: CandidatoDetailModalProps) {
-  const { data: candidato, isLoading } = useQuery({
-    queryKey: ['/api/candidatos', candidatoId],
-    enabled: !!candidatoId && isOpen,
-  });
+  const { data: candidato, isLoading } = useCandidato(candidatoId || "");
 
   // Query para buscar dados DISC do candidato
   const { data: resultadoDisc } = useQuery({
@@ -376,7 +374,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {(candidato as any)?.experienciaProfissional && Array.isArray((candidato as any)?.experienciaProfissional) && (candidato as any)?.experienciaProfissional.length > 0 ? (
+                {Array.isArray((candidato as any)?.experienciaProfissional) && (candidato as any)?.experienciaProfissional.length > 0 ? (
                   <div className="space-y-4">
                     {(candidato as any)?.experienciaProfissional.map((exp: any, index: number) => (
                       <div key={index} className="border-l-4 border-blue-200 pl-4 py-2">
@@ -404,7 +402,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {(candidato as any)?.educacao && Array.isArray((candidato as any)?.educacao) && (candidato as any)?.educacao.length > 0 ? (
+                {Array.isArray((candidato as any)?.educacao) && (candidato as any)?.educacao.length > 0 ? (
                   <div className="space-y-3">
                     {(candidato as any)?.educacao.map((edu: any, index: number) => (
                       <div key={index} className="border-l-4 border-green-200 pl-4 py-2">
@@ -452,7 +450,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {(candidato as any)?.idiomas && Array.isArray((candidato as any)?.idiomas) && (candidato as any)?.idiomas.length > 0 ? (
+                {Array.isArray((candidato as any)?.idiomas) && (candidato as any)?.idiomas.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(candidato as any)?.idiomas.map((idioma: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
@@ -476,7 +474,7 @@ export function CandidatoDetailModal({ isOpen, onClose, candidatoId }: Candidato
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {(candidato as any)?.certificacoes && Array.isArray((candidato as any)?.certificacoes) && (candidato as any)?.certificacoes.length > 0 ? (
+                {Array.isArray((candidato as any)?.certificacoes) && (candidato as any)?.certificacoes.length > 0 ? (
                   <div className="space-y-3">
                     {(candidato as any)?.certificacoes.map((cert: any, index: number) => (
                       <div key={index} className="border-l-4 border-yellow-200 pl-4 py-2">

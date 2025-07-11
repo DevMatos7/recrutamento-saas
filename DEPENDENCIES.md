@@ -47,67 +47,99 @@ git --version
 ## Dependências de Produção (package.json)
 
 ### Framework Principal
-- **express:** ^4.18.0 - Servidor web
-- **react:** ^18.2.0 - Interface do usuário  
-- **react-dom:** ^18.2.0 - Renderização React
-- **typescript:** ^5.0.0 - Tipagem estática
+- **express:** ^4.21.2 - Servidor web
+- **react:** ^18.3.1 - Interface do usuário  
+- **react-dom:** ^18.3.1 - Renderização React
+- **typescript:** ^5.6.3 - Tipagem estática
 
 ### Banco de Dados
-- **drizzle-orm:** ^0.29.0 - ORM principal
-- **@neondatabase/serverless:** ^0.7.0 - Driver PostgreSQL
-- **drizzle-kit:** ^0.20.0 - Migrations e schema
+- **drizzle-orm:** ^0.39.1 - ORM principal
+- **@neondatabase/serverless:** ^0.10.4 - Driver PostgreSQL
+- **drizzle-kit:** ^0.30.4 - Migrations e schema
 
 ### Autenticação e Segurança
 - **passport:** ^0.7.0 - Sistema de autenticação
 - **passport-local:** ^1.0.0 - Estratégia local
-- **bcrypt:** ^5.1.0 - Hash de senhas
-- **express-session:** ^1.17.3 - Gerenciamento de sessões
-- **connect-pg-simple:** ^9.0.0 - Store de sessões PostgreSQL
+- **bcrypt:** ^6.0.0 - Hash de senhas
+- **express-session:** ^1.18.1 - Gerenciamento de sessões
+- **connect-pg-simple:** ^10.0.0 - Store de sessões PostgreSQL
+- **express-rate-limit:** ^7.5.1 - Rate limiting para APIs
 
 ### Interface do Usuário
-- **@radix-ui/react-*:** ^1.0.0 - Componentes primitivos
-- **tailwindcss:** ^3.3.0 - Framework CSS
-- **lucide-react:** ^0.292.0 - Ícones
-- **framer-motion:** ^10.16.0 - Animações
+- **@radix-ui/react-*:** ^1.2.4 - Componentes primitivos
+- **tailwindcss:** ^3.4.17 - Framework CSS
+- **lucide-react:** ^0.453.0 - Ícones
+- **framer-motion:** ^11.13.1 - Animações
+- **react-color:** ^2.19.3 - Seletor de cores
+- **react-select:** ^5.10.1 - Componente de seleção
+
+### Drag and Drop e Interatividade
+- **@hello-pangea/dnd:** ^18.0.1 - Drag and drop para pipeline
+- **react-beautiful-dnd:** ^13.1.1 - Drag and drop (legacy)
 
 ### Validação e Formulários
-- **zod:** ^3.22.0 - Validação de schemas
-- **react-hook-form:** ^7.47.0 - Formulários
-- **@hookform/resolvers:** ^3.3.0 - Resolvers Zod
+- **zod:** ^3.25.69 - Validação de schemas
+- **react-hook-form:** ^7.55.0 - Formulários
+- **@hookform/resolvers:** ^3.10.0 - Resolvers Zod
 
 ### Estado e API
-- **@tanstack/react-query:** ^5.0.0 - Cache e estado server
-- **wouter:** ^3.0.0 - Roteamento client-side
+- **@tanstack/react-query:** ^5.60.5 - Cache e estado server
+- **wouter:** ^3.3.5 - Roteamento client-side
 
 ### Integrações Externas
-- **openai:** ^4.20.0 - API OpenAI para IA
-- **@sendgrid/mail:** ^8.0.0 - Envio de emails
-- **nodemailer:** ^6.9.0 - SMTP alternativo
+- **openai:** ^5.7.0 - API OpenAI para IA
+- **@sendgrid/mail:** ^8.1.5 - Envio de emails
+- **nodemailer:** ^7.0.3 - SMTP alternativo
+- **@huggingface/inference:** ^4.3.2 - APIs de IA
+
+### Processamento de Arquivos
+- **multer:** ^2.0.1 - Upload de arquivos
+- **pdf-parse:** ^1.1.1 - Extração de texto de PDFs
+- **mammoth:** ^1.9.1 - Processamento de documentos Word
+- **exceljs:** ^4.4.0 - Geração de relatórios Excel
 
 ### Utilitários
-- **date-fns:** ^2.30.0 - Manipulação de datas
-- **nanoid:** ^5.0.0 - IDs únicos
-- **clsx:** ^2.0.0 - Manipulação classes CSS
+- **date-fns:** ^3.6.0 - Manipulação de datas
+- **nanoid:** ^5.1.5 - IDs únicos
+- **clsx:** ^2.1.1 - Manipulação classes CSS
+- **class-variance-authority:** ^0.7.1 - Variantes de componentes
+- **tailwind-merge:** ^2.6.0 - Merge de classes Tailwind
+
+### Agendamento e Tarefas
+- **node-cron:** ^4.2.0 - Agendamento de tarefas
+- **ws:** ^8.18.0 - WebSockets
 
 ## Dependências de Desenvolvimento
 
 ### Build e Bundle
-- **vite:** ^5.0.0 - Build tool e dev server
-- **@vitejs/plugin-react:** ^4.1.0 - Plugin React para Vite
-- **esbuild:** ^0.19.0 - Bundler JavaScript
+- **vite:** ^5.4.14 - Build tool e dev server
+- **@vitejs/plugin-react:** ^4.3.2 - Plugin React para Vite
+- **esbuild:** ^0.25.0 - Bundler JavaScript
+- **tsx:** ^4.19.1 - Executor TypeScript
 
 ### TypeScript
-- **@types/node:** ^20.8.0 - Tipos Node.js
-- **@types/react:** ^18.2.0 - Tipos React
-- **@types/react-dom:** ^18.2.0 - Tipos React DOM
-- **@types/express:** ^4.17.0 - Tipos Express
-- **@types/passport:** ^1.0.0 - Tipos Passport
-- **@types/bcrypt:** ^5.0.0 - Tipos bcrypt
+- **@types/node:** ^20.16.11 - Tipos Node.js
+- **@types/react:** ^18.3.11 - Tipos React
+- **@types/react-dom:** ^18.3.1 - Tipos React DOM
+- **@types/express:** ^4.17.21 - Tipos Express
+- **@types/passport:** ^1.0.16 - Tipos Passport
+- **@types/bcrypt:** ^5.0.2 - Tipos bcrypt
+- **@types/express-session:** ^1.18.0 - Tipos Express Session
+- **@types/connect-pg-simple:** ^7.0.3 - Tipos Connect PG Simple
+- **@types/passport-local:** ^1.0.38 - Tipos Passport Local
+- **@types/react-color:** ^3.0.13 - Tipos React Color
+- **@types/react-big-calendar:** ^1.16.2 - Tipos React Big Calendar
+- **@types/ws:** ^8.5.13 - Tipos WebSocket
 
 ### CSS e Styling
-- **@tailwindcss/typography:** ^0.5.0 - Plugin tipografia
-- **autoprefixer:** ^10.4.0 - Prefixos CSS automáticos
-- **postcss:** ^8.4.0 - Processador CSS
+- **@tailwindcss/typography:** ^0.5.15 - Plugin tipografia
+- **@tailwindcss/vite:** ^4.1.3 - Plugin Tailwind para Vite
+- **autoprefixer:** ^10.4.20 - Prefixos CSS automáticos
+- **postcss:** ^8.4.47 - Processador CSS
+- **tailwindcss-animate:** ^1.0.7 - Animações Tailwind
+
+### Testes e Debugging
+- **axios:** ^1.10.0 - Cliente HTTP para testes
 
 ## Variáveis de Ambiente Necessárias
 
@@ -122,6 +154,7 @@ NODE_ENV="development"
 ```env
 OPENAI_API_KEY="sk-..."           # Para recomendações IA
 SENDGRID_API_KEY="SG...."        # Para emails via SendGrid
+HF_API_KEY="hf_..."              # Para APIs Hugging Face
 ```
 
 ## Portas Utilizadas
@@ -199,58 +232,67 @@ npm run dev
 
 ### Mínimo
 - **RAM:** 4GB
-- **Processador:** Dual-core 2.0GHz
-- **Armazenamento:** 2GB livres
-- **Rede:** Conexão à internet (para APIs externas)
+- **CPU:** 2 cores
+- **Disco:** 10GB livre
+- **Rede:** Conexão estável à internet
 
 ### Recomendado
 - **RAM:** 8GB+
-- **Processador:** Quad-core 2.5GHz+
-- **Armazenamento:** 5GB+ livres
-- **SSD:** Para melhor performance do banco
+- **CPU:** 4 cores+
+- **Disco:** 20GB+ livre (SSD)
+- **Rede:** Conexão de alta velocidade
 
-## Troubleshooting Comum
+## Funcionalidades Adicionadas Recentemente
 
-### Erro: "node: command not found"
-- Reinicie o terminal após instalar Node.js
-- Verifique se Node.js está no PATH
-- No Windows, pode ser necessário reiniciar o computador
+### Pipeline de Candidatos
+- **Drag and Drop:** Interface Kanban para movimentação de candidatos
+- **Etapas Personalizáveis:** Configuração de cores, responsáveis e campos obrigatórios
+- **Rate Limiting:** Proteção contra spam e ataques
+- **Seletor de Cores:** Interface visual para personalização de etapas
 
-### Erro: "psql: command not found"
-- PostgreSQL não está no PATH
-- No Windows, adicione `C:\Program Files\PostgreSQL\xx\bin` ao PATH
-- No Linux, instale com o gerenciador de pacotes
+### Dependências Específicas do Pipeline
+- **@hello-pangea/dnd:** Drag and drop moderno
+- **react-color:** Seletor de cores para etapas
+- **react-select:** Seleção múltipla de responsáveis
+- **express-rate-limit:** Proteção da API
 
-### Erro: "npm install" falha
-- Limpe o cache: `npm cache clean --force`
-- Delete `node_modules` e `package-lock.json`
-- Execute `npm install` novamente
+## Troubleshooting
 
-### Erro de conexão com banco
-- Verifique se PostgreSQL está rodando
-- Confirme credenciais no arquivo `.env`
-- Teste conexão: `psql -U user -d database -h localhost`
+### Problemas Comuns
 
-## APIs Externas (Opcionais)
+1. **Erro de Rate Limiting (429)**
+   - Ajuste os limites em `server/middleware/rate-limit.middleware.ts`
+   - Reinicie o servidor após alterações
 
-### OpenAI
-- **Necessário para:** Recomendações inteligentes e análises IA
-- **Como obter:** https://platform.openai.com/api-keys
-- **Custo:** Pay-per-use (aproximadamente $0.001-0.03 por requisição)
+2. **Dependências não encontradas**
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
 
-### SendGrid
-- **Necessário para:** Envio de emails em produção
-- **Como obter:** https://sendgrid.com/
-- **Alternativas:** Configuração SMTP personalizada (gratuita)
+3. **Erro de TypeScript**
+   ```bash
+   npm run check
+   ```
 
-## Performance e Otimização
+4. **Problemas de banco de dados**
+   ```bash
+   npm run db:push
+   ```
 
-### Desenvolvimento
-- Use SSD para melhor performance do banco
-- Feche outras aplicações pesadas durante desenvolvimento
-- Considere aumentar limite de arquivos abertos no sistema
+## Atualizações Recentes
 
-### Produção
-- Configure pooling de conexões do banco
-- Use cache Redis para sessões (opcional)
-- Configure reverse proxy (nginx) para servir arquivos estáticos
+### v1.2.0 - Pipeline de Candidatos
+- ✅ Pipeline Kanban com drag and drop
+- ✅ Etapas personalizáveis com cores
+- ✅ Rate limiting configurável
+- ✅ Seletor de cores integrado
+- ✅ Responsáveis por etapa
+- ✅ Campos obrigatórios por etapa
+
+### Dependências Adicionadas
+- `@hello-pangea/dnd`: ^18.0.1
+- `react-color`: ^2.19.3
+- `react-select`: ^5.10.1
+- `express-rate-limit`: ^7.5.1
+- `@types/react-color`: ^3.0.13
