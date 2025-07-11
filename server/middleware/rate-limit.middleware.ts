@@ -11,7 +11,7 @@ export const authLimiter = [
   logRateLimit,
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 5, // máximo 5 tentativas por IP
+    max: 20, // máximo 20 tentativas por IP (aumentado de 5)
     message: {
       message: 'Muitas tentativas de login. Tente novamente em 15 minutos.'
     },
@@ -26,7 +26,7 @@ export const apiLimiter = [
   logRateLimit,
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // máximo 100 requisições por IP
+    max: 1000, // máximo 1000 requisições por IP (aumentado de 100)
     message: {
       message: 'Muitas requisições. Tente novamente em 15 minutos.'
     },
@@ -40,7 +40,7 @@ export const uploadLimiter = [
   logRateLimit,
   rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hora
-    max: 10, // máximo 10 uploads por IP
+    max: 50, // máximo 50 uploads por IP (aumentado de 10)
     message: {
       message: 'Limite de uploads excedido. Tente novamente em 1 hora.'
     },
@@ -54,7 +54,7 @@ export const candidatePortalLimiter = [
   logRateLimit,
   rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hora
-    max: 3, // máximo 3 candidaturas por IP
+    max: 10, // máximo 10 candidaturas por IP (aumentado de 3)
     message: {
       message: 'Limite de candidaturas excedido. Tente novamente em 1 hora.'
     },

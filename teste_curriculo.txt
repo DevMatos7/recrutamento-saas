@@ -1,0 +1,1 @@
+João Silva\nEmail: joao.silva@email.com\nTelefone: (11) 99999-9999\nCPF: 123.456.789-00\n\nFORMAÇÃO\nBacharel em Ciência da Computação\nUniversidade de São Paulo\n\nEXPERIÊNCIA\nDesenvolvedor Full Stack\nEmpresa XYZ - 2020-2023\nDesenvolvimento de aplicações web com React e Node.js

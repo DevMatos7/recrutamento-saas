@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema } from "@shared/schema";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema, insertPipelineEtapaSchema, pipelineAuditoria } from "@shared/schema";
 import { TesteService } from "./services/teste-service.js";
 import { EntrevistaService } from "./services/entrevista-service.js";
 import { z } from "zod";
@@ -13,6 +13,8 @@ import multer from 'multer';
 import mammoth from 'mammoth';
 import { HfInference } from '@huggingface/inference';
 import fs from 'fs';
+import ExcelJS from "exceljs";
+import { db } from './db';
 
 const scryptAsync = promisify(scrypt);
 const upload = multer({ dest: '/tmp' });
@@ -43,6 +45,12 @@ function requireAdmin(req: any, res: any, next: any) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Sets up /api/register, /api/login, /api/logout, /api/user
   setupAuth(app);
+
+  // Middleware para injetar o db em req.db
+  app.use((req, res, next) => {
+    req.db = db;
+    next();
+  });
 
   // Custom registration endpoint that requires admin
   app.post("/api/register-user", requireAdmin, async (req, res, next) => {
@@ -441,13 +449,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/vagas", requireAuth, async (req, res, next) => {
     try {
-      // Only admin and recrutador can create jobs
       if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
         return res.status(403).json({ message: "Acesso negado" });
       }
-
       const vagaData = insertVagaSchema.parse(req.body);
       const vaga = await storage.createVaga(vagaData);
+      // Auditoria: criar
+      try {
+        await storage.createVagaAuditoria({
+          vagaId: vaga.id,
+          usuarioId: req.user.id,
+          acao: 'criar',
+          detalhes: JSON.stringify(vagaData)
+        });
+      } catch (e) { console.error('Erro ao registrar auditoria:', e); }
+      // Notificação automática (já implementada)
+      try {
+        const { CommunicationService } = await import("./services/communication-service");
+        const comm = new CommunicationService();
+        const gestor = await storage.getUsuario(vaga.gestorId);
+        const recrutadores = await storage.getUsuariosByEmpresa(vaga.empresaId);
+        if (gestor) {
+          await comm.enviarComunicacao('email', gestor, `Uma nova vaga foi criada: ${vaga.titulo}`);
+          await comm.enviarComunicacao('whatsapp', gestor, `Uma nova vaga foi criada: ${vaga.titulo}`);
+        }
+        for (const rec of recrutadores) {
+          if (rec.id !== gestor?.id) {
+            await comm.enviarComunicacao('email', rec, `Uma nova vaga foi criada: ${vaga.titulo}`);
+            await comm.enviarComunicacao('whatsapp', rec, `Uma nova vaga foi criada: ${vaga.titulo}`);
+          }
+        }
+      } catch (e) { console.error('Erro ao notificar:', e); }
       res.status(201).json(vaga);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -459,16 +491,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/vagas/:id", requireAuth, async (req, res, next) => {
     try {
-      // Only admin and recrutador can edit jobs
       if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
         return res.status(403).json({ message: "Acesso negado" });
       }
-
       const vagaData = insertVagaSchema.partial().parse(req.body);
+      
+      // Buscar dados antigos da vaga antes da atualização
+      const vagaAntiga = await storage.getVaga(req.params.id);
+      if (!vagaAntiga) {
+        return res.status(404).json({ message: "Vaga não encontrada" });
+      }
+      
       const vaga = await storage.updateVaga(req.params.id, vagaData);
       if (!vaga) {
         return res.status(404).json({ message: "Vaga não encontrada" });
       }
+      
+      // Auditoria: editar
+      try {
+        // Criar objeto com dados antigos e novos para comparação
+        const dadosAuditoria = {
+          dadosAntigos: vagaAntiga,
+          dadosNovos: vagaData,
+          camposAlterados: Object.keys(vagaData)
+        };
+        
+        await storage.createVagaAuditoria({
+          vagaId: vaga.id,
+          usuarioId: req.user.id,
+          acao: 'editar',
+          detalhes: JSON.stringify(dadosAuditoria)
+        });
+      } catch (e) { 
+        console.error('[AUDITORIA] Erro ao registrar auditoria:', e);
+      }
+      // Notificação automática (já implementada)
+      try {
+        const { CommunicationService } = await import("./services/communication-service");
+        const comm = new CommunicationService();
+        const gestor = await storage.getUsuario(vaga.gestorId);
+        const recrutadores = await storage.getUsuariosByEmpresa(vaga.empresaId);
+        if (gestor) {
+          await comm.enviarComunicacao('email', gestor, `A vaga ${vaga.titulo} foi atualizada.`);
+          await comm.enviarComunicacao('whatsapp', gestor, `A vaga ${vaga.titulo} foi atualizada.`);
+        }
+        for (const rec of recrutadores) {
+          if (rec.id !== gestor?.id) {
+            await comm.enviarComunicacao('email', rec, `A vaga ${vaga.titulo} foi atualizada.`);
+            await comm.enviarComunicacao('whatsapp', rec, `A vaga ${vaga.titulo} foi atualizada.`);
+          }
+        }
+      } catch (e) { console.error('Erro ao notificar:', e); }
       res.json(vaga);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -504,6 +577,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ message: "Vaga não encontrada" });
       }
+      // Auditoria: excluir
+      try {
+        await storage.createVagaAuditoria({
+          vagaId: req.params.id,
+          usuarioId: req.user.id,
+          acao: 'excluir',
+          detalhes: null
+        });
+      } catch (e) { console.error('Erro ao registrar auditoria:', e); }
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -566,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!candidato) {
         return res.status(404).json({ message: "Candidato não encontrado" });
       }
-      res.json(candidato);
+      res.json(candidato); // Retorna apenas o objeto, não um array
     } catch (error) {
       next(error);
     }
@@ -669,10 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { etapa, comentarios, nota } = req.body;
       const currentUser = (req as any).user;
-      
-      // Import the pipeline service
       const { PipelineService, PipelineServiceError } = await import('./services/pipeline-service');
-      
       const resultado = await PipelineService.moverCandidatoPipeline(
         req.params.vagaId,
         req.params.candidatoId,
@@ -681,7 +760,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nota,
         comentarios
       );
-      
       res.json({
         vagaCandidato: resultado.vagaCandidato,
         historico: resultado.historico,
@@ -699,13 +777,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'CANDIDATE_NOT_FOUND': 404,
           'CANDIDATE_INACTIVE': 400,
           'NO_MOVEMENT_NEEDED': 400,
-          'UPDATE_FAILED': 500
+          'UPDATE_FAILED': 500,
+          'MISSING_REQUIRED_FIELD': 400
         };
-        
         const status = statusMap[error.code] || 400;
-        return res.status(status).json({ 
+        return res.status(status).json({
           message: error.message,
-          code: error.code 
+          code: error.code,
+          field: error.field || undefined,
+          details: error.details || undefined
+        });
+      }
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Dados inválidos",
+          code: "VALIDATION_ERROR",
+          details: error.errors
         });
       }
       next(error);
@@ -767,7 +854,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/candidatos/:id/historico", requireAuth, async (req, res, next) => {
     try {
       const { PipelineService } = await import('./services/pipeline-service');
-      const historico = await PipelineService.obterHistoricoCompleto(req.params.id);
+      const historico = await PipelineService.obterHistoricoCompleto(req.params.id, req.user);
       res.json(historico);
     } catch (error) {
       next(error);
@@ -2442,6 +2529,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ nenhumDadoExtraido: true });
       }
       return res.json(campos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Endpoint para consultar histórico/auditoria de uma vaga
+  app.get("/api/vagas/:id/auditoria", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const auditoria = await storage.getAuditoriaByVaga(req.params.id);
+      res.json(auditoria);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Pipeline etapas endpoints
+  app.get("/api/vagas/:vagaId/etapas", requireAuth, async (req, res, next) => {
+    try {
+      const etapas = await storage.getEtapasByVaga(req.params.vagaId);
+      res.json(etapas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/vagas/:vagaId/etapas", requireAuth, async (req, res, next) => {
+    try {
+      if (!['admin', 'recrutador'].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const etapas = req.body.etapas;
+      console.log('Recebendo etapas para salvar:', etapas);
+      console.log('Vaga ID:', req.params.vagaId);
+      
+      // Remove etapas que não existem mais
+      const etapasAtuais = await storage.getEtapasByVaga(req.params.vagaId);
+      const idsAtuais = etapasAtuais.map(e => e.id);
+      const idsNovos = etapas.filter(e => e.id).map(e => e.id);
+      for (const id of idsAtuais) {
+        if (!idsNovos.includes(id)) {
+          await storage.deleteEtapa(id);
+        }
+      }
+      // Atualiza ou cria etapas
+      for (const etapa of etapas) {
+        if (etapa.id) {
+          // Sempre atualiza todos os campos editáveis
+          await storage.updateEtapa(etapa.id, {
+            nome: etapa.nome,
+            cor: etapa.cor,
+            ordem: etapa.ordem,
+            camposObrigatorios: etapa.camposObrigatorios,
+            responsaveis: etapa.responsaveis
+          });
+        } else {
+          console.log('Criando nova etapa:', etapa);
+          await storage.createEtapa({ ...etapa, vagaId: req.params.vagaId });
+        }
+      }
+      const atualizadas = await storage.getEtapasByVaga(req.params.vagaId);
+      console.log('Etapas atualizadas:', atualizadas);
+      res.json(atualizadas);
+    } catch (error) {
+      console.error('Erro ao salvar etapas:', error);
+      next(error);
+    }
+  });
+
+  app.put("/api/etapas/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!['admin', 'recrutador'].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const etapaData = {
+        ...req.body,
+        camposObrigatorios: Array.isArray(req.body.camposObrigatorios) ? req.body.camposObrigatorios : [],
+        responsaveis: Array.isArray(req.body.responsaveis) ? req.body.responsaveis : [],
+      };
+      const etapa = await storage.updateEtapa(req.params.id, etapaData);
+      if (!etapa) {
+        return res.status(404).json({ message: "Etapa não encontrada", code: "NOT_FOUND" });
+      }
+      await req.db.insert(pipelineAuditoria).values({
+        vagaId: etapa.vagaId,
+        candidatoId: null,
+        usuarioId: req.user.id,
+        acao: 'editar_etapa',
+        etapaAnterior: null,
+        etapaNova: etapa.nome,
+        nota: null,
+        comentarios: null,
+        dataMovimentacao: new Date(),
+        ip: req.ip,
+        detalhes: { etapa }
+      });
+      res.json(etapa);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", code: "VALIDATION_ERROR", details: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/etapas/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!['admin', 'recrutador'].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deleteEtapa(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Etapa não encontrada" });
+      }
+      // Auditoria
+      await req.db.insert(pipelineAuditoria).values({
+        vagaId: deleted.vagaId,
+        candidatoId: null,
+        usuarioId: req.user.id,
+        acao: 'remover_etapa',
+        etapaAnterior: deleted.nome,
+        etapaNova: null,
+        nota: null,
+        comentarios: null,
+        dataMovimentacao: new Date(),
+        ip: req.ip,
+        detalhes: { etapa: deleted }
+      });
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/vagas/:vagaId/etapas/reorder", requireAuth, async (req, res, next) => {
+    try {
+      if (!['admin', 'recrutador'].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const etapas = req.body.etapas; // [{id, ordem}]
+      await storage.reorderEtapas(req.params.vagaId, etapas);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Exportação do pipeline em XLSX
+  app.get("/api/vagas/:vagaId/pipeline/export", requireAuth, async (req, res, next) => {
+    try {
+      const pipeline = await storage.getCandidatosByVaga(req.params.vagaId);
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Pipeline");
+      sheet.addRow(["Nome", "Email", "Etapa", "Nota", "Comentários"]);
+      pipeline.forEach((c: any) => {
+        sheet.addRow([
+          c.candidato?.nome || "",
+          c.candidato?.email || "",
+          c.etapa,
+          c.nota,
+          c.comentarios
+        ]);
+      });
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=pipeline.xlsx');
+      await workbook.xlsx.write(res);
+      res.end();
     } catch (error) {
       next(error);
     }

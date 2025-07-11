@@ -7,12 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Eye, Square, Users, Target, Settings } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Square, Users, Target, Settings, History, MoreHorizontal } from "lucide-react";
 import { Link } from "wouter";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type Vaga } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import VagaAuditoria from "@/components/VagaAuditoria";
+import PipelineEtapasConfig from "@/components/PipelineEtapasConfig";
 
 // Job Modal Component with Form
 function VagaModal({ isOpen, onClose, editingVaga }: { isOpen: boolean; onClose: () => void; editingVaga?: Vaga | null }) {
@@ -257,6 +261,8 @@ export default function VagasPage() {
   const [editingVaga, setEditingVaga] = useState<Vaga | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [searchTerm, setSearchTerm] = useState("");
+  const [auditoriaVagaId, setAuditoriaVagaId] = useState<string | null>(null);
+  const [pipelineConfigVagaId, setPipelineConfigVagaId] = useState<string | null>(null);
 
   const { data: vagas = [], isLoading } = useQuery({
     queryKey: ["/api/vagas"],
@@ -471,70 +477,95 @@ export default function VagasPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Link href={`/pipeline/${vaga.id}`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Ver Pipeline"
-                            >
-                              <Users className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditVaga(vaga)}
-                            title="Visualizar"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.location.href = `/vagas/${vaga.id}/matches`}
-                            title="Ver matches compatíveis"
-                          >
-                            <Target className="h-4 w-4" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link href={`/pipeline/${vaga.id}`}>
+                                  <Button variant="ghost" size="sm" aria-label="Ver Pipeline">
+                                    <Users className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent>Ver Pipeline</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" onClick={() => handleEditVaga(vaga)} aria-label="Visualizar">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Visualizar vaga</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" onClick={() => window.location.href = `/vagas/${vaga.id}/matches`} aria-label="Ver matches compatíveis">
+                                <Target className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Ver matches compatíveis</TooltipContent>
+                          </Tooltip>
                           {canManageVagas && vaga.status === "aberta" && (
                             <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditVaga(vaga)}
-                                title="Editar"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEncerrarVaga(vaga.id)}
-                                title="Encerrar"
-                              >
-                                <Square className="h-4 w-4" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={() => handleEditVaga(vaga)} aria-label="Editar">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Editar vaga</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={() => handleEncerrarVaga(vaga.id)} aria-label="Encerrar">
+                                    <Square className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Encerrar vaga</TooltipContent>
+                              </Tooltip>
                             </>
                           )}
-                          <Link href={`/vagas/${vaga.id}/configurar-matching`}>
+                          {canManageVagas && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="Configurar Matching"
+                              onClick={() => setPipelineConfigVagaId(vaga.id)}
+                              aria-label="Configurar Pipeline"
                             >
-                              <Target className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          {user?.perfil === "admin" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteVaga(vaga.id)}
-                              title="Excluir"
-                            >
-                              <Trash2 className="h-4 w-4" />
+                              <Settings className="h-4 w-4" />
                             </Button>
                           )}
+                          {/* Dropdown para ações secundárias */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" aria-label="Mais ações">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/vagas/${vaga.id}/configurar-matching`}>
+                                  <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4" />
+                                    Configurar Matching
+                                  </div>
+                                </Link>
+                              </DropdownMenuItem>
+                              {user?.perfil === "admin" && (
+                                <>
+                                  <DropdownMenuItem onClick={() => setAuditoriaVagaId(vaga.id)}>
+                                    <History className="h-4 w-4 text-yellow-600" />
+                                    Histórico de Auditoria
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleDeleteVaga(vaga.id)} className="text-red-600 focus:bg-red-50">
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                    Excluir vaga
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -559,6 +590,21 @@ export default function VagasPage() {
             }}
             editingVaga={editingVaga}
           />
+      
+      {auditoriaVagaId && (
+        <VagaAuditoria
+          vagaId={auditoriaVagaId}
+          onClose={() => setAuditoriaVagaId(null)}
+        />
+      )}
+
+      {pipelineConfigVagaId && (
+        <PipelineEtapasConfig
+          vagaId={pipelineConfigVagaId}
+          open={!!pipelineConfigVagaId}
+          onClose={() => setPipelineConfigVagaId(null)}
+        />
+      )}
     </div>
   );
 }

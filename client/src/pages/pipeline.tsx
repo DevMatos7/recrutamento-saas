@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus, Trash2, Brain, FileText } from "lucide-react";
+import { Users, ArrowRight, Mail, Phone, Star, Clock, Plus, Trash2, Brain, FileText, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
+import PipelineEtapasConfig from "@/components/PipelineEtapasConfig";
 
 
 const PIPELINE_STAGES = [
@@ -21,6 +25,16 @@ const PIPELINE_STAGES = [
   { id: "aprovado", title: "Aprovados", color: "bg-green-500 text-white" },
   { id: "reprovado", title: "Reprovados", color: "bg-red-500 text-white" },
 ];
+
+// Descrições explicativas para cada etapa do pipeline
+const PIPELINE_STAGE_DESCRIPTIONS: Record<string, string> = {
+  recebido: "Candidatos recém-inscritos aguardando triagem inicial.",
+  triagem: "Análise de currículos e pré-requisitos pela equipe de RH.",
+  entrevista: "Candidatos em fase de entrevistas com recrutadores ou gestores.",
+  avaliacao: "Avaliação técnica, comportamental ou testes online.",
+  aprovado: "Candidatos aprovados para proposta ou contratação.",
+  reprovado: "Candidatos que não seguirão no processo seletivo.",
+};
 
 interface CandidateWithDetails {
   id: string;
@@ -118,30 +132,79 @@ function MoveModal({
   candidate, 
   isOpen, 
   onClose, 
-  onMove 
+  onMove,
+  errorMessage
 }: { 
   candidate: CandidateWithDetails | null;
   isOpen: boolean;
   onClose: () => void;
   onMove: (etapa: string, comentarios: string, nota?: number) => void;
+  errorMessage?: string | null;
 }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [etapa, setEtapa] = useState("");
   const [comentarios, setComentarios] = useState("");
   const [nota, setNota] = useState("");
+  const [error, setError] = useState<string | null>(errorMessage ?? null);
+  const [requiredFields, setRequiredFields] = useState<string[]>([]);
+
+  // Buscar campos obrigatórios da etapa atual ao abrir o modal
+  useEffect(() => {
+    async function fetchRequiredFields() {
+      if (candidate && candidate.vagaId && candidate.etapa) {
+        const res = await fetch(`/api/vagas/${candidate.vagaId}/etapas`);
+        if (res.ok) {
+          const etapas = await res.json();
+          const etapaAtual = etapas.find((e: any) => e.nome === candidate.etapa);
+          if (etapaAtual && Array.isArray(etapaAtual.camposObrigatorios)) {
+            setRequiredFields(etapaAtual.camposObrigatorios);
+          } else {
+            setRequiredFields([]);
+          }
+        }
+      }
+    }
+    if (isOpen) {
+      fetchRequiredFields();
+    }
+  }, [candidate, isOpen]);
+
+  // Atualizar requiredFields ao mudar a etapa de destino (opcional: buscar da API se etapas customizadas)
+  useEffect(() => {
+    async function fetchRequiredFieldsForNewStage() {
+      if (candidate && candidate.vagaId && etapa) {
+        const res = await fetch(`/api/vagas/${candidate.vagaId}/etapas`);
+        if (res.ok) {
+          const etapas = await res.json();
+          const etapaDestino = etapas.find((e: any) => e.nome === etapa);
+          if (etapaDestino && Array.isArray(etapaDestino.camposObrigatorios)) {
+            setRequiredFields(etapaDestino.camposObrigatorios);
+          } else {
+            setRequiredFields([]);
+          }
+        }
+      }
+    }
+    if (etapa) {
+      fetchRequiredFieldsForNewStage();
+    }
+  }, [etapa, candidate]);
 
   const handleSubmit = () => {
     if (!etapa) {
-      alert("Por favor, selecione uma etapa");
+      setError("Por favor, selecione uma etapa");
       return;
     }
+    setError(null);
     onMove(etapa, comentarios, nota ? parseFloat(nota) : undefined);
-    onClose();
   };
 
   const handleClose = () => {
     setEtapa("");
     setComentarios("");
     setNota("");
+    setError(null);
     onClose();
   };
 
@@ -155,6 +218,7 @@ function MoveModal({
         </DialogHeader>
         
         <div className="space-y-4">
+          {error && <div className="text-red-600 text-sm font-medium">{error}</div>}
           <div>
             <Label htmlFor="etapa">Nova Etapa</Label>
             <Select value={etapa} onValueChange={setEtapa}>
@@ -172,7 +236,10 @@ function MoveModal({
           </div>
 
           <div>
-            <Label htmlFor="nota">Nota (0-10)</Label>
+            <Label htmlFor="nota">
+              Nota (0-10)
+              {requiredFields.includes("score") && <span className="text-red-500 ml-1">*</span>}
+            </Label>
             <Input
               id="nota"
               type="number"
@@ -182,17 +249,22 @@ function MoveModal({
               value={nota}
               onChange={(e) => setNota(e.target.value)}
               placeholder="Nota opcional"
+              required={requiredFields.includes("score")}
             />
           </div>
 
           <div>
-            <Label htmlFor="comentarios">Comentários</Label>
+            <Label htmlFor="comentarios">
+              Comentários
+              {requiredFields.includes("observacao") && <span className="text-red-500 ml-1">*</span>}
+            </Label>
             <Textarea
               id="comentarios"
               value={comentarios}
               onChange={(e) => setComentarios(e.target.value)}
               placeholder="Observações sobre a movimentação..."
               rows={3}
+              required={requiredFields.includes("observacao")}
             />
           </div>
 
@@ -215,6 +287,42 @@ export default function PipelinePage() {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithDetails | null>(null);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [addCandidateModalOpen, setAddCandidateModalOpen] = useState(false);
+  const [moveModalError, setMoveModalError] = useState<string | null>(null);
+  // Novo estado para armazenar etapa de destino do drag and drop
+  const [dragTargetStage, setDragTargetStage] = useState<string | null>(null);
+  // Novo estado para armazenar etapas detalhadas (com responsáveis)
+  const [etapasDetalhadas, setEtapasDetalhadas] = useState<any[]>([]);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [reloadEtapas, setReloadEtapas] = useState(0);
+
+  // Buscar etapas detalhadas e usuários ao selecionar vaga
+  useEffect(() => {
+    if (selectedVaga) {
+      console.log('Buscando etapas para vaga:', selectedVaga);
+      fetch(`/api/vagas/${selectedVaga}/etapas`)
+        .then(r => r.json())
+        .then(data => {
+          console.log('API etapas retornou:', data);
+          console.log('Número de etapas:', data.length);
+          setEtapasDetalhadas(data);
+        })
+        .catch(error => {
+          console.error('Erro ao buscar etapas:', error);
+        });
+      if (user?.empresaId) {
+        fetch(`/api/usuarios?empresaId=${user.empresaId}`)
+          .then(r => r.json())
+          .then(setUsuarios);
+      }
+    }
+  }, [selectedVaga, user?.empresaId, reloadEtapas]);
+
+  // Função utilitária para pegar responsáveis da etapa
+  const getResponsaveis = (etapa: any) =>
+    (etapa.responsaveis || [])
+      .map((id: string) => usuarios.find((u: any) => u.id === id))
+      .filter(Boolean);
 
   // Fetch available jobs
   const { data: vagas, isLoading: vagasLoading } = useQuery({
@@ -248,12 +356,10 @@ export default function PipelinePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ etapa, comentarios, nota }),
       });
-      
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Erro ao mover candidato');
       }
-      
       return response.json();
     },
     onSuccess: () => {
@@ -262,26 +368,28 @@ export default function PipelinePage() {
       setMoveModalOpen(false);
       setSelectedCandidate(null);
     },
-    onError: (error: Error) => {
-      toast({ 
-        title: "Erro ao mover candidato", 
+    onError: (error: any) => {
+      setMoveModalError(error.message);
+      toast({
+        title: "Erro ao mover candidato",
         description: error.message,
-        variant: "destructive" 
+        variant: error.message?.toLowerCase().includes('permissão') ? "destructive" : "default"
       });
     },
   });
 
   // Add candidate to job mutation
   const addCandidateMutation = useMutation({
-    mutationFn: async ({ vagaId, candidatoId, comentarios }: {
+    mutationFn: async ({ vagaId, candidatoId, etapa, comentarios }: {
       vagaId: string;
       candidatoId: string;
+      etapa: string;
       comentarios?: string;
     }) => {
       const response = await fetch(`/api/vagas/${vagaId}/candidatos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidatoId, etapa: 'recebido', comentarios }),
+        body: JSON.stringify({ candidatoId, etapa, comentarios }),
       });
       
       if (!response.ok) {
@@ -343,16 +451,37 @@ export default function PipelinePage() {
     setMoveModalOpen(true);
   };
 
-  const handleMove = (etapa: string, comentarios: string, nota?: number) => {
-    if (!selectedCandidate || !etapa) return;
+  // Função chamada ao finalizar o drag and drop
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const sourceStage = result.source.droppableId;
+    const destStage = result.destination.droppableId;
+    if (sourceStage === destStage) return;
+    const candidateId = result.draggableId;
+    // Encontrar o candidato arrastado
+    const candidate = pipeline?.[sourceStage]?.find((c: any) => c.id === candidateId);
+    if (candidate) {
+      setSelectedCandidate(candidate);
+      setDragTargetStage(destStage);
+      setMoveModalOpen(true);
+    }
+  };
 
+  // Modificar handleMove para usar dragTargetStage se existir
+  const handleMove = (etapa: string, comentarios: string, nota?: number) => {
+    let etapaFinal: string = etapa;
+    if (dragTargetStage !== null && dragTargetStage !== undefined && typeof dragTargetStage === 'string') {
+      etapaFinal = dragTargetStage;
+    }
+    if (!selectedCandidate || !etapaFinal) return;
     moveCandidateMutation.mutate({
       vagaId: selectedCandidate.vagaId,
       candidatoId: selectedCandidate.candidatoId,
-      etapa,
+      etapa: etapaFinal,
       comentarios: comentarios || "",
       nota,
     });
+    setDragTargetStage(null);
   };
 
   const handleRemoveCandidate = (candidate: CandidateWithDetails) => {
@@ -361,6 +490,20 @@ export default function PipelinePage() {
         vagaId: candidate.vagaId,
         candidatoId: candidate.candidatoId,
       });
+    }
+  };
+
+  // Ao adicionar candidato à vaga, usar o id da primeira etapa personalizada
+  const handleAddCandidate = (formData: FormData) => {
+    const candidatoId = formData.get('candidatoId') as string;
+    const comentarios = formData.get('comentarios') as string;
+    if (candidatoId && selectedVaga && etapasDetalhadas.length > 0) {
+      addCandidateMutation.mutate({
+        vagaId: selectedVaga,
+        candidatoId,
+        etapa: etapasDetalhadas[0].id, // Usar o id da primeira etapa personalizada
+        comentarios: comentarios || undefined,
+      } as any); // Forçar tipagem para evitar erro do TypeScript
     }
   };
 
@@ -387,7 +530,7 @@ export default function PipelinePage() {
       <div className="mb-6">
         <Label htmlFor="vaga-select">Selecionar Vaga</Label>
         <div className="flex gap-4 items-end">
-          <Select value={selectedVaga} onValueChange={setSelectedVaga}>
+          <Select {...(typeof selectedVaga === 'string' ? { value: selectedVaga } : {})} onValueChange={setSelectedVaga}>
                 <SelectTrigger className="w-[400px]">
                   <SelectValue placeholder="Escolha uma vaga para visualizar o pipeline" />
                 </SelectTrigger>
@@ -399,59 +542,128 @@ export default function PipelinePage() {
                   ))}
                 </SelectContent>
               </Select>
-              
               {selectedVaga && (
-                <Button 
-                  onClick={() => setAddCandidateModalOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Adicionar Candidato
-                </Button>
-          )}
+                <>
+                  <Button 
+                    onClick={() => setAddCandidateModalOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Adicionar Candidato
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => window.open(`/api/vagas/${selectedVaga}/pipeline/export`, '_blank')}
+                  >
+                    Exportar Pipeline (XLSX)
+                  </Button>
+                  {/* Botão de engrenagem para configurar etapas do pipeline */}
+                  {["admin", "recrutador"].includes(user?.perfil || "") && (
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2"
+                      title="Configurar etapas do pipeline"
+                      onClick={() => setConfigModalOpen(true)}
+                    >
+                      <Settings className="h-5 w-5" />
+                    </Button>
+                  )}
+                </>
+              )}
         </div>
       </div>
 
       {/* Pipeline */}
       {selectedVaga && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-          {PIPELINE_STAGES.map((stage) => {
-                const stageCandidates = (pipeline && typeof pipeline === 'object' && !Array.isArray(pipeline) && pipeline[stage.id]) ? pipeline[stage.id] : [];
-                
-                return (
-                  <div key={stage.id} className="space-y-4">
-                    <div className={`${stage.color} p-3 rounded-lg text-center`}>
-                      <h3 className="font-semibold">{stage.title}</h3>
-                      <Badge variant="secondary" className="mt-1 bg-white/20 text-white">
-                        {stageCandidates.length}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-3 min-h-[400px]">
-                      {pipelineLoading ? (
-                        <div className="text-center text-gray-500 py-8">
-                          Carregando...
-                        </div>
-                      ) : Array.isArray(stageCandidates) && stageCandidates.length > 0 ? (
-                        stageCandidates.map((candidate: CandidateWithDetails) => (
-                          <CandidateCard
-                            key={candidate.id}
-                            candidate={candidate}
-                            onMoveCandidate={handleMoveCandidate}
-                            onRemoveCandidate={handleRemoveCandidate}
-                          />
-                        ))
-                      ) : (
-                        <div className="text-center text-gray-500 py-8">
-                          <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">Nenhum candidato</p>
+        <TooltipProvider>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+              {(() => {
+                console.log('Renderizando pipeline com etapas:', etapasDetalhadas);
+                console.log('Pipeline data:', pipeline);
+                return etapasDetalhadas.length > 0 ? etapasDetalhadas.map((stage) => {
+                  const stageCandidates = (pipeline && typeof pipeline === 'object' && !Array.isArray(pipeline) && pipeline[stage.id]) ? pipeline[stage.id] : [];
+                  console.log(`Etapa ${stage.nome} (${stage.id}) tem ${stageCandidates.length} candidatos`);
+                  return (
+                    <Droppable droppableId={stage.id} key={stage.id}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`space-y-4 ${snapshot.isDraggingOver ? 'bg-orange-50' : ''}`}
+                        >
+                          <div style={{ background: stage.cor, color: '#fff', borderRadius: '12px 12px 0 0', padding: '12px', textAlign: 'center' }}>
+                            <h3 className="font-semibold flex items-center justify-center gap-2">
+                              {stage.nome}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="ml-1 cursor-pointer align-middle inline-flex"><HelpCircle className="w-4 h-4" /></span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-left">
+                                  {stage.descricao || PIPELINE_STAGE_DESCRIPTIONS[stage.id] || "Etapa do pipeline."}
+                                </TooltipContent>
+                              </Tooltip>
+                            </h3>
+                            {/* Exibir responsáveis */}
+                            {getResponsaveis(stage).length > 0 && (
+                              <div className="flex flex-wrap justify-center gap-1 mt-1">
+                                {getResponsaveis(stage).map((resp: any) => (
+                                  <span key={resp.id} className="text-xs bg-gray-100 rounded px-2 py-0.5" title={resp.email} style={{ color: '#222' }}>
+                                    {resp.nome.split(' ')[0]}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <Badge variant="secondary" className="mt-1 bg-white/20 text-white">
+                              {stageCandidates.length}
+                            </Badge>
+                          </div>
+                          <div className="space-y-3 min-h-[400px]">
+                            {pipelineLoading ? (
+                              <div className="text-center text-gray-500 py-8">
+                                Carregando...
+                              </div>
+                            ) : Array.isArray(stageCandidates) && stageCandidates.length > 0 ? (
+                              stageCandidates.map((candidate: CandidateWithDetails, idx: number) => (
+                                <Draggable draggableId={candidate.id} index={idx} key={candidate.id}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className={snapshot.isDragging ? 'opacity-70' : ''}
+                                    >
+                                      <CandidateCard
+                                        candidate={candidate}
+                                        onMoveCandidate={handleMoveCandidate}
+                                        onRemoveCandidate={handleRemoveCandidate}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))
+                            ) : (
+                              <div className="text-center text-gray-500 py-8">
+                                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">Nenhum candidato</p>
+                              </div>
+                            )}
+                            {provided.placeholder}
+                          </div>
                         </div>
                       )}
-                    </div>
+                    </Droppable>
+                  );
+                }) : (
+                  <div className="col-span-full text-center py-8">
+                    <p className="text-gray-500">Nenhuma etapa configurada para esta vaga</p>
                   </div>
                 );
-          })}
-        </div>
+              })()}
+            </div>
+          </DragDropContext>
+        </TooltipProvider>
       )}
 
       {!selectedVaga && (
@@ -472,6 +684,7 @@ export default function PipelinePage() {
         isOpen={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
         onMove={handleMove}
+        errorMessage={moveModalError}
       />
 
       {/* Add Candidate Modal */}
@@ -482,17 +695,7 @@ export default function PipelinePage() {
           </DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-            const candidatoId = formData.get('candidatoId') as string;
-            const comentarios = formData.get('comentarios') as string;
-            
-            if (candidatoId && selectedVaga) {
-              addCandidateMutation.mutate({
-                vagaId: selectedVaga,
-                candidatoId,
-                comentarios: comentarios || undefined,
-              });
-            }
+            handleAddCandidate(new FormData(e.target as HTMLFormElement));
           }} className="space-y-4">
             <div>
               <Label htmlFor="candidato">Candidato</Label>
@@ -567,6 +770,19 @@ export default function PipelinePage() {
         </form>
       </DialogContent>
     </Dialog>
+
+      {/* Modal de configuração de etapas do pipeline */}
+      {selectedVaga && configModalOpen && (
+        <PipelineEtapasConfig
+          vagaId={selectedVaga}
+          open={configModalOpen}
+          onClose={() => {
+            console.log('Fechando modal, forçando reload das etapas');
+            setConfigModalOpen(false);
+            setReloadEtapas(re => re + 1);
+          }}
+        />
+      )}
     </div>
   );
 }

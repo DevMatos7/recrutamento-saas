@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, Users, Plus, Edit, Trash2, CheckCircle, XCircle, UserX } from "lucide-react";
+import { Calendar as LucideCalendar, Clock, Users, Plus, Edit, Trash2, CheckCircle, XCircle, UserX } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,6 +20,9 @@ import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import { parseISO, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as UiCalendar } from "@/components/ui/calendar";
+import React from "react";
 
 import type { Entrevista, InsertEntrevista } from "@shared/schema";
 
@@ -36,7 +39,7 @@ const entrevistaFormSchema = z.object({
 type EntrevistaFormData = z.infer<typeof entrevistaFormSchema>;
 
 const STATUS_CONFIG = {
-  agendada: { label: "Agendada", color: "bg-blue-500 text-white", icon: Calendar },
+  agendada: { label: "Agendada", color: "bg-blue-500 text-white", icon: LucideCalendar },
   realizada: { label: "Realizada", color: "bg-green-500 text-white", icon: CheckCircle },
   cancelada: { label: "Cancelada", color: "bg-red-500 text-white", icon: XCircle },
   faltou: { label: "Faltou", color: "bg-yellow-500 text-white", icon: UserX },
@@ -216,7 +219,7 @@ export default function EntrevistasPage() {
 
   const getStatusIcon = (status: string) => {
     const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
-    const Icon = config?.icon || Calendar;
+    const Icon = config?.icon || LucideCalendar;
     return <Icon className="w-4 h-4" />;
   };
 
@@ -271,143 +274,125 @@ export default function EntrevistasPage() {
       </div>
 
       <div className="space-y-6">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-3 bg-muted rounded w-full mb-2"></div>
-                    <div className="h-3 bg-muted rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : Array.isArray(entrevistas) && entrevistas.length > 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Entrevistas Agendadas
-                </CardTitle>
-                <CardDescription>
-                  Lista de todas as entrevistas do sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BigCalendar
-                  localizer={localizer}
-                  events={eventos}
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{ height: 500, marginBottom: 32 }}
-                  onSelectEvent={(evento: any) => {
-                    setSelectedEntrevista(evento.resource);
-                    setStatusModalOpen(true); // ou abrir modal de detalhes/edição
-                  }}
-                />
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Candidato</TableHead>
-                      <TableHead>Vaga</TableHead>
-                      <TableHead>Data/Hora</TableHead>
-                      <TableHead>Entrevistador</TableHead>
-                      <TableHead>Local</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {entrevistas.map((entrevista: any) => (
-                      <TableRow key={entrevista.id}>
-                        <TableCell className="font-medium">
-                          {entrevista.candidato?.nome}
-                        </TableCell>
-                        <TableCell>{entrevista.vaga?.titulo}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            {formatDateTime(entrevista.dataHora)}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Entrevistas Agendadas
+            </CardTitle>
+            <CardDescription>
+              Lista de todas as entrevistas do sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BigCalendar
+              localizer={localizer}
+              events={eventos}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 500, marginBottom: 32 }}
+              onSelectEvent={(evento: any) => {
+                setSelectedEntrevista(evento.resource);
+                setStatusModalOpen(true);
+              }}
+            />
+            {Array.isArray(entrevistas) && entrevistas.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Candidato</TableHead>
+                    <TableHead>Vaga</TableHead>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead>Entrevistador</TableHead>
+                    <TableHead>Local</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {entrevistas.map((entrevista: any) => (
+                    <TableRow key={entrevista.id}>
+                      <TableCell className="font-medium">
+                        {entrevista.candidato?.nome}
+                      </TableCell>
+                      <TableCell>{entrevista.vaga?.titulo}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          {formatDateTime(entrevista.dataHora)}
+                        </div>
+                      </TableCell>
+                      <TableCell>{entrevista.entrevistador?.nome}</TableCell>
+                      <TableCell>
+                        {entrevista.local || "Não especificado"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={STATUS_CONFIG[entrevista.status as keyof typeof STATUS_CONFIG]?.color}>
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon(entrevista.status)}
+                            {STATUS_CONFIG[entrevista.status as keyof typeof STATUS_CONFIG]?.label}
                           </div>
-                        </TableCell>
-                        <TableCell>{entrevista.entrevistador?.nome}</TableCell>
-                        <TableCell>
-                          {entrevista.local || "Não especificado"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={STATUS_CONFIG[entrevista.status as keyof typeof STATUS_CONFIG]?.color}>
-                            <div className="flex items-center gap-1">
-                              {getStatusIcon(entrevista.status)}
-                              {STATUS_CONFIG[entrevista.status as keyof typeof STATUS_CONFIG]?.label}
-                            </div>
-                          </Badge>
-                          <div className="flex flex-col mt-1 text-xs gap-1">
-                            <span className="flex items-center gap-1">
-                              {entrevista.confirmadoCandidato ? (
-                                <CheckCircle className="w-3 h-3 text-green-600" />
-                              ) : (
-                                <Clock className="w-3 h-3 text-yellow-500" />
-                              )}
-                              Candidato: {entrevista.confirmadoCandidato ? 'Confirmado' : 'Pendente'}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              {entrevista.confirmadoEntrevistador ? (
-                                <CheckCircle className="w-3 h-3 text-green-600" />
-                              ) : (
-                                <Clock className="w-3 h-3 text-yellow-500" />
-                              )}
-                              Entrevistador: {entrevista.confirmadoEntrevistador ? 'Confirmado' : 'Pendente'}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {canEditInterviews && entrevista.status === 'agendada' && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedEntrevista(entrevista);
-                                    setStatusModalOpen(true);
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => deleteEntrevistaMutation.mutate(entrevista.id)}
-                                  disabled={deleteEntrevistaMutation.isPending}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </>
+                        </Badge>
+                        <div className="flex flex-col mt-1 text-xs gap-1">
+                          <span className="flex items-center gap-1">
+                            {entrevista.confirmadoCandidato ? (
+                              <CheckCircle className="w-3 h-3 text-green-600" />
+                            ) : (
+                              <Clock className="w-3 h-3 text-yellow-500" />
                             )}
-                            {canEditInterviews && entrevista.status === 'agendada' && (
+                            Candidato: {entrevista.confirmadoCandidato ? 'Confirmado' : 'Pendente'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            {entrevista.confirmadoEntrevistador ? (
+                              <CheckCircle className="w-3 h-3 text-green-600" />
+                            ) : (
+                              <Clock className="w-3 h-3 text-yellow-500" />
+                            )}
+                            Entrevistador: {entrevista.confirmadoEntrevistador ? 'Confirmado' : 'Pendente'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {canEditInterviews && entrevista.status === 'agendada' && (
+                            <>
                               <Button
+                                variant="outline"
                                 size="sm"
-                                onClick={() => handleStatusChange('realizada')}
+                                onClick={() => {
+                                  setSelectedEntrevista(entrevista);
+                                  setStatusModalOpen(true);
+                                }}
                               >
-                                Marcar como Realizada
+                                <Edit className="w-4 h-4" />
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => deleteEntrevistaMutation.mutate(entrevista.id)}
+                                disabled={deleteEntrevistaMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                          {canEditInterviews && entrevista.status === 'agendada' && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleStatusChange('realizada')}
+                            >
+                              Marcar como Realizada
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12">
+                <LucideCalendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Nenhuma entrevista agendada</h3>
                 <p className="text-muted-foreground mb-4">
                   Comece agendando a primeira entrevista com um candidato
@@ -418,10 +403,11 @@ export default function EntrevistasPage() {
                     Agendar Primeira Entrevista
                   </Button>
                 )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Create/Edit Interview Modal */}
       <Dialog open={createModalOpen || !!editingEntrevista} onOpenChange={(open) => {
@@ -524,51 +510,58 @@ export default function EntrevistasPage() {
                 <FormField
                   control={form.control}
                   name="dataHora"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data e Hora</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um horário sugerido ou escolha manualmente" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(Array.isArray(slotsLivres) ? slotsLivres : []).map((slot, idx) => (
-                            <SelectItem key={idx} value={slot.inicio}>
-                              {new Date(slot.inicio).toLocaleString('pt-BR')}
-                            </SelectItem>
-                          ))}
-                          <div className="p-2 border-t flex flex-col gap-2">
-                            <Input
-                              type="datetime-local"
-                              value={field.value}
-                              onChange={e => field.onChange(e.target.value)}
-                              placeholder="Ou escolha manualmente"
-                            />
-                            <Button
-                              type="button"
-                              variant="default"
-                              className="w-full mt-1"
-                              onClick={() => {
-                                if (field.value) {
-                                  toast({ title: "Data e hora selecionadas!", description: new Date(field.value).toLocaleString('pt-BR') });
-                                  form.setValue('dataHora', field.value, { shouldValidate: true });
-                                  // Fechar o dropdown
-                                  document.activeElement && (document.activeElement as HTMLElement).blur();
-                                } else {
-                                  toast({ title: "Selecione uma data e hora válidas.", variant: "destructive" });
-                                }
-                              }}
-                            >
-                              OK
-                            </Button>
-                          </div>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    // Separar data e hora para facilitar a seleção
+                    const valueDate = field.value ? new Date(field.value) : undefined;
+                    const [date, setDate] = React.useState<Date | undefined>(valueDate);
+                    const [time, setTime] = React.useState<string>(valueDate ? valueDate.toISOString().substring(11, 16) : "");
+
+                    React.useEffect(() => {
+                      if (date && time) {
+                        // Montar string ISO
+                        const [hours, minutes] = time.split(":");
+                        const newDate = new Date(date);
+                        newDate.setHours(Number(hours));
+                        newDate.setMinutes(Number(minutes));
+                        newDate.setSeconds(0);
+                        newDate.setMilliseconds(0);
+                        field.onChange(newDate.toISOString());
+                      }
+                    }, [date, time]);
+
+                    return (
+                      <FormItem>
+                        <FormLabel>Data e Hora</FormLabel>
+                        <div className="flex gap-2 items-center">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-[180px] justify-start text-left font-normal">
+                                <UiCalendar className="mr-2 h-4 w-4" />
+                                {date ? date.toLocaleDateString('pt-BR') : <span>Selecione a data</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <UiCalendar
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                captionLayout="dropdown"
+                                locale="pt-BR"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <Input
+                            type="time"
+                            value={time}
+                            onChange={e => setTime(e.target.value)}
+                            className="w-[110px]"
+                            step="60"
+                          />
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField

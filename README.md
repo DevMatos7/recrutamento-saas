@@ -8,11 +8,13 @@ Uma plataforma SaaS completa de recrutamento e seleção que combina gestão ava
 - 👥 **Portal do Candidato** - Interface pública para candidaturas e testes
 - 📊 **Teste DISC Obrigatório** - Avaliação comportamental automática
 - 🤖 **Recomendações IA** - Matching inteligente candidato-vaga com OpenAI
-- 📋 **Pipeline de Seleção** - Kanban de 6 etapas para acompanhamento
+- 📋 **Pipeline de Seleção** - Kanban personalizável com drag & drop
+- 🎨 **Etapas Customizáveis** - Cores, responsáveis e campos obrigatórios
 - 📅 **Gestão de Entrevistas** - Agendamento e controle completo
 - 📧 **Comunicações** - WhatsApp e Email automatizados com templates
 - 📈 **Analytics** - Relatórios e métricas detalhadas com KPIs
 - 👤 **Gestão de Status** - Ativação/desativação de usuários pelo admin
+- 🛡️ **Rate Limiting** - Proteção contra spam e ataques
 
 ### Tecnologias
 
@@ -23,6 +25,8 @@ Uma plataforma SaaS completa de recrutamento e seleção que combina gestão ava
 - TanStack Query (estado)
 - Wouter (roteamento)
 - React Hook Form + Zod (formulários)
+- @hello-pangea/dnd (drag & drop)
+- React Color (seletor de cores)
 
 #### Backend
 - Node.js + Express + TypeScript
@@ -30,6 +34,7 @@ Uma plataforma SaaS completa de recrutamento e seleção que combina gestão ava
 - Express Session (sessões)
 - Drizzle ORM (banco de dados)
 - PostgreSQL (Neon Database)
+- Express Rate Limit (proteção)
 
 ## Instalação Rápida
 
@@ -130,6 +135,21 @@ MIT
 
 ### Configuração SMTP Personalizada
 Alternativamente ao SendGrid, configure SMTP em Configurações > Credenciais
+
+## Novas Funcionalidades - v1.2.0
+
+### Pipeline de Candidatos
+- **🎨 Etapas Personalizáveis**: Configure cores, responsáveis e campos obrigatórios
+- **🖱️ Drag & Drop**: Interface Kanban intuitiva para movimentação de candidatos
+- **👥 Responsáveis por Etapa**: Atribua usuários específicos para cada etapa
+- **📝 Campos Obrigatórios**: Defina observações e scores obrigatórios por etapa
+- **🛡️ Rate Limiting**: Proteção contra spam e ataques com limites configuráveis
+
+### Melhorias Técnicas
+- **⚡ Performance**: Rate limiting otimizado para desenvolvimento
+- **🔧 Debugging**: Logs detalhados para troubleshooting
+- **📱 Responsividade**: Interface adaptável para diferentes dispositivos
+- **🎯 UX**: Interface mais intuitiva e moderna
 
 ## Suporte
 

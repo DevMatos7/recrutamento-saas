@@ -6,7 +6,9 @@ import {
   candidatos, 
   usuarios,
   type VagaCandidato,
-  type Usuario
+  type Usuario,
+  pipelineEtapas,
+  pipelineAuditoria
 } from "@shared/schema";
 
 // Valid pipeline stages
@@ -61,6 +63,20 @@ export class PipelineService {
         "Usuário não tem permissão para mover candidatos no pipeline",
         "PERMISSION_DENIED"
       );
+    }
+  }
+
+  /**
+   * Valida se o usuário pertence à mesma empresa da vaga
+   */
+  private static async validateEmpresaVaga(vagaId: string, usuarioLogado: Usuario): Promise<void> {
+    if (usuarioLogado.perfil === 'admin') return;
+    const [vaga] = await db.select().from(vagas).where(eq(vagas.id, vagaId));
+    if (!vaga) {
+      throw new PipelineServiceError('Vaga não encontrada', 'JOB_NOT_FOUND');
+    }
+    if (vaga.empresaId !== usuarioLogado.empresaId) {
+      throw new PipelineServiceError('Acesso negado: vaga não pertence à sua empresa', 'PERMISSION_DENIED');
     }
   }
 
@@ -216,6 +232,30 @@ export class PipelineService {
     vagaCandidato: VagaCandidato;
     historico: MovimentacaoHistorico;
   }> {
+    // 0. Validar empresa
+    await this.validateEmpresaVaga(vagaId, usuarioLogado);
+    // 0.1 Validar se é responsável pela vaga (ou admin)
+    if (usuarioLogado.perfil !== 'admin') {
+      const [vaga] = await db.select().from(vagas).where(eq(vagas.id, vagaId));
+      if (!vaga) {
+        throw new PipelineServiceError('Vaga não encontrada', 'JOB_NOT_FOUND');
+      }
+      if (vaga.gestorId && vaga.gestorId !== usuarioLogado.id) {
+        throw new PipelineServiceError('Apenas o responsável pela vaga pode mover candidatos', 'PERMISSION_DENIED');
+      }
+    }
+    // 0.2 Validar se o usuário é responsável pela etapa de destino (ou admin)
+    if (usuarioLogado.perfil !== 'admin') {
+      const [etapaDestino] = await db.select().from(pipelineEtapas).where(and(eq(pipelineEtapas.vagaId, vagaId), eq(pipelineEtapas.nome, novaEtapa)));
+      if (!etapaDestino) {
+        throw new PipelineServiceError('Etapa de destino não encontrada', 'INVALID_STAGE');
+      }
+      if (Array.isArray(etapaDestino.responsaveis) && etapaDestino.responsaveis.length > 0) {
+        if (!etapaDestino.responsaveis.includes(usuarioLogado.id)) {
+          throw new PipelineServiceError('Você não tem permissão para mover candidatos para esta etapa', 'PERMISSION_DENIED');
+        }
+      }
+    }
     // 1. Validate user permissions
     this.validateUserPermissions(usuarioLogado);
 
@@ -229,6 +269,32 @@ export class PipelineService {
 
     // 4. Validate candidate is enrolled in the job
     const inscricaoAtual = await this.validateCandidatoInscrito(vagaId, candidatoId);
+
+    // NOVO: Buscar definição da etapa atual e validar campos obrigatórios
+    const [etapaAtualDef] = await db
+      .select()
+      .from(pipelineEtapas)
+      .where(and(
+        eq(pipelineEtapas.vagaId, vagaId),
+        eq(pipelineEtapas.nome, inscricaoAtual.etapa)
+      ));
+    if (etapaAtualDef && Array.isArray(etapaAtualDef.camposObrigatorios)) {
+      for (const campo of etapaAtualDef.camposObrigatorios) {
+        if (campo === "observacao" && !comentarios) {
+          throw new PipelineServiceError(
+            "É obrigatório preencher a observação para mover o candidato desta etapa.",
+            "MISSING_REQUIRED_FIELD"
+          );
+        }
+        if (campo === "score" && (nota === undefined || nota === null)) {
+          throw new PipelineServiceError(
+            "É obrigatório preencher o score de avaliação para mover o candidato desta etapa.",
+            "MISSING_REQUIRED_FIELD"
+          );
+        }
+        // Adicione outras validações conforme necessário
+      }
+    }
 
     // 5. Check if movement is necessary
     if (inscricaoAtual.etapa === novaEtapa) {
@@ -270,6 +336,25 @@ export class PipelineService {
       );
     }
 
+    // 8. Registrar auditoria
+    await db.insert(pipelineAuditoria).values({
+      vagaId,
+      candidatoId,
+      usuarioId: usuarioLogado.id,
+      acao: 'mover_candidato',
+      etapaAnterior: inscricaoAtual.etapa,
+      etapaNova: novaEtapa,
+      nota: nota?.toString() || null,
+      comentarios: comentarios || null,
+      dataMovimentacao: new Date(),
+      ip: (usuarioLogado as any).ip || null,
+      detalhes: {
+        motivo: comentarios,
+        score: nota,
+        responsavel: usuarioLogado.nome
+      }
+    });
+
     return {
       vagaCandidato: vagaCandidatoAtualizado,
       historico
@@ -279,7 +364,13 @@ export class PipelineService {
   /**
    * Get complete movement history for a candidate across all jobs
    */
-  static async obterHistoricoCompleto(candidatoId: string): Promise<MovimentacaoHistorico[]> {
+  static async obterHistoricoCompleto(candidatoId: string, usuarioLogado: Usuario): Promise<MovimentacaoHistorico[]> {
+    // Buscar todas as inscrições do candidato
+    const inscricoes = await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.candidatoId, candidatoId));
+    // Para cada inscrição, validar empresa
+    for (const inscricao of inscricoes) {
+      await this.validateEmpresaVaga(inscricao.vagaId, usuarioLogado);
+    }
     const historico = await db
       .select({
         id: vagaCandidatos.id,
