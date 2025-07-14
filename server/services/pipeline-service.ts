@@ -11,18 +11,6 @@ import {
   pipelineAuditoria
 } from "@shared/schema";
 
-// Valid pipeline stages
-export const ETAPAS_VALIDAS = [
-  "recebido",
-  "triagem", 
-  "entrevista",
-  "avaliacao",
-  "aprovado",
-  "reprovado"
-] as const;
-
-export type EtapaValida = typeof ETAPAS_VALIDAS[number];
-
 // Service errors
 export class PipelineServiceError extends Error {
   constructor(message: string, public code: string) {
@@ -77,18 +65,6 @@ export class PipelineService {
     }
     if (vaga.empresaId !== usuarioLogado.empresaId) {
       throw new PipelineServiceError('Acesso negado: vaga não pertence à sua empresa', 'PERMISSION_DENIED');
-    }
-  }
-
-  /**
-   * Validates if the stage is valid
-   */
-  private static validateEtapa(etapa: string): asserts etapa is EtapaValida {
-    if (!ETAPAS_VALIDAS.includes(etapa as EtapaValida)) {
-      throw new PipelineServiceError(
-        `Etapa inválida: ${etapa}. Etapas válidas: ${ETAPAS_VALIDAS.join(", ")}`,
-        "INVALID_STAGE"
-      );
     }
   }
 
@@ -245,8 +221,9 @@ export class PipelineService {
       }
     }
     // 0.2 Validar se o usuário é responsável pela etapa de destino (ou admin)
+    let etapaDestino;
     if (usuarioLogado.perfil !== 'admin') {
-      const [etapaDestino] = await db.select().from(pipelineEtapas).where(and(eq(pipelineEtapas.vagaId, vagaId), eq(pipelineEtapas.nome, novaEtapa)));
+      [etapaDestino] = await db.select().from(pipelineEtapas).where(and(eq(pipelineEtapas.vagaId, vagaId), eq(pipelineEtapas.id, novaEtapa)));
       if (!etapaDestino) {
         throw new PipelineServiceError('Etapa de destino não encontrada', 'INVALID_STAGE');
       }
@@ -255,12 +232,17 @@ export class PipelineService {
           throw new PipelineServiceError('Você não tem permissão para mover candidatos para esta etapa', 'PERMISSION_DENIED');
         }
       }
+    } else {
+      // Admin: só precisa validar se a etapa existe
+      [etapaDestino] = await db.select().from(pipelineEtapas).where(and(eq(pipelineEtapas.vagaId, vagaId), eq(pipelineEtapas.id, novaEtapa)));
+      if (!etapaDestino) {
+        throw new PipelineServiceError('Etapa de destino não encontrada', 'INVALID_STAGE');
+      }
     }
     // 1. Validate user permissions
     this.validateUserPermissions(usuarioLogado);
 
     // 2. Validate input parameters
-    this.validateEtapa(novaEtapa);
     this.validateNota(nota);
 
     // 3. Validate entities exist and are active
@@ -276,7 +258,7 @@ export class PipelineService {
       .from(pipelineEtapas)
       .where(and(
         eq(pipelineEtapas.vagaId, vagaId),
-        eq(pipelineEtapas.nome, inscricaoAtual.etapa)
+        eq(pipelineEtapas.id, inscricaoAtual.etapa)
       ));
     if (etapaAtualDef && Array.isArray(etapaAtualDef.camposObrigatorios)) {
       for (const campo of etapaAtualDef.camposObrigatorios) {
@@ -418,7 +400,7 @@ export class PipelineService {
    */
   static async obterEstatisticasPipeline(vagaId: string): Promise<{
     total: number;
-    porEtapa: Record<EtapaValida, number>;
+    porEtapa: Record<string, number>;
     taxaConversao: Record<string, number>;
   }> {
     const candidatos = await db
@@ -429,10 +411,10 @@ export class PipelineService {
       .where(eq(vagaCandidatos.vagaId, vagaId));
 
     const total = candidatos.length;
-    const porEtapa = ETAPAS_VALIDAS.reduce((acc, etapa) => {
-      acc[etapa] = candidatos.filter(c => c.etapa === etapa).length;
+    const porEtapa = candidatos.reduce((acc, inscricao) => {
+      acc[inscricao.etapa] = (acc[inscricao.etapa] || 0) + 1;
       return acc;
-    }, {} as Record<EtapaValida, number>);
+    }, {} as Record<string, number>);
 
     // Calculate conversion rates between stages
     const taxaConversao: Record<string, number> = {};

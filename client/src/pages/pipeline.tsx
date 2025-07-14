@@ -133,13 +133,15 @@ function MoveModal({
   isOpen, 
   onClose, 
   onMove,
-  errorMessage
+  errorMessage,
+  etapas // <-- NOVO: etapas personalizadas
 }: { 
   candidate: CandidateWithDetails | null;
   isOpen: boolean;
   onClose: () => void;
   onMove: (etapa: string, comentarios: string, nota?: number) => void;
   errorMessage?: string | null;
+  etapas: any[]; // <-- NOVO: etapas personalizadas
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -226,9 +228,9 @@ function MoveModal({
                 <SelectValue placeholder="Selecione a nova etapa" />
               </SelectTrigger>
               <SelectContent>
-                {PIPELINE_STAGES.map((stage) => (
+                {etapas.map((stage) => (
                   <SelectItem key={stage.id} value={stage.id}>
-                    {stage.title}
+                    {stage.nome || stage.title}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -685,6 +687,7 @@ export default function PipelinePage() {
         onClose={() => setMoveModalOpen(false)}
         onMove={handleMove}
         errorMessage={moveModalError}
+        etapas={etapasDetalhadas} // <-- Passe as etapas personalizadas
       />
 
       {/* Add Candidate Modal */}
