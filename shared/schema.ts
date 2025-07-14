@@ -209,6 +209,28 @@ export const comunicacoes = pgTable("comunicacoes", {
   atualizadoEm: timestamp("atualizado_em").defaultNow().notNull(),
 });
 
+// Tabela de Skills Padronizadas
+export const skills = pgTable("skills", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  categoria: varchar("categoria", { length: 100 }),
+  codigoExterno: varchar("codigo_externo", { length: 100 }), // ESCO/CBO
+});
+
+// Relacionamento Candidato <-> Skills
+export const candidatoSkills = pgTable("candidato_skills", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
+  skillId: uuid("skill_id").notNull().references(() => skills.id),
+});
+
+// Relacionamento Vaga <-> Skills
+export const vagaSkills = pgTable("vaga_skills", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaId: uuid("vaga_id").notNull().references(() => vagas.id),
+  skillId: uuid("skill_id").notNull().references(() => skills.id),
+});
+
 // Relations
 export const empresasRelations = relations(empresas, ({ many }) => ({
   departamentos: many(departamentos),
@@ -561,4 +583,27 @@ export const pipelineAuditoria = pgTable('pipeline_auditoria', {
   dataMovimentacao: timestamp('data_movimentacao').defaultNow().notNull(),
   ip: varchar('ip', { length: 64 }),
   detalhes: jsonb('detalhes'),
+});
+
+export const matchFeedback = pgTable("match_feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaId: uuid("vaga_id").notNull().references(() => vagas.id),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id),
+  feedback: varchar("feedback", { length: 10 }).notNull(), // 'bom' ou 'ruim'
+  comentario: text("comentario"),
+  data: timestamp("data").defaultNow().notNull(),
+});
+
+export const vagaMatchingConfig = pgTable("vaga_matching_config", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaId: uuid("vaga_id").notNull().references(() => vagas.id),
+  competenciasPeso: integer("competencias_peso").notNull(),
+  experienciaPeso: integer("experiencia_peso").notNull(),
+  formacaoPeso: integer("formacao_peso").notNull(),
+  localizacaoPeso: integer("localizacao_peso").notNull(),
+  salarioPeso: integer("salario_peso").notNull(),
+  discPeso: integer("disc_peso").notNull(),
+  scoreMinimo: integer("score_minimo").notNull(),
+  data: timestamp("data").defaultNow().notNull(),
 });

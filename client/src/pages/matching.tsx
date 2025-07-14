@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,11 @@ export default function MatchingPage() {
       return await res.json();
     },
     enabled: !!vagaId,
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 
   // Buscar estatísticas
@@ -380,7 +385,7 @@ export default function MatchingPage() {
                                 ((quantidade as number) / estatisticas.totalCandidatos) * 100 : 0} 
                             />
                           </div>
-                          <span className="font-medium">{quantidade}</span>
+                          <span className="font-medium">{quantidade as number}</span>
                         </div>
                       </div>
                     ))}

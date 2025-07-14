@@ -3,6 +3,8 @@ import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { seedTests } from "./seed-tests.js";
 import { seedQuestoesDisc } from "./seed-disc.js";
+import { db } from "./db";
+import { skills } from "@shared/schema";
 
 const scryptAsync = promisify(scrypt);
 
@@ -60,6 +62,23 @@ export async function seedDatabase() {
       
       // Seed DISC questions
       await seedQuestoesDisc();
+
+      // Seed de skills técnicas comuns
+      const skillsSeed = [
+        { nome: "React", categoria: "Frontend", codigoExterno: "ESCO:1234" },
+        { nome: "Node.js", categoria: "Backend", codigoExterno: "ESCO:5678" },
+        { nome: "Python", categoria: "Backend", codigoExterno: "ESCO:9101" },
+        { nome: "SQL", categoria: "Banco de Dados", codigoExterno: "ESCO:1121" },
+        { nome: "Java", categoria: "Backend", codigoExterno: "ESCO:3141" },
+        { nome: "AWS", categoria: "Cloud", codigoExterno: "ESCO:5161" },
+        { nome: "Docker", categoria: "DevOps", codigoExterno: "ESCO:7181" },
+        { nome: "Figma", categoria: "Design", codigoExterno: "ESCO:9202" },
+        { nome: "Excel", categoria: "Ferramentas", codigoExterno: "ESCO:1222" },
+        { nome: "Inglês", categoria: "Idiomas", codigoExterno: "ESCO:2332" },
+      ];
+      for (const skill of skillsSeed) {
+        await db.insert(skills).values(skill).onConflictDoNothing();
+      }
 
       console.log("Seed data created successfully!");
       console.log("Master user: admin@gentepro.com / 123456");

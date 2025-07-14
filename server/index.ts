@@ -9,6 +9,9 @@ import { CommunicationService } from "./services/communication-service";
 
 const app = express();
 
+// Desabilitar ETag para evitar respostas 304 e garantir sempre status 200
+app.disable('etag');
+
 // Aplicar rate limiting global para APIs
 app.use("/api", apiLimiter);
 

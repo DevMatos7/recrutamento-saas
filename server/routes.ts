@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema, insertPipelineEtapaSchema, pipelineAuditoria } from "@shared/schema";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema, insertPipelineEtapaSchema, pipelineAuditoria, matchFeedback, vagaMatchingConfig } from "@shared/schema";
 import { TesteService } from "./services/teste-service.js";
 import { EntrevistaService } from "./services/entrevista-service.js";
 import { z } from "zod";
@@ -15,6 +15,8 @@ import { HfInference } from '@huggingface/inference';
 import fs from 'fs';
 import ExcelJS from "exceljs";
 import { db } from './db';
+import { like, eq, ilike } from 'drizzle-orm';
+import { candidatoSkills, vagaSkills, skills } from "@shared/schema";
 
 const scryptAsync = promisify(scrypt);
 const upload = multer({ dest: '/tmp' });
@@ -453,7 +455,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Acesso negado" });
       }
       const vagaData = insertVagaSchema.parse(req.body);
+      const skillsIds = req.body.skillsIds || [];
       const vaga = await storage.createVaga(vagaData);
+      // Atualizar skills da vaga
+      if (skillsIds.length > 0) {
+        const { db } = await import("./db");
+        const { vagaSkills } = await import("@shared/schema");
+        for (const skillId of skillsIds) {
+          await db.insert(vagaSkills).values({ vagaId: vaga.id, skillId }).onConflictDoNothing();
+        }
+      }
       // Auditoria: criar
       try {
         await storage.createVagaAuditoria({
@@ -495,53 +506,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Acesso negado" });
       }
       const vagaData = insertVagaSchema.partial().parse(req.body);
-      
+      const skillsIds = req.body.skillsIds || [];
       // Buscar dados antigos da vaga antes da atualização
       const vagaAntiga = await storage.getVaga(req.params.id);
       if (!vagaAntiga) {
         return res.status(404).json({ message: "Vaga não encontrada" });
       }
-      
       const vaga = await storage.updateVaga(req.params.id, vagaData);
       if (!vaga) {
         return res.status(404).json({ message: "Vaga não encontrada" });
       }
-      
+      // Atualizar skills da vaga
+      const { db } = await import("./db");
+      const { vagaSkills } = await import("@shared/schema");
+      await db.delete(vagaSkills).where(vagaSkills.vagaId.eq(req.params.id));
+      for (const skillId of skillsIds) {
+        await db.insert(vagaSkills).values({ vagaId: req.params.id, skillId }).onConflictDoNothing();
+      }
       // Auditoria: editar
       try {
-        // Criar objeto com dados antigos e novos para comparação
         const dadosAuditoria = {
           dadosAntigos: vagaAntiga,
           dadosNovos: vagaData,
           camposAlterados: Object.keys(vagaData)
         };
-        
         await storage.createVagaAuditoria({
-          vagaId: vaga.id,
+          vagaId: req.params.id,
           usuarioId: req.user.id,
           acao: 'editar',
           detalhes: JSON.stringify(dadosAuditoria)
         });
-      } catch (e) { 
-        console.error('[AUDITORIA] Erro ao registrar auditoria:', e);
-      }
-      // Notificação automática (já implementada)
-      try {
-        const { CommunicationService } = await import("./services/communication-service");
-        const comm = new CommunicationService();
-        const gestor = await storage.getUsuario(vaga.gestorId);
-        const recrutadores = await storage.getUsuariosByEmpresa(vaga.empresaId);
-        if (gestor) {
-          await comm.enviarComunicacao('email', gestor, `A vaga ${vaga.titulo} foi atualizada.`);
-          await comm.enviarComunicacao('whatsapp', gestor, `A vaga ${vaga.titulo} foi atualizada.`);
-        }
-        for (const rec of recrutadores) {
-          if (rec.id !== gestor?.id) {
-            await comm.enviarComunicacao('email', rec, `A vaga ${vaga.titulo} foi atualizada.`);
-            await comm.enviarComunicacao('whatsapp', rec, `A vaga ${vaga.titulo} foi atualizada.`);
-          }
-        }
-      } catch (e) { console.error('Erro ao notificar:', e); }
+      } catch (e) { console.error('Erro ao registrar auditoria:', e); }
       res.json(vaga);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -656,31 +651,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/candidatos", requireAuth, async (req, res, next) => {
     try {
-      // Only admin and recrutador can create candidates
       if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
         return res.status(403).json({ message: "Acesso negado" });
       }
-
-      const candidato = await storage.createCandidato(req.body);
+      const candidatoData = insertCandidatoSchema.parse(req.body);
+      const skillsIds = req.body.skillsIds || [];
+      const candidato = await storage.createCandidato(candidatoData);
+      // Atualizar skills do candidato
+      if (skillsIds.length > 0) {
+        const { db } = await import("./db");
+        const { candidatoSkills } = await import("@shared/schema");
+        for (const skillId of skillsIds) {
+          await db.insert(candidatoSkills).values({ candidatoId: candidato.id, skillId }).onConflictDoNothing();
+        }
+      }
       res.status(201).json(candidato);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
       next(error);
     }
   });
 
   app.put("/api/candidatos/:id", requireAuth, async (req, res, next) => {
     try {
-      // Only admin and recrutador can update candidates
       if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
         return res.status(403).json({ message: "Acesso negado" });
       }
-
-      const candidato = await storage.updateCandidato(req.params.id, req.body);
+      const candidatoData = insertCandidatoSchema.partial().parse(req.body);
+      const skillsIds = req.body.skillsIds || [];
+      const candidato = await storage.updateCandidato(req.params.id, candidatoData);
       if (!candidato) {
         return res.status(404).json({ message: "Candidato não encontrado" });
       }
+      // Atualizar skills do candidato
+      const { db } = await import("./db");
+      const { candidatoSkills } = await import("@shared/schema");
+      await db.delete(candidatoSkills).where(candidatoSkills.candidatoId.eq(req.params.id));
+      for (const skillId of skillsIds) {
+        await db.insert(candidatoSkills).values({ candidatoId: req.params.id, skillId }).onConflictDoNothing();
+      }
       res.json(candidato);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
       next(error);
     }
   });
@@ -2205,7 +2221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      if (nivelExperiencia) {
+      if (nivelExperiencia && nivelExperiencia !== "todos" && nivelExperiencia !== "") {
         matches = matches.filter(match => 
           match.candidato.nivelExperiencia === nivelExperiencia
         );
@@ -2697,6 +2713,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.end();
     } catch (error) {
       next(error);
+    }
+  });
+
+  // Endpoint para buscar skills (autocomplete)
+  app.get("/api/skills", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { search, limit = "50" } = req.query;
+      let query = db.select().from(skills);
+      if (search) {
+        const words = (search as string).split(/\s+/).filter(Boolean);
+        for (const word of words) {
+          query = query.where(ilike(skills.nome, `%${word}%`));
+        }
+      }
+      // Filtro de categoria removido temporariamente
+      const results = await query.limit(parseInt(limit as string));
+      res.json(results);
+    } catch (error) {
+      console.error("Erro ao buscar skills:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Endpoint para registrar feedback de match
+  app.post("/api/match-feedback", requireAuth, async (req, res, next) => {
+    try {
+      const { vagaId, candidatoId, feedback, comentario } = req.body;
+      if (!vagaId || !candidatoId || !feedback) {
+        return res.status(400).json({ message: "vagaId, candidatoId e feedback são obrigatórios" });
+      }
+      const usuarioId = req.user.id;
+      const [fb] = await db.insert(matchFeedback).values({ vagaId, candidatoId, usuarioId, feedback, comentario }).returning();
+      res.status(201).json(fb);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Endpoint para consultar feedbacks de match
+  app.get("/api/match-feedback", requireAuth, async (req, res, next) => {
+    try {
+      const { vagaId, candidatoId } = req.query;
+      let query = db.select().from(matchFeedback);
+      if (vagaId) query = query.where(matchFeedback.vagaId.eq(vagaId));
+      if (candidatoId) query = query.where(matchFeedback.candidatoId.eq(candidatoId));
+      const feedbacks = await query;
+      res.json(feedbacks);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Endpoint para salvar configuração de matching por vaga
+  app.post("/api/vagas/:id/matching-config", requireAuth, async (req, res, next) => {
+    try {
+      const vagaId = req.params.id;
+      const config = req.body;
+      // Remove configs antigas para a vaga
+      await db.delete(vagaMatchingConfig).where(vagaMatchingConfig.vagaId.eq(vagaId));
+      // Salva nova config
+      const [saved] = await db.insert(vagaMatchingConfig).values({ vagaId, ...config }).returning();
+      res.status(201).json(saved);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Endpoint para recuperar configuração de matching por vaga
+  app.get("/api/vagas/:id/matching-config", requireAuth, async (req, res, next) => {
+    try {
+      const vagaId = req.params.id;
+      const [config] = await db.select().from(vagaMatchingConfig).where(vagaMatchingConfig.vagaId.eq(vagaId)).orderBy(vagaMatchingConfig.data.desc()).limit(1);
+      res.json(config || null);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // CRUD de Competências (Skills)
+  app.get("/api/skills", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { search, categoria, limit = "50" } = req.query;
+      
+      let query = db.select().from(skills);
+      
+      if (search) {
+        query = query.where(like(skills.nome, `%${search}%`));
+      }
+      
+      if (categoria) {
+        query = query.where(eq(skills.categoria, categoria as string));
+      }
+      
+      const results = await query.limit(parseInt(limit as string));
+      res.json(results);
+    } catch (error) {
+      console.error("Erro ao buscar skills:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/skills", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { nome, codigoExterno, categoria } = req.body;
+      
+      if (!nome) {
+        return res.status(400).json({ error: "Nome é obrigatório" });
+      }
+      
+      const [newSkill] = await db.insert(skills).values({
+        nome,
+        codigoExterno: codigoExterno || null,
+        categoria: categoria || "Custom"
+      }).returning();
+      
+      res.status(201).json(newSkill);
+    } catch (error) {
+      console.error("Erro ao criar skill:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  app.put("/api/skills/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { nome, codigoExterno, categoria } = req.body;
+      
+      if (!nome) {
+        return res.status(400).json({ error: "Nome é obrigatório" });
+      }
+      
+      const [updatedSkill] = await db.update(skills)
+        .set({
+          nome,
+          codigoExterno: codigoExterno || null,
+          categoria: categoria || "Custom"
+        })
+        .where(eq(skills.id, id))
+        .returning();
+      
+      if (!updatedSkill) {
+        return res.status(404).json({ error: "Competência não encontrada" });
+      }
+      
+      res.json(updatedSkill);
+    } catch (error) {
+      console.error("Erro ao atualizar skill:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  app.delete("/api/skills/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      // Verificar se a skill está sendo usada
+      const candidatoSkills = await db.select().from(candidatoSkills).where(eq(candidatoSkills.skillId, id));
+      const vagaSkills = await db.select().from(vagaSkills).where(eq(vagaSkills.skillId, id));
+      
+      if (candidatoSkills.length > 0 || vagaSkills.length > 0) {
+        return res.status(400).json({ 
+          error: "Não é possível excluir. Esta competência está sendo usada por candidatos ou vagas.",
+          candidatos: candidatoSkills.length,
+          vagas: vagaSkills.length
+        });
+      }
+      
+      const [deletedSkill] = await db.delete(skills)
+        .where(eq(skills.id, id))
+        .returning();
+      
+      if (!deletedSkill) {
+        return res.status(404).json({ error: "Competência não encontrada" });
+      }
+      
+      res.json({ message: "Competência excluída com sucesso" });
+    } catch (error) {
+      console.error("Erro ao excluir skill:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
     }
   });
 

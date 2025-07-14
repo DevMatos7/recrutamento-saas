@@ -13,6 +13,8 @@ import { insertVagaSchema, type InsertVaga, type Vaga } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
+import { MultiSelect } from '@/components/ui/multiselect';
+import axios from 'axios';
 
 interface VagaModalProps {
   isOpen: boolean;
@@ -52,6 +54,29 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
       gestorId: "",
     },
   });
+
+  const [skillsOptions, setSkillsOptions] = React.useState<{ value: string; label: string }[]>([]);
+  const [skillsIds, setSkillsIds] = React.useState<string[]>([]);
+
+  // Buscar skills da API para autocomplete
+  React.useEffect(() => {
+    if (isOpen) {
+      axios.get('/api/skills').then(res => {
+        setSkillsOptions(res.data.map((s: any) => ({ value: s.id, label: s.nome })));
+      });
+    }
+  }, [isOpen]);
+
+  // Preencher skillsIds ao editar
+  React.useEffect(() => {
+    if (editingVaga && isOpen) {
+      axios.get(`/api/vagas/${editingVaga.id}/skills`).then(res => {
+        setSkillsIds(res.data.map((s: any) => s.id));
+      }).catch(() => setSkillsIds([]));
+    } else if (isOpen) {
+      setSkillsIds([]);
+    }
+  }, [editingVaga, isOpen]);
 
   // Reset form when modal opens/closes or editing vaga changes
   React.useEffect(() => {
@@ -111,7 +136,7 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
   });
 
   const onSubmit = (data: InsertVaga) => {
-    mutation.mutate(data);
+    mutation.mutate({ ...data, skillsIds });
   };
 
   // Filter usuarios to show only gestors and admins
@@ -208,6 +233,15 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
+                <div>
+                  <label className="block text-sm font-medium mb-1">Competências Técnicas</label>
+                  <MultiSelect
+                    options={skillsOptions}
+                    values={skillsIds}
+                    onChange={setSkillsIds}
+                    placeholder="Selecione as skills da vaga"
+                  />
+                </div>
               </div>
 
               {/* Organization */}

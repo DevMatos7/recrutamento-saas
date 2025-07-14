@@ -32,7 +32,8 @@ import {
   type InsertComunicacao,
   vagaAuditoria,
   type PipelineEtapa,
-  type InsertPipelineEtapa
+  type InsertPipelineEtapa,
+  skills
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, asc, lte, isNull, sql } from "drizzle-orm";
@@ -810,6 +811,14 @@ export class DatabaseStorage implements IStorage {
     for (const etapa of etapas) {
       await db.update(pipelineEtapas).set({ ordem: etapa.ordem }).where(eq(pipelineEtapas.id, etapa.id));
     }
+  }
+
+  // Skills methods
+  async getSkills(query?: string): Promise<any[]> {
+    if (query) {
+      return db.select().from(skills).where(sql`LOWER(nome) LIKE ${'%' + query.toLowerCase() + '%'}`).orderBy(skills.nome);
+    }
+    return db.select().from(skills).orderBy(skills.nome);
   }
 }
 

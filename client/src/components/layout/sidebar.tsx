@@ -22,7 +22,8 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  Edit
+  Edit,
+  Tag
 } from "lucide-react";
 
 export function Sidebar() {
@@ -104,6 +105,12 @@ export function Sidebar() {
       name: "Departamentos", 
       href: "/configuracoes/departamentos",
       icon: Network,
+      show: ["admin", "recrutador"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Competências",
+      href: "/configuracoes/competencias",
+      icon: Tag,
       show: ["admin", "recrutador"].includes(user?.perfil || ""),
     },
     {

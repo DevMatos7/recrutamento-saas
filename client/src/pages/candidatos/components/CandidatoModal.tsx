@@ -15,6 +15,10 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { MultiSelect } from '@/components/ui/multiselect';
+import SkillsAutocomplete from '@/components/skills-autocomplete';
+import CargoAutocomplete from '@/components/cargo-autocomplete';
+import { type Skill } from '@shared/schema';
 
 interface CandidatoModalProps {
   isOpen: boolean;
@@ -182,6 +186,30 @@ export function CandidatoModal({ isOpen, onClose, editingCandidato }: CandidatoM
   const [cepError, setCepError] = useState<string | null>(null);
   const [touchedFields, setTouchedFields] = useState<{ [key: string]: boolean }>({});
   const [triedSubmit, setTriedSubmit] = useState(false);
+  // skillsOptions deve ser Skill[]
+  const [skillsOptions, setSkillsOptions] = useState<Skill[]>([]);
+  const [skillsIds, setSkillsIds] = useState<string[]>([]);
+
+  // Buscar skills da API para autocomplete
+  useEffect(() => {
+    if (isOpen) {
+      axios.get('/api/skills').then(res => {
+        setSkillsOptions(res.data.map((s: any) => ({ value: s.id, label: s.nome })));
+      });
+    }
+  }, [isOpen]);
+
+  // Preencher skillsIds ao editar
+  useEffect(() => {
+    if (editingCandidato && isOpen) {
+      // Buscar skills do candidato (se vierem no objeto, senão buscar via API)
+      axios.get(`/api/candidatos/${editingCandidato.id}/skills`).then(res => {
+        setSkillsIds(res.data.map((s: any) => s.id));
+      }).catch(() => setSkillsIds([]));
+    } else if (isOpen) {
+      setSkillsIds([]);
+    }
+  }, [editingCandidato, isOpen]);
 
   // Calcular progresso do preenchimento
   const calculateProgress = () => {
@@ -338,6 +366,7 @@ export function CandidatoModal({ isOpen, onClose, editingCandidato }: CandidatoM
       ...formData,
       password: formData.password || '',
       dataNascimento: formData.dataNascimento === '' ? undefined : formData.dataNascimento,
+      skillsIds,
     };
     // Validar formulário completo
     const isValid = validateForm(dataToSubmit, isEditing);
@@ -397,6 +426,15 @@ export function CandidatoModal({ isOpen, onClose, editingCandidato }: CandidatoM
       return { ...prev, idiomas };
     });
   };
+
+  // Função para atualizar o cargo de uma experiência profissional
+  function handleExperienceFieldChange(idx: number, field: string, value: string) {
+    setFormData(prev => {
+      const arr = [...prev.experienciaProfissional];
+      arr[idx] = { ...arr[idx], [field]: value };
+      return { ...prev, experienciaProfissional: arr };
+    });
+  }
 
   // getFieldError é uma função, precisamos obter todos os campos e coletar os erros
   const errorFields = Object.keys(formData);
@@ -855,16 +893,14 @@ export function CandidatoModal({ isOpen, onClose, editingCandidato }: CandidatoM
             </TabsContent>
 
               <TabsContent value="profissional" className="pt-6 space-y-6 animate-in fade-in-0 slide-in-from-right-2 duration-300">
-              <ValidatedField
-                label="Cargo Atual"
-                name="cargo"
-                type="text"
-                value={formData.cargo || ''}
-                onChange={(value) => handleFieldChange('cargo', value)}
-                onBlur={() => handleFieldBlur('cargo')}
-                error={getFieldError('cargo')}
-                placeholder="Ex: Desenvolvedor Frontend"
-              />
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">Cargo Desejado</label>
+                <CargoAutocomplete
+                  value={formData.cargo}
+                  onChange={value => handleFieldChange('cargo', value)}
+                  placeholder="Digite ou selecione o cargo desejado..."
+                />
+              </div>
 
               <ValidatedField
                 label="Resumo Profissional"
@@ -1005,61 +1041,34 @@ export function CandidatoModal({ isOpen, onClose, editingCandidato }: CandidatoM
               <TabsContent value="habilidades" className="pt-6 space-y-6 animate-in fade-in-0 slide-in-from-right-2 duration-300">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <label className="block text-sm font-medium text-gray-700">Habilidades</label>
+                    <label className="block text-sm font-medium text-gray-700">Competências Técnicas</label>
                     <Badge variant="secondary" className="text-xs">Opcional</Badge>
                     <Tooltip>
                       <TooltipTrigger>
                         <Info className="w-4 h-4 text-gray-400" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Digite as habilidades do candidato e pressione Enter para adicionar</p>
+                        <p>Selecione as competências técnicas do candidato</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {formData.habilidades.map((habilidade, idx) => (
-                      <span key={idx} className="bg-gradient-to-r from-blue-200 to-blue-300 text-blue-900 font-medium px-3 py-1 rounded-full shadow-sm flex items-center gap-1 hover:from-blue-300 hover:to-blue-400 transition-all duration-200 transform hover:scale-105">
-                        {habilidade}
-                        <button 
-                          type="button" 
-                          className="ml-1 text-xs text-blue-700 hover:text-red-600 transition-colors duration-200" 
-                          onClick={() => {
-                            setFormData(prev => ({ ...prev, habilidades: prev.habilidades.filter((_, i) => i !== idx) }));
-                          }}
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  
-                        <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400"
-                    placeholder="Digite uma habilidade e pressione Enter"
-                    value={formData.novaHabilidade}
-                    onChange={e => setFormData(prev => ({ ...prev, novaHabilidade: e.target.value }))}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && formData.novaHabilidade.trim()) {
-                        e.preventDefault();
-                        if (!formData.habilidades.includes(formData.novaHabilidade.trim())) {
-                          setFormData(prev => ({
-                            ...prev,
-                            habilidades: [...prev.habilidades, prev.novaHabilidade.trim()],
-                            novaHabilidade: ''
-                          }));
-                        } else {
-                          setFormData(prev => ({ ...prev, novaHabilidade: '' }));
-                        }
-                      }
+                  <SkillsAutocomplete
+                    selectedSkills={skillsOptions.filter(opt => skillsIds.includes(opt.id))}
+                    onSkillsChange={skills => {
+                      setSkillsIds(skills.map(s => s.id));
+                      // Atualiza também skillsOptions se necessário
+                      setSkillsOptions(prev => {
+                        const ids = new Set(skills.map(s => s.id));
+                        // Mantém opções já existentes e adiciona novas
+                        const novas = skills.filter(s => !prev.some(p => p.id === s.id));
+                        return [...prev.filter(p => ids.has(p.id)), ...novas];
+                      });
                     }}
+                    placeholder="Busque e selecione competências..."
+                    maxSkills={20}
                   />
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <Info className="w-3 h-3" />
-                    Pressione Enter para adicionar cada habilidade.
-                  </p>
-                    </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="experiencia" className="pt-6 space-y-6 animate-in fade-in-0 slide-in-from-right-2 duration-300">
@@ -1071,11 +1080,14 @@ export function CandidatoModal({ isOpen, onClose, editingCandidato }: CandidatoM
                         arr[idx].empresa = val;
                         setFormData(prev => ({ ...prev, experienciaProfissional: arr }));
                       }} />
-                      <ValidatedField label="Cargo" name={`experienciaProfissional[${idx}].cargo`} value={exp.cargo} onChange={val => {
-                        const arr = [...formData.experienciaProfissional];
-                        arr[idx].cargo = val;
-                        setFormData(prev => ({ ...prev, experienciaProfissional: arr }));
-                      }} />
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Cargo</label>
+                        <CargoAutocomplete
+                          value={exp.cargo}
+                          onChange={value => handleExperienceFieldChange(idx, 'cargo', value)}
+                          placeholder="Digite ou selecione o cargo..."
+                        />
+                      </div>
                       <ValidatedField label="Data Início" name={`experienciaProfissional[${idx}].dataInicio`} type="date"
                         value={exp.dataInicio}
                         onChange={val => {

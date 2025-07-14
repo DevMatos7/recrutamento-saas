@@ -25,6 +25,7 @@ import CredenciaisPage from "@/pages/credenciais";
 import CandidatePortalPage from "@/pages/candidate-portal";
 import CandidaturasPendentesPage from "@/pages/candidaturas-pendentes";
 import AIRecommendationsPage from "@/pages/ai-recommendations";
+import SkillsAdminPage from "@/pages/skills-admin";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -44,6 +45,7 @@ function Router() {
       <ProtectedRoute path="/configuracoes/departamentos" component={DepartamentosPage} />
       <ProtectedRoute path="/configuracoes/empresas" component={EmpresasPage} />
       <ProtectedRoute path="/configuracoes/usuarios" component={UsuariosPage} />
+      <ProtectedRoute path="/configuracoes/competencias" component={SkillsAdminPage} />
       <ProtectedRoute path="/configuracoes/comunicacoes" component={ComunicacoesPage} />
       <ProtectedRoute path="/configuracoes/credenciais" component={CredenciaisPage} />
       <ProtectedRoute path="/vagas/:vagaId/matches" component={MatchingPage} />
