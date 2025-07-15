@@ -1028,31 +1028,40 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
   );
 
   // Jobs listing view for public access
-  const JobsListingView = () => (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Vagas Disponíveis</h1>
-            <Button onClick={() => setAuthMode('login')}>
-              Fazer Login
-            </Button>
+  const JobsListingView = () => {
+    const { data: jornadas = [] } = useQuery({ queryKey: ["/api/jornadas"] });
+    const jornadaMap = Object.fromEntries((jornadas as any[]).map(j => [j.id, j]));
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-gray-900">Vagas Disponíveis</h1>
+              <Button onClick={() => setAuthMode('login')}>
+                Fazer Login
+              </Button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {jobsLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Carregando vagas...</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {Array.isArray(jobs) && jobs.map((job: any) => (
-              <Card key={job.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">{job.titulo}</CardTitle>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {jobsLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Carregando vagas...</p>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.isArray(jobs) && jobs.map((job: any) => (
+                <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{job.titulo}</CardTitle>
+                    {job.jornadaId && jornadaMap[job.jornadaId] && (
+                      <div className="flex items-center gap-2 text-xs text-blue-700 font-semibold">
+                        <span className="font-bold">Jornada:</span> {jornadaMap[job.jornadaId].nome}
+                        <span className="text-gray-500">{jornadaMap[job.jornadaId].horarios?.map((h: any) => `${h.label}: ${h.hora}`).join(", ")}</span>
+                      </div>
+                    )}
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Building2 className="h-4 w-4" />
                     {job.empresa}
@@ -1077,6 +1086,12 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                       <DialogContent className="max-w-2xl" aria-describedby="job-details-description">
                         <DialogHeader>
                           <DialogTitle>{job.titulo}</DialogTitle>
+                          {job.jornadaId && jornadaMap[job.jornadaId] && (
+                            <div className="flex items-center gap-2 text-xs text-blue-700 font-semibold mt-1">
+                              <span className="font-bold">Jornada:</span> {jornadaMap[job.jornadaId].nome}
+                              <span className="text-gray-500">{jornadaMap[job.jornadaId].horarios?.map((h: any) => `${h.label}: ${h.hora}`).join(", ")}</span>
+                            </div>
+                          )}
                         </DialogHeader>
                         <div className="space-y-4" id="job-details-description">
                           <div>
@@ -1110,11 +1125,12 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                 </CardContent>
               </Card>
             ))}
-          </div>
-        )}
-      </main>
-    </div>
-  );
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  };
 
   // Authenticated dashboard
   const AuthenticatedDashboard = () => {

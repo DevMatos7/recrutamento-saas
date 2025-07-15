@@ -17,242 +17,7 @@ import { type Vaga } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import VagaAuditoria from "@/components/VagaAuditoria";
 import PipelineEtapasConfig from "@/components/PipelineEtapasConfig";
-
-// Job Modal Component with Form
-function VagaModal({ isOpen, onClose, editingVaga }: { isOpen: boolean; onClose: () => void; editingVaga?: Vaga | null }) {
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const [formData, setFormData] = useState({
-    titulo: "",
-    descricao: "",
-    requisitos: "",
-    local: "",
-    salario: "",
-    beneficios: "",
-    tipoContratacao: "CLT",
-    status: "aberta",
-    empresaId: user?.empresaId || "",
-    departamentoId: "",
-    gestorId: user?.id || "",
-  });
-
-  const { data: empresas = [] } = useQuery({ queryKey: ["/api/empresas"] });
-  const { data: departamentos = [] } = useQuery({ queryKey: ["/api/departamentos"] });
-  const { data: usuarios = [] } = useQuery({ queryKey: ["/api/usuarios"] });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const url = editingVaga ? `/api/vagas/${editingVaga.id}` : "/api/vagas";
-      const method = editingVaga ? "PUT" : "POST";
-      const res = await apiRequest(method, url, data);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/vagas"] });
-      toast({
-        title: "Sucesso",
-        description: editingVaga ? "Vaga atualizada!" : "Vaga criada!",
-      });
-      onClose();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  useEffect(() => {
-    if (editingVaga) {
-      setFormData({
-        titulo: editingVaga.titulo,
-        descricao: editingVaga.descricao,
-        requisitos: editingVaga.requisitos ?? "",
-        local: editingVaga.local,
-        salario: editingVaga.salario || "",
-        beneficios: editingVaga.beneficios || "",
-        tipoContratacao: editingVaga.tipoContratacao,
-        status: editingVaga.status,
-        empresaId: editingVaga.empresaId,
-        departamentoId: editingVaga.departamentoId,
-        gestorId: editingVaga.gestorId,
-      });
-    } else if (isOpen) {
-      setFormData({
-        titulo: "",
-        descricao: "",
-        requisitos: "",
-        local: "",
-        salario: "",
-        beneficios: "",
-        tipoContratacao: "CLT",
-        status: "aberta",
-        empresaId: user?.empresaId || "",
-        departamentoId: "",
-        gestorId: user?.id || "",
-      });
-    }
-  }, [editingVaga, isOpen, user]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.titulo || !formData.descricao || !formData.requisitos) {
-      toast({
-        title: "Erro",
-        description: "Preencha os campos obrigatórios",
-        variant: "destructive",
-      });
-      return;
-    }
-    createMutation.mutate(formData);
-  };
-
-  if (!isOpen) return null;
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">
-          {editingVaga ? "Editar Vaga" : "Nova Vaga"}
-        </h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Título *</label>
-              <input
-                type="text"
-                value={formData.titulo}
-                onChange={(e) => setFormData({...formData, titulo: e.target.value})}
-                className="w-full p-2 border rounded"
-                placeholder="Ex: Desenvolvedor Frontend React"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Local *</label>
-              <input
-                type="text"
-                value={formData.local}
-                onChange={(e) => setFormData({...formData, local: e.target.value})}
-                className="w-full p-2 border rounded"
-                placeholder="Ex: São Paulo - SP, Remoto"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Tipo de Contratação</label>
-              <select
-                value={formData.tipoContratacao}
-                onChange={(e) => setFormData({...formData, tipoContratacao: e.target.value})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="CLT">CLT</option>
-                <option value="PJ">PJ</option>
-                <option value="Estágio">Estágio</option>
-                <option value="Temporário">Temporário</option>
-                <option value="Freelancer">Freelancer</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Departamento</label>
-              <select
-                value={formData.departamentoId}
-                onChange={(e) => setFormData({...formData, departamentoId: e.target.value})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="">Selecionar departamento</option>
-                {(departamentos as any[]).map((dept) => (
-                  <option key={dept.id} value={dept.id}>{dept.nome}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Faixa Salarial</label>
-              <input
-                type="text"
-                value={formData.salario}
-                onChange={(e) => setFormData({...formData, salario: e.target.value})}
-                className="w-full p-2 border rounded"
-                placeholder="Ex: R$ 5.000 - R$ 8.000"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="aberta">Aberta</option>
-                <option value="em_triagem">Em Triagem</option>
-                <option value="entrevistas">Entrevistas</option>
-                <option value="encerrada">Encerrada</option>
-                <option value="cancelada">Cancelada</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Descrição *</label>
-            <textarea
-              value={formData.descricao}
-              onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-              className="w-full p-2 border rounded h-24"
-              placeholder="Descreva as responsabilidades e atividades da vaga..."
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Requisitos *</label>
-            <textarea
-              value={formData.requisitos}
-              onChange={(e) => setFormData({...formData, requisitos: e.target.value})}
-              className="w-full p-2 border rounded h-24"
-              placeholder="Liste os requisitos técnicos e experiências necessárias..."
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Benefícios</label>
-            <textarea
-              value={formData.beneficios}
-              onChange={(e) => setFormData({...formData, beneficios: e.target.value})}
-              className="w-full p-2 border rounded h-20"
-              placeholder="Liste os benefícios oferecidos..."
-            />
-          </div>
-          
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border rounded hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {createMutation.isPending ? "Salvando..." : editingVaga ? "Atualizar" : "Criar Vaga"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+import { VagaModal } from "@/components/modals/vaga-modal";
 
 export default function VagasPage() {
   const { user } = useAuth();
@@ -279,6 +44,9 @@ export default function VagasPage() {
   const { data: usuarios = [] } = useQuery({
     queryKey: ["/api/usuarios"],
   });
+
+  const { data: jornadas = [] } = useQuery({ queryKey: ["/api/jornadas"] });
+  const jornadaMap = Object.fromEntries((jornadas as any[]).map(j => [j.id, j]));
 
   const encerrarVagaMutation = useMutation({
     mutationFn: async (vagaId: string) => {
@@ -448,6 +216,7 @@ export default function VagasPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>Gestor</TableHead>
                     <TableHead>Data Abertura</TableHead>
+                    <TableHead>Jornada</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -474,6 +243,16 @@ export default function VagasPage() {
                       </TableCell>
                       <TableCell>
                         {new Date(vaga.dataAbertura).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell>
+                        {vaga.jornadaId && jornadaMap[vaga.jornadaId] ? (
+                          <>
+                            <div className="font-medium">{jornadaMap[vaga.jornadaId].nome}</div>
+                            <div className="text-xs text-gray-500">
+                              {jornadaMap[vaga.jornadaId].horarios?.map((h: any) => `${h.label}: ${h.hora}`).join(", ")}
+                            </div>
+                          </>
+                        ) : "-"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -572,7 +351,7 @@ export default function VagasPage() {
                   ))}
                   {filteredVagas.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                         Nenhuma vaga encontrada
                       </TableCell>
                     </TableRow>
@@ -582,14 +361,10 @@ export default function VagasPage() {
         </CardContent>
       </Card>
 
-      <VagaModal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              setEditingVaga(null);
-            }}
-            editingVaga={editingVaga}
-          />
+      <VagaModal isOpen={isModalOpen} onClose={() => {
+        setIsModalOpen(false);
+        setEditingVaga(null);
+      }} editingVaga={editingVaga} />
       
       {auditoriaVagaId && (
         <VagaAuditoria

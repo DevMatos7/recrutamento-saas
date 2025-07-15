@@ -37,5 +37,13 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      "/ia": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+      },
+      // Adicione outras rotas de API aqui se necessário
+    },
   },
 });

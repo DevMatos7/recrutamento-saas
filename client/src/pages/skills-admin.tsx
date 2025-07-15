@@ -207,18 +207,24 @@ export default function SkillsAdminPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Categoria</label>
-                  <Select name="categoria" defaultValue="Custom">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Custom">Custom</SelectItem>
-                      <SelectItem value="CBO">CBO</SelectItem>
-                      <SelectItem value="Tecnologia">Tecnologia</SelectItem>
-                      <SelectItem value="Gestão">Gestão</SelectItem>
-                      <SelectItem value="Design">Design</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <input
+                    name="categoria"
+                    placeholder="Digite ou selecione a categoria"
+                    className="w-full p-2 border rounded"
+                    list="categorias-list"
+                    defaultValue="Custom"
+                  />
+                  <datalist id="categorias-list">
+                    <option value="Custom" />
+                    <option value="CBO" />
+                    <option value="Tecnologia" />
+                    <option value="Gestão" />
+                    <option value="Design" />
+                    {/* Outras categorias existentes podem ser adicionadas dinamicamente aqui */}
+                    {categories && categories.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="flex gap-2">
                   <Button type="submit" disabled={createSkillMutation.isPending}>

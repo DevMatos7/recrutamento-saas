@@ -137,6 +137,12 @@ export function Sidebar() {
       icon: Settings,
       show: ["admin"].includes(user?.perfil || ""),
     },
+    {
+      name: "Jornadas Detalhadas",
+      href: "/jornadas",
+      icon: Clock,
+      show: ["admin"].includes(user?.perfil || ""),
+    },
   ];
 
   // Submenus de avaliações
@@ -160,6 +166,12 @@ export function Sidebar() {
     {
       name: "Gerenciar Vagas",
       href: "/vagas",
+      icon: Briefcase,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Perfis de Vaga",
+      href: "/perfis-vaga",
       icon: Briefcase,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },

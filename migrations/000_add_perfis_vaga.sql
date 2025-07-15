@@ -1,0 +1,22 @@
+CREATE TABLE "perfis_vaga" (
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "nome_perfil" varchar(255) NOT NULL,
+    "titulo_vaga" varchar(255) NOT NULL,
+    "descricao_funcao" text NOT NULL,
+    "requisitos_obrigatorios" text,
+    "requisitos_desejaveis" text,
+    "competencias_tecnicas" jsonb DEFAULT '[]'::jsonb,
+    "competencias_comportamentais" jsonb DEFAULT '[]'::jsonb,
+    "beneficios" text,
+    "tipo_contratacao" varchar(50) NOT NULL,
+    "faixa_salarial" varchar(100),
+    "empresa_id" uuid NOT NULL,
+    "departamento_id" uuid NOT NULL,
+    "local_atuacao" varchar(255),
+    "modelo_trabalho" varchar(50),
+    "observacoes_internas" text,
+    "data_criacao" timestamp DEFAULT now() NOT NULL,
+    "data_atualizacao" timestamp DEFAULT now() NOT NULL,
+    CONSTRAINT "perfis_vaga_empresa_id_fkey" FOREIGN KEY ("empresa_id") REFERENCES "empresas"("id"),
+    CONSTRAINT "perfis_vaga_departamento_id_fkey" FOREIGN KEY ("departamento_id") REFERENCES "departamentos"("id")
+); 

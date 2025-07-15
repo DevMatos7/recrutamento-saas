@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema, insertPipelineEtapaSchema, pipelineAuditoria, matchFeedback, vagaMatchingConfig } from "@shared/schema";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema, insertPipelineEtapaSchema, pipelineAuditoria, matchFeedback, vagaMatchingConfig, insertPerfilVagaSchema, updatePerfilVagaSchema } from "@shared/schema";
 import { TesteService } from "./services/teste-service.js";
 import { EntrevistaService } from "./services/entrevista-service.js";
 import { z } from "zod";
@@ -17,10 +17,12 @@ import ExcelJS from "exceljs";
 import { db } from './db';
 import { like, eq, ilike } from 'drizzle-orm';
 import { candidatoSkills, vagaSkills, skills } from "@shared/schema";
+import OpenAI from "openai";
 
 const scryptAsync = promisify(scrypt);
 const upload = multer({ dest: '/tmp' });
 const hf = new HfInference(process.env.HF_API_KEY || undefined);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -40,6 +42,13 @@ function requireAuth(req: any, res: any, next: any) {
 function requireAdmin(req: any, res: any, next: any) {
   if (!req.isAuthenticated() || req.user.perfil !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+}
+
+function requireRH(req: any, res: any, next: any) {
+  if (!req.isAuthenticated() || !["admin", "recrutador", "rh"].includes(req.user.perfil)) {
+    return res.status(403).json({ message: "Acesso restrito à equipe de RH/Admin." });
   }
   next();
 }
@@ -492,6 +501,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (e) { console.error('Erro ao notificar:', e); }
       res.status(201).json(vaga);
+      // Após inserir na tabela vagaSkills, adicione:
+      console.log(`Vaga ${vaga.id} associada às skills:`, skillsIds);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
@@ -2255,15 +2266,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vagas/:vagaId/ai-recommendations", requireAuth, async (req: Request, res: Response) => {
     try {
       const vagaId = req.params.vagaId;
-      const limit = parseInt(req.query.limit as string) || 5;
-
-      if (!["admin", "recrutador"].includes(req.user?.perfil || "")) {
-        return res.status(403).json({ message: "Acesso negado" });
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      // Permitir apenas admin
+      if (req.user?.perfil !== "admin") {
+        return res.status(403).json({ message: "Apenas administradores podem usar recomendações de IA" });
       }
-
       const { AIRecommendationService } = await import("./services/ai-recommendation-service.js");
       const recommendations = await AIRecommendationService.getAIRecommendations(vagaId, limit);
-      
       res.json(recommendations);
     } catch (error: any) {
       console.error("Erro ao gerar recomendações AI:", error);
@@ -2276,14 +2285,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const candidatoId = req.params.candidatoId;
       const vagaId = req.params.vagaId;
-
-      if (!["admin", "recrutador", "gestor"].includes(req.user?.perfil || "")) {
-        return res.status(403).json({ message: "Acesso negado" });
+      // Permitir apenas admin
+      if (req.user?.perfil !== "admin") {
+        return res.status(403).json({ message: "Apenas administradores podem usar insights de IA" });
       }
-
       const { AIRecommendationService } = await import("./services/ai-recommendation-service.js");
       const insights = await AIRecommendationService.getCandidateInsights(candidatoId, vagaId);
-      
       res.json(insights);
     } catch (error: any) {
       console.error("Erro ao gerar insights do candidato:", error);
@@ -2817,17 +2824,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/skills", requireAuth, async (req: Request, res: Response) => {
     try {
       const { nome, codigoExterno, categoria } = req.body;
-      
       if (!nome) {
         return res.status(400).json({ error: "Nome é obrigatório" });
       }
-      
+
+      // Validação de unicidade do código externo
+      if (codigoExterno) {
+        const existing = await db.select().from(skills).where(eq(skills.codigoExterno, codigoExterno));
+        if (existing.length > 0) {
+          return res.status(400).json({ error: "Código externo já cadastrado para outra competência." });
+        }
+      }
+
+      // Geração automática do código externo se não informado
+      let finalCodigoExterno = codigoExterno;
+      if (!finalCodigoExterno) {
+        // Buscar o último código SKILL-XXXX
+        const lastSkill = await db.select().from(skills)
+          .where(like(skills.codigoExterno, 'SKILL-%'))
+          .orderBy(sql`CAST(SUBSTRING(${skills.codigoExterno}, 7) AS INTEGER) DESC`)
+          .limit(1);
+        let nextNumber = 1;
+        if (lastSkill.length > 0) {
+          const lastCode = lastSkill[0].codigoExterno;
+          const match = lastCode.match(/SKILL-(\d{4})/);
+          if (match) {
+            nextNumber = parseInt(match[1], 10) + 1;
+          }
+        }
+        finalCodigoExterno = `SKILL-${String(nextNumber).padStart(4, '0')}`;
+      }
+
       const [newSkill] = await db.insert(skills).values({
         nome,
-        codigoExterno: codigoExterno || null,
+        codigoExterno: finalCodigoExterno,
         categoria: categoria || "Custom"
       }).returning();
-      
+
       res.status(201).json(newSkill);
     } catch (error) {
       console.error("Erro ao criar skill:", error);
@@ -2893,6 +2926,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Erro ao excluir skill:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
+  });
+
+  // Perfis de Vaga endpoints
+  app.get("/api/perfis-vaga", requireAuth, async (req, res, next) => {
+    try {
+      const { empresaId, departamentoId, nome, titulo, local } = req.query;
+      let perfis;
+      if (empresaId) {
+        perfis = await storage.getPerfisVagaByEmpresa(empresaId as string);
+      } else if (departamentoId) {
+        perfis = await storage.getPerfisVagaByDepartamento(departamentoId as string);
+      } else {
+        perfis = await storage.getAllPerfisVaga();
+      }
+      // Filtros adicionais
+      if (nome) {
+        perfis = perfis.filter((p: any) => p.nomePerfil?.toLowerCase().includes((nome as string).toLowerCase()));
+      }
+      if (titulo) {
+        perfis = perfis.filter((p: any) => p.tituloVaga?.toLowerCase().includes((titulo as string).toLowerCase()));
+      }
+      if (local) {
+        perfis = perfis.filter((p: any) => p.localAtuacao?.toLowerCase().includes((local as string).toLowerCase()));
+      }
+      res.json(perfis);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/perfis-vaga/:id", requireAuth, async (req, res, next) => {
+    try {
+      const perfil = await storage.getPerfilVaga(req.params.id);
+      if (!perfil) {
+        return res.status(404).json({ message: "Perfil de vaga não encontrado" });
+      }
+      res.json(perfil);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/perfis-vaga", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const perfilData = insertPerfilVagaSchema.parse(req.body);
+      const perfil = await storage.createPerfilVaga(perfilData);
+      res.status(201).json(perfil);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/perfis-vaga/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const perfilData = updatePerfilVagaSchema.parse(req.body);
+      const perfil = await storage.updatePerfilVaga(req.params.id, perfilData);
+      if (!perfil) {
+        return res.status(404).json({ message: "Perfil de vaga não encontrado" });
+      }
+      res.json(perfil);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/perfis-vaga/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deletePerfilVaga(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Perfil de vaga não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/ia/criar-perfil-vaga", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { cargo, tipo_contratacao, local, jornada, departamento, nivel, info_adicional } = req.body;
+      const prompt = `Você é um especialista em recrutamento. Com base nas informações abaixo, gere um perfil completo de vaga:
+- Cargo: ${cargo}
+- Tipo de contratação: ${tipo_contratacao}
+- Local: ${local}
+- Jornada: ${jornada}
+- Departamento: ${departamento}
+- Nível: ${nivel}
+- Observações: ${info_adicional}
+
+Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente estes nomes de chave):
+- nomePerfil (string)
+- tituloVaga (string)
+- descricaoFuncao (string)
+- requisitosObrigatorios (array de string)
+- requisitosDesejaveis (array de string)
+- competenciasTecnicas (array de string)
+- competenciasComportamentais (array de string)
+- beneficios (array de string)
+- tipoContratacao (string)
+- faixaSalarial (string)
+- empresaId (string, pode deixar vazio)
+- departamentoId (string, pode deixar vazio)
+- localAtuacao (string)
+- modeloTrabalho (string)
+- observacoesInternas (string)`;
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "Você é um especialista em RH. Responda sempre em JSON válido." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3
+      });
+      // Log de auditoria (simples)
+      console.log(`[IA] Perfil gerado por ${req.user.email} em ${new Date().toISOString()}:`, req.body);
+      const result = JSON.parse(response.choices[0].message.content || '{}');
+      res.json(result);
+    } catch (error: any) {
+      console.error("Erro IA criar-perfil-vaga:", error);
+      res.status(500).json({ message: error.message || "Erro ao gerar perfil com IA" });
+    }
+  });
+
+  // Jornadas detalhadas
+  app.get("/api/jornadas", requireAuth, async (req, res, next) => {
+    try {
+      const empresaId = req.user.empresaId;
+      const jornadas = await storage.getAllJornadas(empresaId);
+      res.json(jornadas);
+    } catch (error) { next(error); }
+  });
+  app.get("/api/jornadas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const jornada = await storage.getJornada(req.params.id);
+      if (!jornada) return res.status(404).json({ message: "Jornada não encontrada" });
+      res.json(jornada);
+    } catch (error) { next(error); }
+  });
+  app.post("/api/jornadas", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const data = { ...req.body, empresaId: req.user.empresaId };
+      const [jornada] = await storage.createJornada(data);
+      res.status(201).json(jornada);
+    } catch (error) { next(error); }
+  });
+  app.put("/api/jornadas/:id", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const [jornada] = await storage.updateJornada(req.params.id, req.body);
+      res.json(jornada);
+    } catch (error) { next(error); }
+  });
+  app.delete("/api/jornadas/:id", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      await storage.deleteJornada(req.params.id);
+      res.status(204).send();
+    } catch (error) { next(error); }
   });
 
   const httpServer = createServer(app);

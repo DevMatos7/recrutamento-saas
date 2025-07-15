@@ -29,12 +29,15 @@ import SkillsAdminPage from "@/pages/skills-admin";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
+import PerfisVagaPage from "@/pages/perfis-vaga";
+import JornadasPage from "@/pages/jornadas";
 
 function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={AnalyticsPage} />
       <ProtectedRoute path="/vagas" component={VagasPage} />
+      <ProtectedRoute path="/perfis-vaga" component={PerfisVagaPage} />
       <ProtectedRoute path="/candidatos" component={CandidatosPage} />
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
       <ProtectedRoute path="/testes" component={TestesPage} />
@@ -53,6 +56,7 @@ function Router() {
       <ProtectedRoute path="/matching/criterios" component={MatchingCriteriaInfo} />
       <ProtectedRoute path="/candidaturas-pendentes" component={CandidaturasPendentesPage} />
       <ProtectedRoute path="/ai-recommendations" component={AIRecommendationsPage} />
+      <ProtectedRoute path="/jornadas" component={JornadasPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/portal/disc" component={CandidateDiscTest} />
       <Route path="/auth" component={AuthPage} />

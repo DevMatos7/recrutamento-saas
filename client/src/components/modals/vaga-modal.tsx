@@ -15,6 +15,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
 import { MultiSelect } from '@/components/ui/multiselect';
 import axios from 'axios';
+import SkillsAutocomplete from '@/components/skills-autocomplete';
+
+interface Skill { id: string; nome: string; categoria?: string; codigoExterno?: string; }
 
 interface VagaModalProps {
   isOpen: boolean;
@@ -38,6 +41,8 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
     queryKey: ["/api/usuarios"],
   });
 
+  const { data: jornadas = [] } = useQuery({ queryKey: ["/api/jornadas"] });
+
   const form = useForm<InsertVaga>({
     resolver: zodResolver(insertVagaSchema),
     defaultValues: {
@@ -55,26 +60,26 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
     },
   });
 
-  const [skillsOptions, setSkillsOptions] = React.useState<{ value: string; label: string }[]>([]);
-  const [skillsIds, setSkillsIds] = React.useState<string[]>([]);
+  const [skillsOptions, setSkillsOptions] = React.useState<Skill[]>([]);
+  const [selectedSkills, setSelectedSkills] = React.useState<Skill[]>([]);
 
   // Buscar skills da API para autocomplete
   React.useEffect(() => {
     if (isOpen) {
       axios.get('/api/skills').then(res => {
-        setSkillsOptions(res.data.map((s: any) => ({ value: s.id, label: s.nome })));
+        setSkillsOptions(res.data);
       });
     }
   }, [isOpen]);
 
-  // Preencher skillsIds ao editar
+  // Preencher selectedSkills ao editar
   React.useEffect(() => {
     if (editingVaga && isOpen) {
       axios.get(`/api/vagas/${editingVaga.id}/skills`).then(res => {
-        setSkillsIds(res.data.map((s: any) => s.id));
-      }).catch(() => setSkillsIds([]));
+        setSelectedSkills(res.data);
+      }).catch(() => setSelectedSkills([]));
     } else if (isOpen) {
-      setSkillsIds([]);
+      setSelectedSkills([]);
     }
   }, [editingVaga, isOpen]);
 
@@ -111,6 +116,33 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
     }
   }, [editingVaga, isOpen, form, user?.empresaId]);
 
+  // Buscar perfis de vaga
+  const { data: perfisVaga = [] } = useQuery({
+    queryKey: ["/api/perfis-vaga"],
+    enabled: isOpen && !editingVaga, // Só busca ao criar nova vaga
+  });
+
+  // Handler para preencher campos a partir do perfil selecionado
+  const handlePerfilVagaChange = (perfilId: string) => {
+    const perfil = (perfisVaga as any[]).find((p) => p.id === perfilId);
+    if (perfil) {
+      form.reset({
+        titulo: perfil.tituloVaga,
+        descricao: perfil.descricaoFuncao,
+        requisitos: perfil.requisitosObrigatorios || "",
+        local: perfil.localAtuacao || "",
+        salario: perfil.faixaSalarial || "",
+        beneficios: perfil.beneficios || "",
+        tipoContratacao: perfil.tipoContratacao,
+        status: "aberta",
+        empresaId: perfil.empresaId,
+        departamentoId: perfil.departamentoId,
+        gestorId: user?.id || "",
+      });
+      // Se desejar, pode também sugerir skills/competências técnicas
+    }
+  };
+
   const mutation = useMutation({
     mutationFn: async (vagaData: InsertVaga) => {
       const url = editingVaga ? `/api/vagas/${editingVaga.id}` : "/api/vagas";
@@ -136,7 +168,15 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
   });
 
   const onSubmit = (data: InsertVaga) => {
-    mutation.mutate({ ...data, skillsIds });
+    if (selectedSkills.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione pelo menos uma competência técnica para a vaga.",
+        variant: "destructive",
+      });
+      return;
+    }
+    mutation.mutate({ ...data, skillsIds: selectedSkills.map(s => s.id) });
   };
 
   // Filter usuarios to show only gestors and admins
@@ -154,12 +194,28 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Informações Básicas</h3>
-                
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Importar Perfil de Vaga */}
+            {!editingVaga && (
+              <div className="mb-4">
+                <FormLabel>Importar Perfil de Vaga</FormLabel>
+                <select
+                  className="w-full p-2 border rounded"
+                  defaultValue=""
+                  onChange={e => handlePerfilVagaChange(e.target.value)}
+                >
+                  <option value="">Selecionar um perfil cadastrado...</option>
+                  {(perfisVaga as any[]).map((perfil) => (
+                    <option key={perfil.id} value={perfil.id}>
+                      {perfil.nomePerfil} - {perfil.tituloVaga}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Informações Básicas</h3>
                 <FormField
                   control={form.control}
                   name="titulo"
@@ -173,7 +229,6 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="local"
@@ -187,7 +242,6 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="tipoContratacao"
@@ -212,7 +266,6 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="salario"
@@ -220,34 +273,15 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     <FormItem>
                       <FormLabel>Faixa Salarial (Opcional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Ex: R$ 5.000 - R$ 8.000" 
-                          name={field.name}
-                          ref={field.ref}
-                          onBlur={field.onBlur}
-                          onChange={field.onChange}
-                          value={field.value ?? ""} 
-                        />
+                        <Input placeholder="Ex: R$ 5.000 - R$ 8.000" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div>
-                  <label className="block text-sm font-medium mb-1">Competências Técnicas</label>
-                  <MultiSelect
-                    options={skillsOptions}
-                    values={skillsIds}
-                    onChange={setSkillsIds}
-                    placeholder="Selecione as skills da vaga"
-                  />
-                </div>
               </div>
-
-              {/* Organization */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Organização</h3>
-
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Organização</h3>
                 <FormField
                   control={form.control}
                   name="empresaId"
@@ -272,7 +306,6 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="departamentoId"
@@ -297,7 +330,6 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="gestorId"
@@ -322,7 +354,6 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="status"
@@ -347,9 +378,47 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="jornadaId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jornada</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a jornada" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(jornadas as any[]).map((j) => (
+                            <SelectItem key={j.id} value={j.id}>
+                              <div>
+                                <div className="font-medium">{j.nome}</div>
+                                <div className="text-xs text-gray-500">{j.horarios?.map((h: any) => `${h.label}: ${h.hora}`).join(", ")}</div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
-
+            <div className="space-y-6 pt-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Competências Técnicas</h3>
+              <div>
+                <FormLabel>Competências Técnicas</FormLabel>
+                <SkillsAutocomplete
+                  selectedSkills={selectedSkills}
+                  onSkillsChange={setSelectedSkills}
+                  placeholder="Busque e selecione as competências da vaga"
+                  maxSkills={10}
+                />
+              </div>
+            </div>
             {/* Description and Requirements */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Detalhes da Vaga</h3>

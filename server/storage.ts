@@ -33,7 +33,9 @@ import {
   vagaAuditoria,
   type PipelineEtapa,
   type InsertPipelineEtapa,
-  skills
+  skills,
+  perfisVaga,
+  jornadas
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, asc, lte, isNull, sql } from "drizzle-orm";
@@ -145,6 +147,22 @@ export interface IStorage {
   updateEtapa(id: string, etapa: Partial<InsertPipelineEtapa>): Promise<PipelineEtapa | undefined>;
   deleteEtapa(id: string): Promise<boolean>;
   reorderEtapas(vagaId: string, etapas: {id: string, ordem: number}[]): Promise<void>;
+  
+  // Perfis de Vaga methods
+  getAllPerfisVaga(): Promise<any[]>;
+  getPerfisVagaByEmpresa(empresaId: string): Promise<any[]>;
+  getPerfisVagaByDepartamento(departamentoId: string): Promise<any[]>;
+  getPerfilVaga(id: string): Promise<any | undefined>;
+  createPerfilVaga(perfil: any): Promise<any>;
+  updatePerfilVaga(id: string, perfil: Partial<any>): Promise<any | undefined>;
+  deletePerfilVaga(id: string): Promise<boolean>;
+  
+  // Jornadas methods
+  getAllJornadas(empresaId: string): Promise<any[]>;
+  getJornada(id: string): Promise<any | undefined>;
+  createJornada(data: any): Promise<any>;
+  updateJornada(id: string, data: any): Promise<any | undefined>;
+  deleteJornada(id: string): Promise<boolean>;
   
   sessionStore: any;
 }
@@ -819,6 +837,60 @@ export class DatabaseStorage implements IStorage {
       return db.select().from(skills).where(sql`LOWER(nome) LIKE ${'%' + query.toLowerCase() + '%'}`).orderBy(skills.nome);
     }
     return db.select().from(skills).orderBy(skills.nome);
+  }
+
+  // Perfis de Vaga methods
+  async getAllPerfisVaga(): Promise<any[]> {
+    return await db.select().from(perfisVaga);
+  }
+
+  async getPerfisVagaByEmpresa(empresaId: string): Promise<any[]> {
+    return await db.select().from(perfisVaga).where(eq(perfisVaga.empresaId, empresaId));
+  }
+
+  async getPerfisVagaByDepartamento(departamentoId: string): Promise<any[]> {
+    return await db.select().from(perfisVaga).where(eq(perfisVaga.departamentoId, departamentoId));
+  }
+
+  async getPerfilVaga(id: string): Promise<any | undefined> {
+    const [perfil] = await db.select().from(perfisVaga).where(eq(perfisVaga.id, id));
+    return perfil || undefined;
+  }
+
+  async createPerfilVaga(perfil: any): Promise<any> {
+    const [created] = await db.insert(perfisVaga).values(perfil).returning();
+    return created;
+  }
+
+  async updatePerfilVaga(id: string, perfil: Partial<any>): Promise<any | undefined> {
+    const [updated] = await db
+      .update(perfisVaga)
+      .set({ ...perfil, dataAtualizacao: new Date() })
+      .where(eq(perfisVaga.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deletePerfilVaga(id: string): Promise<boolean> {
+    const deleted = await db.delete(perfisVaga).where(eq(perfisVaga.id, id)).returning();
+    return deleted.length > 0;
+  }
+
+  // Jornadas methods
+  async getAllJornadas(empresaId: string): Promise<any[]> {
+    return await db.select().from(jornadas).where(eq(jornadas.empresaId, empresaId));
+  }
+  async getJornada(id: string): Promise<any | undefined> {
+    return await db.select().from(jornadas).where(eq(jornadas.id, id)).first();
+  }
+  async createJornada(data: any): Promise<any> {
+    return await db.insert(jornadas).values(data).returning();
+  }
+  async updateJornada(id: string, data: any): Promise<any | undefined> {
+    return await db.update(jornadas).set(data).where(eq(jornadas.id, id)).returning();
+  }
+  async deleteJornada(id: string): Promise<boolean> {
+    return await db.delete(jornadas).where(eq(jornadas.id, id));
   }
 }
 

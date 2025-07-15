@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "definida" : "NÃO DEFINIDA");
+
 import pg from 'pg';
 const { Pool } = pg;
 

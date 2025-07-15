@@ -607,3 +607,51 @@ export const vagaMatchingConfig = pgTable("vaga_matching_config", {
   scoreMinimo: integer("score_minimo").notNull(),
   data: timestamp("data").defaultNow().notNull(),
 });
+
+export const perfisVaga = pgTable("perfis_vaga", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nomePerfil: varchar("nome_perfil", { length: 255 }).notNull(),
+  tituloVaga: varchar("titulo_vaga", { length: 255 }).notNull(),
+  descricaoFuncao: text("descricao_funcao").notNull(),
+  requisitosObrigatorios: text("requisitos_obrigatorios"),
+  requisitosDesejaveis: text("requisitos_desejaveis"),
+  competenciasTecnicas: jsonb("competencias_tecnicas").default([]), // array de strings/ids
+  competenciasComportamentais: jsonb("competencias_comportamentais").default([]), // array de strings/ids
+  beneficios: text("beneficios"),
+  tipoContratacao: varchar("tipo_contratacao", { length: 50 }).notNull(), // CLT, PJ, etc
+  faixaSalarial: varchar("faixa_salarial", { length: 100 }),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  departamentoId: uuid("departamento_id").notNull().references(() => departamentos.id),
+  localAtuacao: varchar("local_atuacao", { length: 255 }),
+  modeloTrabalho: varchar("modelo_trabalho", { length: 50 }), // presencial, remoto, híbrido
+  observacoesInternas: text("observacoes_internas"),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+export const insertPerfilVagaSchema = createInsertSchema(perfisVaga).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updatePerfilVagaSchema = insertPerfilVagaSchema.partial();
+
+export const selectPerfilVagaSchema = createInsertSchema(perfisVaga);
+
+export const jornadas = pgTable("jornadas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  horarios: jsonb("horarios").notNull(), // Ex: [{ label: "Entrada", hora: "07:00" }, ...]
+  totalHoras: decimal("total_horas", { precision: 4, scale: 2 }).notNull(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+export const insertJornadaSchema = createInsertSchema(jornadas, {
+  horarios: z.array(z.object({ label: z.string(), hora: z.string() })),
+  totalHoras: z.string().or(z.number()),
+});
+export const updateJornadaSchema = insertJornadaSchema.partial();
