@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema, insertPipelineEtapaSchema, pipelineAuditoria, matchFeedback, vagaMatchingConfig, insertPerfilVagaSchema, updatePerfilVagaSchema } from "@shared/schema";
+import { insertEmpresaSchema, insertDepartamentoSchema, insertUsuarioSchema, insertVagaSchema, insertTesteSchema, insertTesteResultadoSchema, insertEntrevistaSchema, insertPipelineEtapaSchema, pipelineAuditoria, matchFeedback, vagaMatchingConfig, insertPerfilVagaSchema, updatePerfilVagaSchema, insertQuadroIdealSchema, insertQuadroRealSchema, insertSolicitacaoVagaSchema } from "@shared/schema";
 import { TesteService } from "./services/teste-service.js";
 import { EntrevistaService } from "./services/entrevista-service.js";
 import { z } from "zod";
@@ -18,11 +18,25 @@ import { db } from './db';
 import { like, eq, ilike } from 'drizzle-orm';
 import { candidatoSkills, vagaSkills, skills } from "@shared/schema";
 import OpenAI from "openai";
+import { parse as csvParse } from 'csv-parse';
+import { validate as isUuid } from 'uuid';
 
 const scryptAsync = promisify(scrypt);
 const upload = multer({ dest: '/tmp' });
 const hf = new HfInference(process.env.HF_API_KEY || undefined);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const parseCSV = (filePath: string) => {
+  const fs = require('fs');
+  return new Promise<any[]>((resolve, reject) => {
+    const results: any[] = [];
+    fs.createReadStream(filePath)
+      .pipe(csvParse({ columns: true, trim: true }))
+      .on('data', (data: any) => results.push(data))
+      .on('end', () => resolve(results))
+      .on('error', (err: any) => reject(err));
+  });
+};
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -3098,6 +3112,333 @@ Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente es
       await storage.deleteJornada(req.params.id);
       res.status(204).send();
     } catch (error) { next(error); }
+  });
+
+  // Quadro Ideal endpoints
+  app.get("/api/quadro-ideal", requireAuth, async (req, res, next) => {
+    try {
+      const empresaId = req.user.empresaId;
+      const quadros = await storage.getAllQuadrosIdeais(empresaId);
+      res.json(quadros);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/quadro-ideal", requireAuth, async (req, res, next) => {
+    try {
+      const data = insertQuadroIdealSchema.parse({ ...req.body, empresaId: req.user.empresaId });
+      const created = await storage.createQuadroIdeal(data);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/quadro-ideal/:id", requireAuth, async (req, res, next) => {
+    try {
+      const data = insertQuadroIdealSchema.partial().parse(req.body);
+      const updated = await storage.updateQuadroIdeal(req.params.id, data);
+      if (!updated) {
+        return res.status(404).json({ message: "Quadro Ideal não encontrado" });
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/quadro-ideal/:id", requireAuth, async (req, res, next) => {
+    try {
+      const deleted = await storage.deleteQuadroIdeal(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Quadro Ideal não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Quadro Real endpoints
+  app.get("/api/quadro-real", requireAuth, async (req, res, next) => {
+    try {
+      const empresaId = req.user.empresaId;
+      const quadros = await storage.getAllQuadrosReais(empresaId);
+      res.json(quadros);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/quadro-real/:id", requireAuth, async (req, res, next) => {
+    try {
+      const quadro = await storage.getQuadroReal(req.params.id);
+      if (!quadro) {
+        return res.status(404).json({ message: "Quadro Real não encontrado" });
+      }
+      res.json(quadro);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/quadro-real", requireAuth, async (req, res, next) => {
+    try {
+      const data = insertQuadroRealSchema.parse({ ...req.body, empresaId: req.user.empresaId });
+      const created = await storage.createQuadroReal(data);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/quadro-real/:id", requireAuth, async (req, res, next) => {
+    try {
+      const data = insertQuadroRealSchema.partial().parse(req.body);
+      const updated = await storage.updateQuadroReal(req.params.id, data);
+      if (!updated) {
+        return res.status(404).json({ message: "Quadro Real não encontrado" });
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/quadro-real/:id", requireAuth, async (req, res, next) => {
+    try {
+      const deleted = await storage.deleteQuadroReal(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Quadro Real não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Solicitação de Vaga endpoints
+  app.get("/api/solicitacoes-vaga", requireAuth, async (req, res, next) => {
+    try {
+      const empresaId = req.user.empresaId;
+      const solicitacoes = await storage.getAllSolicitacoesVaga(empresaId);
+      res.json(solicitacoes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/solicitacoes-vaga/:id", requireAuth, async (req, res, next) => {
+    try {
+      const solicitacao = await storage.getSolicitacaoVaga(req.params.id);
+      if (!solicitacao) {
+        return res.status(404).json({ message: "Solicitação não encontrada" });
+      }
+      res.json(solicitacao);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/solicitacoes-vaga", requireAuth, async (req, res, next) => {
+    try {
+      const data = insertSolicitacaoVagaSchema.parse({ ...req.body, empresaId: req.user.empresaId, criadoPor: req.user.id, origem: 'manual' });
+      const created = await storage.createSolicitacaoVaga(data);
+      await storage.createHistoricoSolicitacaoVaga({
+        solicitacaoId: created.id,
+        usuarioId: req.user.id,
+        acao: 'criado',
+        motivo: data.motivo || null
+      });
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/solicitacoes-vaga/:id", requireAuth, async (req, res, next) => {
+    try {
+      const data = insertSolicitacaoVagaSchema.partial().parse(req.body);
+      const updated = await storage.updateSolicitacaoVaga(req.params.id, data);
+      if (!updated) {
+        return res.status(404).json({ message: "Solicitação não encontrada" });
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/solicitacoes-vaga/:id", requireAuth, async (req, res, next) => {
+    try {
+      const deleted = await storage.deleteSolicitacaoVaga(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Solicitação não encontrada" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Aprovação/Reprovação de Solicitação de Vaga
+  app.put("/api/solicitacoes-vaga/:id/aprovar", requireAuth, async (req, res, next) => {
+    try {
+      const updated = await storage.aprovarSolicitacaoVaga(req.params.id, req.user.id);
+      if (!updated) {
+        return res.status(404).json({ message: "Solicitação não encontrada" });
+      }
+      await storage.createHistoricoSolicitacaoVaga({
+        solicitacaoId: req.params.id,
+        usuarioId: req.user.id,
+        acao: 'aprovado'
+      });
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/solicitacoes-vaga/:id/reprovar", requireAuth, async (req, res, next) => {
+    try {
+      const motivo = req.body?.motivo || null;
+      const updated = await storage.reprovarSolicitacaoVaga(req.params.id, req.user.id);
+      if (!updated) {
+        return res.status(404).json({ message: "Solicitação não encontrada" });
+      }
+      await storage.createHistoricoSolicitacaoVaga({
+        solicitacaoId: req.params.id,
+        usuarioId: req.user.id,
+        acao: 'reprovado',
+        motivo
+      });
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Histórico de Quadro Ideal endpoint
+  app.get("/api/quadro-ideal/historico/:quadroIdealId", requireAuth, async (req, res, next) => {
+    try {
+      const historico = await storage.getHistoricoQuadroIdeal(req.params.quadroIdealId);
+      res.json(historico);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Alertas/Gaps do Quadro Ideal
+  app.get("/api/quadro-ideal/alertas", requireAuth, async (req, res, next) => {
+    try {
+      const alertas = await storage.getAlertasQuadroIdeal(req.user.empresaId);
+      res.json(alertas);
+    } catch (error) {
+      console.error('[ALERTAS] Erro ao calcular alertas:', error);
+      res.status(500).json({ message: 'Erro ao calcular alertas', error: error.message });
+    }
+  });
+
+  // Rota genérica por ID (deve ficar por último)
+  app.get("/api/quadro-ideal/:id", requireAuth, async (req, res, next) => {
+    if (!isUuid(req.params.id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+    console.log("Rota genérica chamada com id:", req.params.id);
+    try {
+      const quadro = await storage.getQuadroIdeal(req.params.id);
+      if (!quadro) {
+        return res.status(404).json({ message: "Quadro Ideal não encontrado" });
+      }
+      res.json(quadro);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Abertura automática de solicitações de vaga
+  app.post("/api/solicitacoes-vaga/automatica", requireAuth, async (req, res, next) => {
+    try {
+      const criadas = await storage.abrirSolicitacoesAutomaticas(req.user.empresaId, req.user.id);
+      res.json({ message: `Solicitações automáticas criadas: ${criadas}` });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Importação CSV para Quadro Ideal
+  app.post("/api/quadro-ideal/importar-csv", requireAuth, upload.single('file'), async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: 'Arquivo não enviado.' });
+      const rows = await parseCSV(req.file.path);
+      let count = 0;
+      for (const row of rows) {
+        if (!row.departamentoId || !row.cargo || !row.quantidadeIdeal) continue;
+        await storage.createQuadroIdeal({
+          empresaId: req.user.empresaId,
+          departamentoId: row.departamentoId,
+          cargo: row.cargo,
+          quantidadeIdeal: Number(row.quantidadeIdeal)
+        });
+        count++;
+      }
+      res.json({ message: `Importação concluída: ${count} registros inseridos.` });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Importação CSV para Quadro Real (com abertura automática)
+  app.post("/api/quadro-real/importar-csv", requireAuth, upload.single('file'), async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: 'Arquivo não enviado.' });
+      const rows = await parseCSV(req.file.path);
+      let count = 0;
+      for (const row of rows) {
+        if (!row.departamentoId || !row.cargo || !row.quantidadeAtual) continue;
+        await storage.createQuadroReal({
+          empresaId: req.user.empresaId,
+          departamentoId: row.departamentoId,
+          cargo: row.cargo,
+          quantidadeAtual: Number(row.quantidadeAtual)
+        });
+        count++;
+      }
+      // Após importar, dispara abertura automática
+      const criadas = await storage.abrirSolicitacoesAutomaticas(req.user.empresaId, req.user.id);
+      res.json({ message: `Importação concluída: ${count} registros inseridos. Solicitações automáticas criadas: ${criadas}` });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Histórico de Solicitação de Vaga
+  app.get("/api/solicitacoes-vaga/:id/historico", requireAuth, async (req, res, next) => {
+    try {
+      const historico = await storage.getHistoricoSolicitacaoVaga(req.params.id);
+      res.json(historico);
+    } catch (error) {
+      next(error);
+    }
   });
 
   const httpServer = createServer(app);

@@ -52,6 +52,7 @@ export function Sidebar() {
     logoutMutation.mutate();
   };
 
+  // Remover HeadCount completamente
   const navigation = [
     {
       name: "Analytics",
@@ -71,7 +72,12 @@ export function Sidebar() {
       icon: GitBranch,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
-
+    {
+      name: "Quadro Ideal",
+      href: "/quadro-ideal",
+      icon: BarChart3,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
     {
       name: "Teste DISC",
       href: "/avaliacao-disc",
@@ -91,6 +97,7 @@ export function Sidebar() {
       show: ["admin", "recrutador"].includes(user?.perfil || ""),
       target: "_blank",
     },
+    // ... demais menus principais ...
   ];
 
   // Submenus de configurações
@@ -173,6 +180,12 @@ export function Sidebar() {
       name: "Perfis de Vaga",
       href: "/perfis-vaga",
       icon: Briefcase,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Solicitações de Vaga",
+      href: "/solicitacoes-vaga",
+      icon: Users,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {

@@ -2,6 +2,7 @@ import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniq
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { solicitacoesVaga } from './schema'; // garantir import correto se necessário
 
 export const empresas = pgTable("empresas", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -655,3 +656,77 @@ export const insertJornadaSchema = createInsertSchema(jornadas, {
   totalHoras: z.string().or(z.number()),
 });
 export const updateJornadaSchema = insertJornadaSchema.partial();
+
+// =====================
+// Quadro Ideal
+// =====================
+export const quadrosIdeais = pgTable("quadro_ideal", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  departamentoId: uuid("departamento_id").notNull().references(() => departamentos.id),
+  cargo: varchar("cargo", { length: 100 }).notNull(),
+  quantidadeIdeal: integer("quantidade_ideal").notNull(),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow(),
+});
+
+export const quadrosReais = pgTable("quadro_real", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  departamentoId: uuid("departamento_id").notNull().references(() => departamentos.id),
+  cargo: varchar("cargo", { length: 100 }).notNull(),
+  quantidadeAtual: integer("quantidade_atual").notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow(),
+});
+
+export const solicitacoesVaga = pgTable("solicitacoes_vaga", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  departamentoId: uuid("departamento_id").notNull().references(() => departamentos.id),
+  cargo: varchar("cargo", { length: 100 }).notNull(),
+  quantidadeSolicitada: integer("quantidade_solicitada").notNull(),
+  motivo: text("motivo"),
+  status: varchar("status", { length: 20 }).notNull().default("pendente"), // pendente, aprovada, reprovada
+  criadoPor: uuid("criado_por").notNull().references(() => usuarios.id),
+  aprovadoPor: uuid("aprovado_por").references(() => usuarios.id),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow(),
+});
+
+export const historicoQuadroIdeal = pgTable("historico_quadro_ideal", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  quadroIdealId: uuid("quadro_ideal_id").notNull().references(() => quadrosIdeais.id),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id),
+  campoAlterado: varchar("campo_alterado", { length: 50 }),
+  valorAnterior: text("valor_anterior"),
+  valorNovo: text("valor_novo"),
+  dataAlteracao: timestamp("data_alteracao").defaultNow().notNull(),
+});
+
+// Schemas de inserção
+export const insertQuadroIdealSchema = createInsertSchema(quadrosIdeais).omit({ id: true });
+export const insertQuadroRealSchema = createInsertSchema(quadrosReais).omit({ id: true });
+export const insertSolicitacaoVagaSchema = createInsertSchema(solicitacoesVaga).omit({ id: true });
+export const insertHistoricoQuadroIdealSchema = createInsertSchema(historicoQuadroIdeal).omit({ id: true });
+
+// Tipos
+export type QuadroIdeal = typeof quadrosIdeais.$inferSelect;
+export type InsertQuadroIdeal = typeof quadrosIdeais.$inferInsert;
+export type QuadroReal = typeof quadrosReais.$inferSelect;
+export type InsertQuadroReal = typeof quadrosReais.$inferInsert;
+export type SolicitacaoVaga = typeof solicitacoesVaga.$inferSelect;
+export type InsertSolicitacaoVaga = typeof solicitacoesVaga.$inferInsert;
+export type HistoricoQuadroIdeal = typeof historicoQuadroIdeal.$inferSelect;
+export type InsertHistoricoQuadroIdeal = typeof historicoQuadroIdeal.$inferInsert;
+
+export const historicoSolicitacaoVaga = pgTable('historico_solicitacao_vaga', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  solicitacaoId: uuid('solicitacao_id').notNull().references(() => solicitacoesVaga.id, { onDelete: 'cascade' }),
+  usuarioId: uuid('usuario_id').notNull().references(() => usuarios.id),
+  acao: varchar('acao', { length: 32 }).notNull(),
+  motivo: text('motivo'),
+  data: timestamp('data').notNull().defaultNow(),
+});
+
+export type HistoricoSolicitacaoVaga = typeof historicoSolicitacaoVaga.$inferSelect;
+export type InsertHistoricoSolicitacaoVaga = typeof historicoSolicitacaoVaga.$inferInsert;

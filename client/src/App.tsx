@@ -31,6 +31,10 @@ import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "./lib/protected-route";
 import PerfisVagaPage from "@/pages/perfis-vaga";
 import JornadasPage from "@/pages/jornadas";
+import QuadroIdealDashboard from "@/pages/QuadroIdealDashboard";
+import QuadroIdealFormPage from "@/pages/QuadroIdealForm";
+import SolicitacoesVagaPage from "@/pages/SolicitacoesVaga";
+import QuadroIdealHistoricoPage from "@/pages/QuadroIdealHistorico";
 
 function Router() {
   return (
@@ -57,6 +61,11 @@ function Router() {
       <ProtectedRoute path="/candidaturas-pendentes" component={CandidaturasPendentesPage} />
       <ProtectedRoute path="/ai-recommendations" component={AIRecommendationsPage} />
       <ProtectedRoute path="/jornadas" component={JornadasPage} />
+      <ProtectedRoute path="/quadro-ideal" component={QuadroIdealDashboard} />
+      <ProtectedRoute path="/quadro-ideal/novo" component={QuadroIdealFormPage} />
+      <ProtectedRoute path="/quadro-ideal/:id" component={QuadroIdealFormPage} />
+      <ProtectedRoute path="/quadro-ideal/:id/historico" component={QuadroIdealHistoricoPage} />
+      <ProtectedRoute path="/solicitacoes-vaga" component={SolicitacoesVagaPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/portal/disc" component={CandidateDiscTest} />
       <Route path="/auth" component={AuthPage} />

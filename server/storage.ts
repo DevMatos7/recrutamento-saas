@@ -35,7 +35,22 @@ import {
   type InsertPipelineEtapa,
   skills,
   perfisVaga,
-  jornadas
+  jornadas,
+  type QuadroIdeal,
+  type InsertQuadroIdeal,
+  type QuadroReal,
+  type InsertQuadroReal,
+  quadrosReais,
+  type SolicitacaoVaga,
+  type InsertSolicitacaoVaga,
+  solicitacoesVaga,
+  type HistoricoQuadroIdeal,
+  type InsertHistoricoQuadroIdeal,
+  historicoQuadroIdeal,
+  quadrosIdeais,
+  type HistoricoSolicitacaoVaga,
+  type InsertHistoricoSolicitacaoVaga,
+  historicoSolicitacaoVaga
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, asc, lte, isNull, sql } from "drizzle-orm";
@@ -163,6 +178,37 @@ export interface IStorage {
   createJornada(data: any): Promise<any>;
   updateJornada(id: string, data: any): Promise<any | undefined>;
   deleteJornada(id: string): Promise<boolean>;
+  
+  // Quadro Ideal methods
+  getAllQuadrosIdeais(empresaId: string): Promise<QuadroIdeal[]>;
+  getQuadroIdeal(id: string): Promise<QuadroIdeal | undefined>;
+  createQuadroIdeal(data: InsertQuadroIdeal): Promise<QuadroIdeal>;
+  updateQuadroIdeal(id: string, data: Partial<InsertQuadroIdeal>): Promise<QuadroIdeal | undefined>;
+  deleteQuadroIdeal(id: string): Promise<boolean>;
+  
+  // Quadro Real methods
+  getAllQuadrosReais(empresaId: string): Promise<QuadroReal[]>;
+  getQuadroReal(id: string): Promise<QuadroReal | undefined>;
+  createQuadroReal(data: InsertQuadroReal): Promise<QuadroReal>;
+  updateQuadroReal(id: string, data: Partial<InsertQuadroReal>): Promise<QuadroReal | undefined>;
+  deleteQuadroReal(id: string): Promise<boolean>;
+  
+  // Solicitação de Vaga methods
+  getAllSolicitacoesVaga(empresaId: string): Promise<SolicitacaoVaga[]>;
+  getSolicitacaoVaga(id: string): Promise<SolicitacaoVaga | undefined>;
+  createSolicitacaoVaga(data: InsertSolicitacaoVaga): Promise<SolicitacaoVaga>;
+  updateSolicitacaoVaga(id: string, data: Partial<InsertSolicitacaoVaga>): Promise<SolicitacaoVaga | undefined>;
+  deleteSolicitacaoVaga(id: string): Promise<boolean>;
+  aprovarSolicitacaoVaga(id: string, aprovadoPor: string): Promise<SolicitacaoVaga | undefined>;
+  reprovarSolicitacaoVaga(id: string, aprovadoPor: string): Promise<SolicitacaoVaga | undefined>;
+  
+  // Histórico de Quadro Ideal methods
+  getHistoricoQuadroIdeal(quadroIdealId: string): Promise<HistoricoQuadroIdeal[]>;
+  createHistoricoQuadroIdeal(data: InsertHistoricoQuadroIdeal): Promise<HistoricoQuadroIdeal>;
+  
+  // Histórico de Solicitação de Vaga
+  getHistoricoSolicitacaoVaga(solicitacaoId: string): Promise<HistoricoSolicitacaoVaga[]>;
+  createHistoricoSolicitacaoVaga(data: InsertHistoricoSolicitacaoVaga): Promise<HistoricoSolicitacaoVaga>;
   
   sessionStore: any;
 }
@@ -891,6 +937,196 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteJornada(id: string): Promise<boolean> {
     return await db.delete(jornadas).where(eq(jornadas.id, id));
+  }
+
+  // Quadro Ideal methods
+  async getAllQuadrosIdeais(empresaId: string): Promise<QuadroIdeal[]> {
+    return db.select().from(quadrosIdeais).where(eq(quadrosIdeais.empresaId, empresaId));
+  }
+
+  async getQuadroIdeal(id: string): Promise<QuadroIdeal | undefined> {
+    const [quadro] = await db.select().from(quadrosIdeais).where(eq(quadrosIdeais.id, id));
+    return quadro || undefined;
+  }
+
+  async createQuadroIdeal(data: InsertQuadroIdeal): Promise<QuadroIdeal> {
+    const [created] = await db.insert(quadrosIdeais).values(data).returning();
+    return created;
+  }
+
+  async updateQuadroIdeal(id: string, data: Partial<InsertQuadroIdeal>): Promise<QuadroIdeal | undefined> {
+    const [updated] = await db.update(quadrosIdeais).set({ ...data, atualizadoEm: new Date() }).where(eq(quadrosIdeais.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteQuadroIdeal(id: string): Promise<boolean> {
+    const result = await db.delete(quadrosIdeais).where(eq(quadrosIdeais.id, id));
+    return result.rowCount! > 0;
+  }
+
+  // Quadro Real methods
+  async getAllQuadrosReais(empresaId: string): Promise<QuadroReal[]> {
+    return db.select().from(quadrosReais).where(eq(quadrosReais.empresaId, empresaId));
+  }
+
+  async getQuadroReal(id: string): Promise<QuadroReal | undefined> {
+    const [quadro] = await db.select().from(quadrosReais).where(eq(quadrosReais.id, id));
+    return quadro || undefined;
+  }
+
+  async createQuadroReal(data: InsertQuadroReal): Promise<QuadroReal> {
+    const [created] = await db.insert(quadrosReais).values(data).returning();
+    return created;
+  }
+
+  async updateQuadroReal(id: string, data: Partial<InsertQuadroReal>): Promise<QuadroReal | undefined> {
+    const [updated] = await db.update(quadrosReais).set({ ...data, atualizadoEm: new Date() }).where(eq(quadrosReais.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteQuadroReal(id: string): Promise<boolean> {
+    const result = await db.delete(quadrosReais).where(eq(quadrosReais.id, id));
+    return result.rowCount! > 0;
+  }
+
+  // Solicitação de Vaga methods
+  async getAllSolicitacoesVaga(empresaId: string): Promise<SolicitacaoVaga[]> {
+    return db.select().from(solicitacoesVaga).where(eq(solicitacoesVaga.empresaId, empresaId));
+  }
+
+  async getSolicitacaoVaga(id: string): Promise<SolicitacaoVaga | undefined> {
+    const [sol] = await db.select().from(solicitacoesVaga).where(eq(solicitacoesVaga.id, id));
+    return sol || undefined;
+  }
+
+  async createSolicitacaoVaga(data: InsertSolicitacaoVaga): Promise<SolicitacaoVaga> {
+    const [created] = await db.insert(solicitacoesVaga).values(data).returning();
+    return created;
+  }
+
+  async updateSolicitacaoVaga(id: string, data: Partial<InsertSolicitacaoVaga>): Promise<SolicitacaoVaga | undefined> {
+    const [updated] = await db.update(solicitacoesVaga).set({ ...data, atualizadoEm: new Date() }).where(eq(solicitacoesVaga.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteSolicitacaoVaga(id: string): Promise<boolean> {
+    const result = await db.delete(solicitacoesVaga).where(eq(solicitacoesVaga.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async aprovarSolicitacaoVaga(id: string, aprovadoPor: string): Promise<SolicitacaoVaga | undefined> {
+    const [updated] = await db.update(solicitacoesVaga)
+      .set({ status: "aprovada", aprovadoPor, atualizadoEm: new Date() })
+      .where(eq(solicitacoesVaga.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async reprovarSolicitacaoVaga(id: string, aprovadoPor: string): Promise<SolicitacaoVaga | undefined> {
+    const [updated] = await db.update(solicitacoesVaga)
+      .set({ status: "reprovada", aprovadoPor, atualizadoEm: new Date() })
+      .where(eq(solicitacoesVaga.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  // Histórico de Quadro Ideal methods
+  async getHistoricoQuadroIdeal(quadroIdealId: string): Promise<HistoricoQuadroIdeal[]> {
+    return db.select().from(historicoQuadroIdeal).where(eq(historicoQuadroIdeal.quadroIdealId, quadroIdealId)).orderBy(historicoQuadroIdeal.dataAlteracao);
+  }
+
+  async createHistoricoQuadroIdeal(data: InsertHistoricoQuadroIdeal): Promise<HistoricoQuadroIdeal> {
+    const [created] = await db.insert(historicoQuadroIdeal).values(data).returning();
+    return created;
+  }
+
+  // Histórico de Solicitação de Vaga
+  async getHistoricoSolicitacaoVaga(solicitacaoId: string): Promise<HistoricoSolicitacaoVaga[]> {
+    return db.select().from(historicoSolicitacaoVaga).where(eq(historicoSolicitacaoVaga.solicitacaoId, solicitacaoId)).orderBy(historicoSolicitacaoVaga.data);
+  }
+
+  async createHistoricoSolicitacaoVaga(data: InsertHistoricoSolicitacaoVaga): Promise<HistoricoSolicitacaoVaga> {
+    const [created] = await db.insert(historicoSolicitacaoVaga).values(data).returning();
+    return created;
+  }
+
+  // Alertas/Gaps do Quadro Ideal
+  async getAlertasQuadroIdeal(empresaId: string): Promise<any[]> {
+    console.info('[ALERTAS] Buscando alertas para empresa:', empresaId);
+    const quadrosIdeaisDb = await db.select().from(quadrosIdeais).where(eq(quadrosIdeais.empresaId, empresaId));
+    const quadrosReaisDb = await db.select().from(quadrosReais).where(eq(quadrosReais.empresaId, empresaId));
+    if (!quadrosIdeaisDb.length) {
+      console.info('[ALERTAS] Nenhum quadro ideal encontrado para empresa:', empresaId);
+      return [];
+    }
+
+    // Indexar quadro real por departamentoId+cargo
+    const realMap = new Map<string, number>();
+    for (const qr of quadrosReaisDb) {
+      const key = `${qr.departamentoId}:${qr.cargo}`;
+      realMap.set(key, qr.quantidadeAtual);
+    }
+
+    const alertas = quadrosIdeaisDb.map(qi => {
+      const key = `${qi.departamentoId}:${qi.cargo}`;
+      const atual = realMap.get(key) ?? 0;
+      const gap = atual - qi.quantidadeIdeal;
+      let status = "ok", cor = "verde", acaoSugerida = "";
+      if (gap === 0) {
+        status = "ok"; cor = "verde"; acaoSugerida = "";
+      } else if (gap < 0) {
+        const percentual = Math.abs(gap) / (qi.quantidadeIdeal || 1);
+        if (percentual > 0.1) {
+          status = "crítico"; cor = "vermelho"; acaoSugerida = "Abrir vaga";
+        } else {
+          status = "leve_deficit"; cor = "amarelo"; acaoSugerida = "Avaliar contratação";
+        }
+      } else if (gap > 0) {
+        status = "excesso"; cor = "azul"; acaoSugerida = "Avaliar remanejamento";
+      }
+      return {
+        empresaId: qi.empresaId,
+        departamentoId: qi.departamentoId,
+        cargo: qi.cargo,
+        ideal: qi.quantidadeIdeal,
+        atual,
+        gap,
+        status,
+        cor,
+        acaoSugerida
+      };
+    });
+    return alertas;
+  }
+
+  // Fluxo de aprovação automatizado: abertura automática de solicitações de vaga
+  async abrirSolicitacoesAutomaticas(empresaId: string, usuarioId: string): Promise<number> {
+    const alertas = await this.getAlertasQuadroIdeal(empresaId);
+    let criadas = 0;
+    for (const alerta of alertas) {
+      if (alerta.status === 'crítico') {
+        const jaExiste = await db.select().from(solicitacoesVaga)
+          .where(
+            eq(solicitacoesVaga.empresaId, empresaId),
+            eq(solicitacoesVaga.departamentoId, alerta.departamentoId),
+            eq(solicitacoesVaga.cargo, alerta.cargo),
+            eq(solicitacoesVaga.status, 'pendente')
+          );
+        if (jaExiste.length === 0) {
+          await this.createSolicitacaoVaga({
+            empresaId,
+            departamentoId: alerta.departamentoId,
+            cargo: alerta.cargo,
+            quantidadeSolicitada: Math.abs(alerta.gap),
+            motivo: 'Déficit identificado automaticamente',
+            status: 'pendente',
+            criadoPor: usuarioId
+          });
+          criadas++;
+        }
+      }
+    }
+    return criadas;
   }
 }
 
