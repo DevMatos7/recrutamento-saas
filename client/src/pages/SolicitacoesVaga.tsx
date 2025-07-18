@@ -39,6 +39,8 @@ export default function SolicitacoesVagaPage() {
   const [historicoId, setHistoricoId] = useState<string | null>(null);
   const [editing, setEditing] = useState<any | null>(null);
   const { toast } = useToast();
+  // Adicionar estado para aviso no formulário
+  const [aviso, setAviso] = useState<string | null>(null);
 
   // Buscar dados auxiliares
   const { data: departamentos = [] } = useQuery({ queryKey: ['/api/departamentos'] });
@@ -113,6 +115,7 @@ export default function SolicitacoesVagaPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError('');
+    setAviso(null);
     // Validações
     if (!form.tipo) return setFormError('Tipo de vaga é obrigatório.');
     if (!form.cargo) return setFormError('Cargo/Função é obrigatório.');
@@ -126,8 +129,9 @@ export default function SolicitacoesVagaPage() {
     if (!form.urgencia) return setFormError('Nível de urgência é obrigatório.');
     setFormLoading(true);
     try {
+      let res;
       if (editing) {
-        await axios.put(`/api/solicitacoes-vaga/${editing.id}`, {
+        res = await axios.put(`/api/solicitacoes-vaga/${editing.id}`, {
           tipo: form.tipo,
           cargo: form.cargo,
           quantidadeSolicitada: form.quantidade,
@@ -140,7 +144,7 @@ export default function SolicitacoesVagaPage() {
           urgencia: form.urgencia,
         });
       } else {
-        await axios.post('/api/solicitacoes-vaga', {
+        res = await axios.post('/api/solicitacoes-vaga', {
           tipo: form.tipo,
           cargo: form.cargo,
           quantidadeSolicitada: form.quantidade,
@@ -152,6 +156,11 @@ export default function SolicitacoesVagaPage() {
           dataInicio: form.dataInicio,
           urgencia: form.urgencia,
         });
+      }
+      if (res.data.excedente) {
+        setAviso(res.data.mensagem || 'A solicitação excede o quadro ideal do setor.');
+      } else {
+        setAviso('Solicitação enviada com sucesso!');
       }
       setModalOpen(false);
       setEditing(null);
@@ -197,8 +206,10 @@ export default function SolicitacoesVagaPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Solicitações de Vaga</h1>
       {/* Botão Nova Solicitação */}
-      {user?.perfil === 'gestor' && (
-        <Button className="mb-4" onClick={() => { setModalOpen(true); resetForm(); }}>Nova Solicitação</Button>
+      {(user?.perfil === 'gestor' || user?.perfil === 'admin') && (
+        <Button className="mb-4" onClick={() => { setModalOpen(true); resetForm(); }}>
+          Nova Solicitação
+        </Button>
       )}
       {/* Filtros */}
       <div className="flex flex-wrap gap-4 mb-4">
@@ -249,7 +260,7 @@ export default function SolicitacoesVagaPage() {
           </thead>
           <tbody>
             {solicitacoesFiltradas.map(s => (
-              <tr key={s.id} className="border-b">
+              <tr key={s.id} className={`border-b ${s.excedente ? 'bg-yellow-50' : ''}`}>
                 <td className="px-3 py-2">{s.cargo}</td>
                 <td className="px-3 py-2">{departamentoMap[s.departamentoId]?.nome || s.departamentoId}</td>
                 <td className="px-3 py-2">{empresaMap[s.unidadeId]?.nome || '-'}</td>
@@ -263,6 +274,9 @@ export default function SolicitacoesVagaPage() {
                 <td className="px-3 py-2">{s.quantidadeSolicitada}</td>
                 <td className="px-3 py-2">{s.motivo}</td>
                 <td className="px-3 py-2 font-semibold">
+                  {s.status === 'pendente' && s.excedente && (
+                    <span className="inline-block px-2 py-1 bg-yellow-200 text-yellow-800 rounded text-xs mr-1">Excedente</span>
+                  )}
                   {s.status === 'pendente' && <span className="text-yellow-600">Pendente</span>}
                   {s.status === 'aprovada' && <span className="text-green-600">Aprovada</span>}
                   {s.status === 'reprovada' && <span className="text-red-600">Reprovada</span>}
@@ -296,6 +310,11 @@ export default function SolicitacoesVagaPage() {
           <DialogHeader>
             <DialogTitle>{editing ? 'Editar Solicitação de Vaga' : 'Nova Solicitação de Vaga'}</DialogTitle>
           </DialogHeader>
+          {aviso && (
+            <div className={`mb-2 p-2 rounded ${aviso.includes('excede') ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+              {aviso}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block mb-1 font-medium">Tipo de vaga *</label>

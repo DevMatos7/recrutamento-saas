@@ -20,6 +20,8 @@ import { candidatoSkills, vagaSkills, skills } from "@shared/schema";
 import OpenAI from "openai";
 import { parse as csvParse } from 'csv-parse';
 import { validate as isUuid } from 'uuid';
+import { SolicitacaoVagaService } from './services/solicitacao-vaga-service';
+import { requireAuth, requireRole } from './middleware/auth.middleware';
 
 const scryptAsync = promisify(scrypt);
 const upload = multer({ dest: '/tmp' });
@@ -3439,6 +3441,66 @@ Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente es
     } catch (error) {
       next(error);
     }
+  });
+
+  // Rotas para Solicitação de Vagas
+  app.post('/vagas/solicitacoes', requireAuth, requireRole(['gestor']), async (req, res) => {
+    try {
+      const usuarioId = req.user.id;
+      const solicitacao = await SolicitacaoVagaService.criarSolicitacao(req.body, usuarioId);
+      res.status(201).json(solicitacao);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  // Listar solicitações (RH/Admin vê todas, gestor vê as suas)
+  app.get('/vagas/solicitacoes', requireAuth, async (req, res) => {
+    let filtro = {};
+    if (req.user.role === 'gestor') {
+      filtro = { criadoPor: req.user.id };
+    }
+    const solicitacoes = await SolicitacaoVagaService.listarSolicitacoes(filtro);
+    res.json(solicitacoes);
+  });
+
+  // Detalhar solicitação
+  app.get('/vagas/solicitacoes/:id', requireAuth, async (req, res) => {
+    const solicitacao = await SolicitacaoVagaService.detalharSolicitacao(req.params.id);
+    if (!solicitacao) return res.status(404).json({ error: 'Solicitação não encontrada' });
+    // Se gestor, só pode ver as suas
+    if (req.user.role === 'gestor' && solicitacao.criadoPor !== req.user.id) {
+      return res.status(403).json({ error: 'Acesso não autorizado.' });
+    }
+    res.json(solicitacao);
+  });
+
+  // Editar solicitação (RH/Admin)
+  app.put('/vagas/solicitacoes/:id', requireAuth, requireRole(['rh', 'admin']), async (req, res) => {
+    const usuarioId = req.user.id;
+    const solicitacao = await SolicitacaoVagaService.editarSolicitacao(req.params.id, req.body, usuarioId);
+    res.json(solicitacao);
+  });
+
+  // Aprovar solicitação (RH/Admin)
+  app.post('/vagas/solicitacoes/:id/aprovar', requireAuth, requireRole(['rh', 'admin']), async (req, res) => {
+    const usuarioId = req.user.id;
+    const solicitacao = await SolicitacaoVagaService.aprovarSolicitacao(req.params.id, usuarioId);
+    res.json(solicitacao);
+  });
+
+  // Rejeitar solicitação (RH/Admin)
+  app.post('/vagas/solicitacoes/:id/rejeitar', requireAuth, requireRole(['rh', 'admin']), async (req, res) => {
+    const usuarioId = req.user.id;
+    const motivo = req.body.motivo;
+    const solicitacao = await SolicitacaoVagaService.rejeitarSolicitacao(req.params.id, usuarioId, motivo);
+    res.json(solicitacao);
+  });
+
+  // Listar histórico de ações
+  app.get('/vagas/solicitacoes/:id/historico', requireAuth, async (req, res) => {
+    const historico = await SolicitacaoVagaService.listarHistorico(req.params.id);
+    res.json(historico);
   });
 
   const httpServer = createServer(app);
