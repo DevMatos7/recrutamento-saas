@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 // @ts-ignore
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import { parseISO, format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
+import { ptBR } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as UiCalendar } from "@/components/ui/calendar";
@@ -214,7 +214,7 @@ export default function EntrevistasPage() {
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
+    return new Date(dateString).toLocaleString('pt-BR', { timeZone: 'America/Cuiaba' });
   };
 
   const getStatusIcon = (status: string) => {
@@ -515,6 +515,8 @@ export default function EntrevistasPage() {
                     const valueDate = field.value ? new Date(field.value) : undefined;
                     const [date, setDate] = React.useState<Date | undefined>(valueDate);
                     const [time, setTime] = React.useState<string>(valueDate ? valueDate.toISOString().substring(11, 16) : "");
+                    // Estado para controlar abertura do calendário
+                    const [calendarOpen, setCalendarOpen] = React.useState(false);
 
                     React.useEffect(() => {
                       if (date && time) {
@@ -525,7 +527,7 @@ export default function EntrevistasPage() {
                         newDate.setMinutes(Number(minutes));
                         newDate.setSeconds(0);
                         newDate.setMilliseconds(0);
-                        field.onChange(newDate.toISOString());
+                        field.onChange(newDate.toISOString()); // Enviar string ISO
                       }
                     }, [date, time]);
 
@@ -533,10 +535,10 @@ export default function EntrevistasPage() {
                       <FormItem>
                         <FormLabel>Data e Hora</FormLabel>
                         <div className="flex gap-2 items-center">
-                          <Popover>
+                          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                             <PopoverTrigger asChild>
-                              <Button variant="outline" className="w-[180px] justify-start text-left font-normal">
-                                <UiCalendar className="mr-2 h-4 w-4" />
+                              <Button variant="outline" className="w-[180px] justify-start text-left font-normal" onClick={() => setCalendarOpen((v) => !v)}>
+                                <LucideCalendar className="mr-2 h-4 w-4" />
                                 {date ? date.toLocaleDateString('pt-BR') : <span>Selecione a data</span>}
                               </Button>
                             </PopoverTrigger>
@@ -544,9 +546,9 @@ export default function EntrevistasPage() {
                               <UiCalendar
                                 mode="single"
                                 selected={date}
-                                onSelect={setDate}
+                                onSelect={d => { setDate(d); setCalendarOpen(false); }}
                                 captionLayout="dropdown"
-                                locale="pt-BR"
+                                locale={ptBR}
                               />
                             </PopoverContent>
                           </Popover>

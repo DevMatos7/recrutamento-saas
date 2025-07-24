@@ -35,6 +35,10 @@ import QuadroIdealDashboard from "@/pages/QuadroIdealDashboard";
 import QuadroIdealFormPage from "@/pages/QuadroIdealForm";
 import SolicitacoesVagaPage from "@/pages/SolicitacoesVaga";
 import QuadroIdealHistoricoPage from "@/pages/QuadroIdealHistorico";
+import PipelineConfigPage from "@/pages/pipeline-config";
+import ModelosPipelinePage from "@/pages/modelos-pipeline";
+import UploadCandidatoPage from "@/pages/upload-candidato";
+import EmpresaVagasPage from './pages/empresa/[slug]';
 
 function Router() {
   return (
@@ -44,6 +48,8 @@ function Router() {
       <ProtectedRoute path="/perfis-vaga" component={PerfisVagaPage} />
       <ProtectedRoute path="/candidatos" component={CandidatosPage} />
       <ProtectedRoute path="/pipeline" component={PipelinePage} />
+      <ProtectedRoute path="/pipeline-config" component={PipelineConfigPage} />
+      <ProtectedRoute path="/modelos-pipeline" component={ModelosPipelinePage} />
       <ProtectedRoute path="/testes" component={TestesPage} />
       <ProtectedRoute path="/avaliacao-disc" component={AvaliacaoDiscPage} />
       <ProtectedRoute path="/avaliacao-disc/editor" component={DiscEditor} />
@@ -68,7 +74,9 @@ function Router() {
       <ProtectedRoute path="/solicitacoes-vaga" component={SolicitacoesVagaPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/portal/disc" component={CandidateDiscTest} />
+      <Route path="/upload/candidato/:vagaCandidatoId" component={UploadCandidatoPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/empresa/:slug" component={EmpresaVagasPage} />
       <Route component={NotFound} />
     </Switch>
   );

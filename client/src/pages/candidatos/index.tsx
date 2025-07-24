@@ -167,9 +167,9 @@ export default function CandidatosPage() {
 
         {/* Modais */}
         <CandidatoDetailModal
-          isOpen={showDetailModal}
+          open={showDetailModal}
           onClose={() => setShowDetailModal(false)}
-          candidatoId={selectedCandidatoId}
+          candidato={candidatos.find(c => c.id === selectedCandidatoId) || null}
         />
 
         <StatusEticoModal

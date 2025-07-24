@@ -192,6 +192,19 @@ export class EntrevistaService {
     }
     // WhatsApp para entrevistador (se implementado)
     // await communicationService.enviarComunicacao('whatsapp', entrevistador, mensagemEntrevistador);
+    // Registrar evento na timeline
+    if (novaEntrevista && candidato && vaga && entrevistador) {
+      const { TimelineService } = await import('./timeline-service');
+      await TimelineService.criarEvento({
+        candidatoId: candidato.id,
+        tipoEvento: 'entrevista_agendada',
+        descricao: `Entrevista agendada para a vaga "${vaga.titulo}" em ${dataEntrevista} via ${novaEntrevista.plataforma || novaEntrevista.local || '-'} com ${entrevistador.nome}.`,
+        usuarioResponsavelId: usuarioLogado.id,
+        dataEvento: new Date(),
+        origem: 'entrevista',
+        visivelParaCandidato: true
+      });
+    }
     return novaEntrevista;
   }
 
@@ -327,6 +340,18 @@ export class EntrevistaService {
       .where(eq(entrevistas.id, id))
       .returning();
     
+    // Registrar evento na timeline
+    if (entrevistaAtualizada && entrevistaAtualizada.candidatoId) {
+      const { TimelineService } = await import('./timeline-service');
+      await TimelineService.criarEvento({
+        candidatoId: entrevistaAtualizada.candidatoId,
+        tipoEvento: 'entrevista_atualizada',
+        descricao: `Entrevista atualizada. Novos dados: ${JSON.stringify(dadosAtualizacao)}`,
+        usuarioResponsavelId: usuarioLogado.id,
+        dataEvento: new Date(),
+        origem: 'entrevista'
+      });
+    }
     return entrevistaAtualizada || null;
   }
 
@@ -342,32 +367,50 @@ export class EntrevistaService {
     if (usuarioLogado) {
       this.validateUserPermissions(usuarioLogado, 'edit');
     }
-    
     this.validateStatus(novoStatus);
-    
     // Get current interview
     const entrevistaAtual = await db.query.entrevistas.findFirst({
       where: eq(entrevistas.id, id)
     });
-    
     if (!entrevistaAtual) {
       throw new EntrevistaServiceError("Entrevista não encontrada", "INTERVIEW_NOT_FOUND");
     }
-    
     const updateData: any = {
       status: novoStatus,
       dataAtualizacao: new Date()
     };
-    
     if (observacoes !== undefined) {
       updateData.observacoes = observacoes;
     }
-    
     const [entrevistaAtualizada] = await db.update(entrevistas)
       .set(updateData)
       .where(eq(entrevistas.id, id))
       .returning();
-    
+    // Registrar evento na timeline
+    if (entrevistaAtualizada && entrevistaAtualizada.candidatoId) {
+      const { TimelineService } = await import('./timeline-service');
+      let tipoEvento = 'entrevista_status';
+      let descricao = `Status da entrevista alterado para "${novoStatus}".`;
+      if (novoStatus === 'realizada') {
+        tipoEvento = 'entrevista_realizada';
+        descricao = `Entrevista realizada em ${new Date(entrevistaAtualizada.dataHora).toLocaleString('pt-BR')}.`;
+      } else if (novoStatus === 'cancelada') {
+        tipoEvento = 'entrevista_cancelada';
+        descricao = `Entrevista cancelada. Motivo: ${observacoes || '-'}`;
+      } else if (novoStatus === 'faltou') {
+        tipoEvento = 'entrevista_faltou';
+        descricao = `Candidato faltou à entrevista em ${new Date(entrevistaAtualizada.dataHora).toLocaleString('pt-BR')}. Observações: ${observacoes || '-'}`;
+      }
+      await TimelineService.criarEvento({
+        candidatoId: entrevistaAtualizada.candidatoId,
+        tipoEvento,
+        descricao,
+        usuarioResponsavelId: usuarioLogado?.id,
+        dataEvento: new Date(),
+        origem: 'entrevista',
+        visivelParaCandidato: true
+      });
+    }
     return entrevistaAtualizada || null;
   }
 
@@ -541,6 +584,24 @@ export class EntrevistaService {
       })
       .where(eq(entrevistas.id, id))
       .returning();
+    // Registrar evento na timeline
+    if (atualizada && atualizada.candidatoId) {
+      // Buscar dados completos
+      const candidato = await db.query.candidatos.findFirst({ where: eq(candidatos.id, atualizada.candidatoId) });
+      const entrevistador = await db.query.usuarios.findFirst({ where: eq(usuarios.id, atualizada.entrevistadorId) });
+      const vaga = await db.query.vagas.findFirst({ where: eq(vagas.id, atualizada.vagaId) });
+      const dataEntrevista = new Date(atualizada.dataHora).toLocaleString('pt-BR');
+      const { TimelineService } = await import('./timeline-service');
+      await TimelineService.criarEvento({
+        candidatoId: atualizada.candidatoId,
+        tipoEvento: 'entrevista_remarcada',
+        descricao: `Entrevista remarcada para a vaga "${vaga?.titulo}" em ${dataEntrevista} via ${atualizada.plataforma || atualizada.local || '-'} com ${entrevistador?.nome}.`,
+        usuarioResponsavelId: usuarioLogado.id,
+        dataEvento: new Date(),
+        origem: 'entrevista',
+        visivelParaCandidato: true
+      });
+    }
     return atualizada || null;
   }
 

@@ -22,6 +22,12 @@ import { parse as csvParse } from 'csv-parse';
 import { validate as isUuid } from 'uuid';
 import { SolicitacaoVagaService } from './services/solicitacao-vaga-service';
 import { requireAuth, requireRole } from './middleware/auth.middleware';
+import { TimelineService } from './services/timeline-service';
+import { insertEventoTimelineSchema } from '@shared/schema';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const scryptAsync = promisify(scrypt);
 const upload = multer({ dest: '/tmp' });
@@ -29,7 +35,6 @@ const hf = new HfInference(process.env.HF_API_KEY || undefined);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const parseCSV = (filePath: string) => {
-  const fs = require('fs');
   return new Promise<any[]>((resolve, reject) => {
     const results: any[] = [];
     fs.createReadStream(filePath)
@@ -438,11 +443,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Job management routes
-  app.get("/api/vagas", requireAuth, async (req, res, next) => {
+  app.get("/api/vagas", async (req, res, next) => {
     try {
-      const { empresaId, departamentoId, status } = req.query;
+      const { empresaId, departamentoId, status, incluirInativas, incluirOcultas } = req.query;
       let vagas;
-      
       if (empresaId) {
         vagas = await storage.getVagasByEmpresa(empresaId as string);
       } else if (departamentoId) {
@@ -450,12 +454,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         vagas = await storage.getAllVagas();
       }
-      
-      // Filter by status if provided
+      // Filtro padrão: só vagas ativas e visíveis
+      if (!incluirInativas) {
+        vagas = vagas.filter(vaga => vaga.status !== "encerrada" && vaga.status !== "preenchida");
+      }
+      if (!incluirOcultas) {
+        vagas = vagas.filter(vaga => vaga.visivel !== false);
+      }
+      // Filtro por status, se solicitado
       if (status) {
         vagas = vagas.filter(vaga => vaga.status === status);
       }
-      
       res.json(vagas);
     } catch (error) {
       next(error);
@@ -482,6 +491,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const vagaData = insertVagaSchema.parse(req.body);
       const skillsIds = req.body.skillsIds || [];
       const vaga = await storage.createVaga(vagaData);
+      
+      // Aplicar modelo padrão de pipeline se existir
+      try {
+        const modeloPadrao = await storage.getModeloPipelinePadrao(vaga.empresaId);
+        if (modeloPadrao) {
+          await storage.aplicarModeloPipelineAVaga(vaga.id, modeloPadrao.id);
+        }
+      } catch (e) { 
+        console.error('Erro ao aplicar modelo padrão:', e); 
+      }
+      
       // Atualizar skills da vaga
       if (skillsIds.length > 0) {
         const { db } = await import("./db");
@@ -692,6 +712,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await db.insert(candidatoSkills).values({ candidatoId: candidato.id, skillId }).onConflictDoNothing();
         }
       }
+      // Registrar evento de cadastro na timeline
+      const { TimelineService } = await import('./services/timeline-service');
+      await TimelineService.criarEvento({
+        candidatoId: candidato.id,
+        tipoEvento: 'cadastro',
+        descricao: 'Cadastro do candidato',
+        usuarioResponsavelId: req.user.id,
+        dataEvento: new Date(),
+        origem: 'manual'
+      });
       res.status(201).json(candidato);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -799,10 +829,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.params.vagaId,
         req.params.candidatoId,
         etapa,
-        currentUser,
         nota,
-        comentarios
+        comentarios,
+        currentUser
       );
+      // Registrar evento na timeline
+      const { TimelineService } = await import('./services/timeline-service');
+      await TimelineService.criarEvento({
+        candidatoId: req.params.candidatoId,
+        tipoEvento: 'movimentacao_pipeline',
+        descricao: `Candidato movido para etapa "${etapa}". Comentários: ${comentarios || '-'} Nota: ${nota ?? '-'} `,
+        usuarioResponsavelId: currentUser.id,
+        dataEvento: new Date(),
+        origem: 'pipeline'
+      });
       res.json({
         vagaCandidato: resultado.vagaCandidato,
         historico: resultado.historico,
@@ -3501,6 +3541,1126 @@ Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente es
   app.get('/vagas/solicitacoes/:id/historico', requireAuth, async (req, res) => {
     const historico = await SolicitacaoVagaService.listarHistorico(req.params.id);
     res.json(historico);
+  });
+
+  // === Timeline do Candidato ===
+  app.get('/api/candidatos/:id/timeline', requireAuth, async (req, res, next) => {
+    try {
+      const { tipoEvento, dataInicio, dataFim, usuarioResponsavelId, palavraChave, visivelParaCandidato } = req.query;
+      const eventos = await TimelineService.listarEventos({
+        candidatoId: req.params.id,
+        tipoEvento: tipoEvento as string | undefined,
+        dataInicio: dataInicio ? new Date(dataInicio as string) : undefined,
+        dataFim: dataFim ? new Date(dataFim as string) : undefined,
+        usuarioResponsavelId: usuarioResponsavelId as string | undefined,
+        palavraChave: palavraChave as string | undefined,
+        visivelParaCandidato: visivelParaCandidato !== undefined ? visivelParaCandidato === 'true' : undefined,
+      });
+      res.json(eventos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/candidatos/:id/timeline', requireRH, async (req, res, next) => {
+    try {
+      const eventoData = insertEventoTimelineSchema.parse({ ...req.body, candidatoId: req.params.id });
+      const evento = await TimelineService.criarEvento(eventoData);
+      res.status(201).json(evento);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Dados inválidos', errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  // === Upload de arquivos para anexos da timeline ===
+  app.post('/api/upload', requireAuth, upload.array('files'), async (req, res) => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: 'Nenhum arquivo enviado.' });
+      }
+      // Mock: retorna URLs locais, ajuste para storage real se necessário
+      const urls = files.map(f => `/uploads/${f.filename}`);
+      // Registrar evento na timeline se informado candidatoId
+      const { candidatoId } = req.body;
+      if (candidatoId) {
+        const { TimelineService } = await import('./services/timeline-service');
+        await TimelineService.criarEvento({
+          candidatoId,
+          tipoEvento: 'anexo_adicionado',
+          descricao: `Anexos adicionados: ${files.map(f => f.originalname).join(', ')}`,
+          usuarioResponsavelId: req.user.id,
+          dataEvento: new Date(),
+          origem: 'upload'
+        });
+      }
+      res.json({ urls });
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao fazer upload.', error });
+    }
+  });
+
+  // Upload de currículo (PDF/DOC)
+  app.post('/api/upload/curriculo', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Arquivo não enviado.' });
+      }
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      if (!['.pdf', '.doc', '.docx'].includes(ext)) {
+        return res.status(400).json({ message: 'Formato de arquivo não suportado.' });
+      }
+      // Renomear arquivo para evitar conflitos
+      const newName = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}${ext}`;
+      const destPath = path.join(__dirname, 'uploads', 'curriculos', newName);
+      fs.renameSync(req.file.path, destPath);
+      // Montar URL pública (ajustar conforme deploy)
+      const url = `/uploads/curriculos/${newName}`;
+      return res.json({ url });
+    } catch (err) {
+      console.error('Erro upload currículo:', err);
+      return res.status(500).json({ message: 'Erro ao salvar arquivo.' });
+    }
+  });
+
+  // Servir arquivos de currículo
+  app.use('/uploads/curriculos', (req, res, next) => {
+    const filePath = path.join(__dirname, 'uploads', 'curriculos', req.path);
+    res.sendFile(filePath, (err) => {
+      if (err) next();
+    });
+  });
+
+  // Buscar empresa por slug
+  app.get("/api/empresas", async (req, res, next) => {
+    try {
+      const { slug } = req.query;
+      if (slug) {
+        // Busca por slug (case-insensitive)
+        const empresas = await storage.getAllEmpresas();
+        const slugNorm = (slug as string).toLowerCase().replace(/[^a-z0-9]/g, "");
+        const match = empresas.filter(e =>
+          e.nome && e.nome.toLowerCase().replace(/[^a-z0-9]/g, "") === slugNorm
+        );
+        return res.json(match);
+      }
+      // Se não houver slug, retorna todas
+      const empresas = await storage.getAllEmpresas();
+      res.json(empresas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Modelos de Pipeline endpoints
+  app.get("/api/empresas/:empresaId/modelos-pipeline", requireAuth, async (req, res, next) => {
+    try {
+      const modelos = await storage.getModelosPipelineByEmpresa(req.params.empresaId);
+      res.json(modelos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/modelos-pipeline/:id", requireAuth, async (req, res, next) => {
+    try {
+      const modelo = await storage.getModeloPipeline(req.params.id);
+      if (!modelo) {
+        return res.status(404).json({ message: "Modelo não encontrado" });
+      }
+      const etapas = await storage.getEtapasModeloPipeline(req.params.id);
+      res.json({ ...modelo, etapas });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/modelos-pipeline", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { insertModeloPipelineSchema } = await import("@shared/schema");
+      const modeloData = insertModeloPipelineSchema.parse(req.body);
+      const modelo = await storage.createModeloPipeline(modeloData);
+      res.status(201).json(modelo);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/modelos-pipeline/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { updateModeloPipelineSchema } = await import("@shared/schema");
+      const modeloData = updateModeloPipelineSchema.parse(req.body);
+      const modelo = await storage.updateModeloPipeline(req.params.id, modeloData);
+      if (!modelo) {
+        return res.status(404).json({ message: "Modelo não encontrado" });
+      }
+      res.json(modelo);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/modelos-pipeline/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deleteModeloPipeline(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Modelo não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.patch("/api/modelos-pipeline/:id/padrao", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const modelo = await storage.getModeloPipeline(req.params.id);
+      if (!modelo) {
+        return res.status(404).json({ message: "Modelo não encontrado" });
+      }
+      await storage.setModeloPipelinePadrao(req.params.id, modelo.empresaId);
+      res.json({ message: "Modelo definido como padrão" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Endpoint para buscar etapas do modelo padrão de uma empresa
+  app.get("/api/empresas/:empresaId/etapas-pipeline", requireAuth, async (req, res, next) => {
+    try {
+      const etapas = await storage.getEtapasPipelineByEmpresa(req.params.empresaId);
+      res.json(etapas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/modelos-pipeline/:modeloId/etapas", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { insertEtapaModeloPipelineSchema } = await import("@shared/schema");
+      const etapaData = insertEtapaModeloPipelineSchema.parse(req.body);
+      const etapa = await storage.createEtapaModeloPipeline({
+        ...etapaData,
+        modeloId: req.params.modeloId
+      });
+      res.status(201).json(etapa);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/modelos-pipeline/etapas/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { updateEtapaModeloPipelineSchema } = await import("@shared/schema");
+      const etapaData = updateEtapaModeloPipelineSchema.parse(req.body);
+      const etapa = await storage.updateEtapaModeloPipeline(req.params.id, etapaData);
+      if (!etapa) {
+        return res.status(404).json({ message: "Etapa não encontrada" });
+      }
+      res.json(etapa);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/modelos-pipeline/etapas/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deleteEtapaModeloPipeline(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Etapa não encontrada" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/vagas/:vagaId/aplicar-modelo/:modeloId", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      await storage.aplicarModeloPipelineAVaga(req.params.vagaId, req.params.modeloId);
+      res.json({ message: "Modelo aplicado com sucesso" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Templates de Pipeline endpoints
+  app.get("/api/pipeline/templates", requireAuth, async (req, res, next) => {
+    try {
+      const { PipelineTemplatesService } = await import("./services/pipeline-templates");
+      const templates = PipelineTemplatesService.getEtapasPadraoSugeridas();
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/pipeline/templates/:tipoVaga", requireAuth, async (req, res, next) => {
+    try {
+      const { PipelineTemplatesService } = await import("./services/pipeline-templates");
+      const templates = PipelineTemplatesService.getTemplatesPorTipoVaga(req.params.tipoVaga);
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/empresas/:empresaId/modelos-pipeline", requireAuth, async (req, res, next) => {
+    try {
+      console.log("[DEBUG] === POST ENDPOINT CHAMADO ===");
+      console.log("[DEBUG] Body da requisição:", req.body);
+      console.log("[DEBUG] Usuário:", req.user);
+      
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        console.log("[DEBUG] Acesso negado - perfil:", (req as any).user.perfil);
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { nome, descricao, etapas } = req.body;
+      if (!nome) {
+        return res.status(400).json({ message: "Nome do modelo é obrigatório" });
+      }
+
+      console.log("[DEBUG] Criando modelo com dados:", { nome, descricao, empresaId: req.params.empresaId });
+
+      // Criar o modelo
+      const modelo = await storage.createModeloPipeline({
+        nome,
+        descricao,
+        empresaId: req.params.empresaId,
+        ativo: true,
+        padrao: false
+      });
+
+      console.log("[DEBUG] Modelo criado:", modelo);
+
+      // Criar as etapas se fornecidas
+      if (etapas && etapas.length > 0) {
+        console.log("[DEBUG] Criando etapas:", etapas.length);
+        for (const etapa of etapas) {
+          await storage.createEtapaModeloPipeline({
+            ...etapa,
+            modeloId: modelo.id
+          });
+        }
+      }
+
+      // Buscar o modelo com suas etapas
+      const modeloCompleto = await storage.getModeloPipeline(modelo.id);
+      const etapasModelo = await storage.getEtapasModeloPipeline(modelo.id);
+      
+      console.log("[DEBUG] Retornando modelo completo:", { ...modeloCompleto, etapas: etapasModelo });
+      res.status(201).json({ ...modeloCompleto, etapas: etapasModelo });
+    } catch (error) {
+      console.error("[DEBUG] Erro no POST:", error);
+      next(error);
+    }
+  });
+
+  app.post("/api/empresas/:empresaId/modelos-pipeline/template", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { nome, tipoVaga } = req.body;
+      if (!nome) {
+        return res.status(400).json({ message: "Nome do modelo é obrigatório" });
+      }
+
+      const { PipelineTemplatesService } = await import("./services/pipeline-templates");
+      const resultado = await PipelineTemplatesService.criarModeloPadraoCompleto(
+        req.params.empresaId, 
+        nome, 
+        tipoVaga
+      );
+      
+      res.status(201).json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Checklist endpoints
+  app.get("/api/etapas/:etapaId/checklists", requireAuth, async (req, res, next) => {
+    try {
+      const checklists = await storage.getChecklistsByEtapa(req.params.etapaId);
+      res.json(checklists);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Checklist endpoints por tipo de etapa (para configuração)
+  app.get("/api/etapas-tipo/:tipoEtapa/checklists", requireAuth, async (req, res, next) => {
+    try {
+      // Buscar checklists por tipo de etapa (recebido, triagem, aprovado, etc.)
+      const { tipoEtapa } = req.params;
+      const { ChecklistTemplatesService } = await import("./services/checklist-templates");
+      
+      let templates: any[] = [];
+      switch (tipoEtapa) {
+        case 'recebidos':
+        case 'triagem_curriculos':
+          templates = ChecklistTemplatesService.getTemplatesDocumentacao();
+          break;
+        case 'entrevista_rh':
+        case 'entrevista_gestor':
+          templates = ChecklistTemplatesService.getTemplatesTarefasAdministrativas();
+          break;
+        case 'testes_tecnicos':
+        case 'aprovacao_final':
+          templates = ChecklistTemplatesService.getTemplatesValidacoes();
+          break;
+        case 'documentacao_admissional':
+          templates = ChecklistTemplatesService.getTemplatesDocumentacao();
+          break;
+        case 'exames_medicos':
+          templates = ChecklistTemplatesService.getTemplatesExamesMedicos();
+          break;
+        case 'contratacao':
+        case 'integracao':
+        case 'periodo_experiencia':
+        case 'efetivacao':
+          templates = ChecklistTemplatesService.getTemplatesTarefasAdministrativas();
+          break;
+        default:
+          templates = [];
+      }
+      
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/etapas/:etapaId/checklists", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      // Se o etapaId é um tipo (recebidos, triagem_curriculos, etc.), não criar no banco
+      const etapaId = req.params.etapaId;
+      if (['recebidos', 'triagem_curriculos', 'entrevista_rh', 'testes_tecnicos', 'entrevista_gestor', 'aprovacao_final', 'documentacao_admissional', 'exames_medicos', 'contratacao', 'integracao', 'periodo_experiencia', 'efetivacao'].includes(etapaId)) {
+        // Retornar sucesso mas não criar no banco (apenas para configuração)
+        res.status(201).json({ 
+          id: `temp_${Date.now()}`, 
+          ...req.body, 
+          etapaId,
+          message: "Checklist configurado (não persistido no banco)" 
+        });
+        return;
+      }
+      
+      const { insertChecklistEtapaSchema } = await import("@shared/schema");
+      const checklistData = insertChecklistEtapaSchema.parse(req.body);
+      const checklist = await storage.createChecklistEtapa({
+        ...checklistData,
+        etapaId: req.params.etapaId
+      });
+      res.status(201).json(checklist);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/checklists/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { updateChecklistEtapaSchema } = await import("@shared/schema");
+      const checklistData = updateChecklistEtapaSchema.parse(req.body);
+      const checklist = await storage.updateChecklistEtapa(req.params.id, checklistData);
+      if (!checklist) {
+        return res.status(404).json({ message: "Checklist não encontrado" });
+      }
+      res.json(checklist);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/checklists/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deleteChecklistEtapa(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Checklist não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Templates de Checklist endpoints
+  app.get("/api/checklist/templates", requireAuth, async (req, res, next) => {
+    try {
+      const { ChecklistTemplatesService } = await import("./services/checklist-templates");
+      const templates = ChecklistTemplatesService.getAllTemplates();
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/etapas/:etapaId/checklists/template", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { tipoEtapa } = req.body;
+      if (!tipoEtapa) {
+        return res.status(400).json({ message: "Tipo de etapa é obrigatório" });
+      }
+
+      // Se o etapaId é um tipo (recebidos, triagem_curriculos, etc.), retornar templates
+      const etapaId = req.params.etapaId;
+      if (['recebidos', 'triagem_curriculos', 'entrevista_rh', 'testes_tecnicos', 'entrevista_gestor', 'aprovacao_final', 'documentacao_admissional', 'exames_medicos', 'contratacao', 'integracao', 'periodo_experiencia', 'efetivacao'].includes(etapaId)) {
+        const { ChecklistTemplatesService } = await import("./services/checklist-templates");
+        let templates: any[] = [];
+        
+        switch (tipoEtapa) {
+          case 'documentacao':
+            templates = ChecklistTemplatesService.getTemplatesDocumentacao();
+            break;
+          case 'exames':
+            templates = ChecklistTemplatesService.getTemplatesExamesMedicos();
+            break;
+          case 'tarefas':
+            templates = ChecklistTemplatesService.getTemplatesTarefasAdministrativas();
+            break;
+          case 'validacoes':
+            templates = ChecklistTemplatesService.getTemplatesValidacoes();
+            break;
+          default:
+            templates = [];
+        }
+        
+        // Adicionar IDs temporários para os templates
+        const templatesComIds = templates.map((template, index) => ({
+          ...template,
+          id: `temp_${Date.now()}_${index}`,
+          etapaId: etapaId
+        }));
+        
+        res.status(201).json(templatesComIds);
+        return;
+      }
+
+      const { ChecklistTemplatesService } = await import("./services/checklist-templates");
+      const checklists = await ChecklistTemplatesService.criarChecklistsPadraoParaEtapa(
+        req.params.etapaId, 
+        tipoEtapa
+      );
+      
+      res.status(201).json(checklists);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Itens de Checklist por Candidato
+  app.get("/api/vaga-candidatos/:vagaCandidatoId/checklist", requireAuth, async (req, res, next) => {
+    try {
+      const itens = await storage.getItensChecklistByCandidato(req.params.vagaCandidatoId);
+      res.json(itens);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Gerar link de upload para candidato
+  app.get("/api/vaga-candidatos/:vagaCandidatoId/upload-link", requireAuth, async (req, res, next) => {
+    try {
+      if (!['admin', 'recrutador'].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const vagaCandidatoId = req.params.vagaCandidatoId;
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const uploadUrl = `${baseUrl}/upload/candidato/${vagaCandidatoId}`;
+      
+      res.json({ 
+        url: uploadUrl,
+        qrCode: `${baseUrl}/api/qr-code?url=${encodeURIComponent(uploadUrl)}`,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/vaga-candidatos/:vagaCandidatoId/checklist", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { insertItemChecklistCandidatoSchema } = await import("@shared/schema");
+      const itemData = insertItemChecklistCandidatoSchema.parse(req.body);
+      const item = await storage.createItemChecklistCandidato({
+        ...itemData,
+        vagaCandidatoId: req.params.vagaCandidatoId
+      });
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/checklist-items/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { updateItemChecklistCandidatoSchema } = await import("@shared/schema");
+      const itemData = updateItemChecklistCandidatoSchema.parse(req.body);
+      const item = await storage.updateItemChecklistCandidato(req.params.id, itemData);
+      if (!item) {
+        return res.status(404).json({ message: "Item não encontrado" });
+      }
+      
+      // Verificar se checklist está completo e mover candidato se necessário
+      if (item.status === 'aprovado') {
+        await storage.moverCandidatoSeChecklistCompleto(item.vagaCandidatoId);
+      }
+      
+      res.json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  // Upload de arquivos para checklist (sem autenticação para candidatos)
+  app.post("/api/checklist-items/:id/upload", async (req, res, next) => {
+    try {
+      // Aqui você implementaria o upload de arquivos
+      // Por enquanto, vamos simular o upload
+      const itemId = req.params.id;
+      
+      // Simular processamento de arquivos
+      const anexos = [
+        {
+          nome: "documento.pdf",
+          url: "/uploads/documento.pdf",
+          tamanho: 1024000,
+          tipo: "application/pdf"
+        }
+      ];
+      
+      // Atualizar o item com os anexos
+      const item = await storage.updateItemChecklistCandidato(itemId, {
+        anexos,
+        status: "em_andamento"
+      });
+      
+      res.json({ success: true, item });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Informações do candidato para a página de upload
+  app.get("/api/vaga-candidatos/:vagaCandidatoId/info", async (req, res, next) => {
+    try {
+      const vagaCandidatoId = req.params.vagaCandidatoId;
+      
+      // Buscar informações do candidato e vaga
+      const vagaCandidato = await storage.getVagaCandidato(vagaCandidatoId);
+      if (!vagaCandidato) {
+        return res.status(404).json({ message: "Candidato não encontrado" });
+      }
+      
+      const candidato = await storage.getCandidato(vagaCandidato.candidatoId);
+      const vaga = await storage.getVaga(vagaCandidato.vagaId);
+      const empresa = vaga ? await storage.getEmpresa(vaga.empresaId) : null;
+      
+      res.json({
+        nome: candidato?.nome || "Candidato",
+        email: candidato?.email || "",
+        vaga: vaga?.titulo || "Vaga",
+        empresa: empresa?.nome || "Empresa"
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Automatização endpoints
+  app.get("/api/etapas/:etapaId/automatizacoes", requireAuth, async (req, res, next) => {
+    try {
+      const automatizacoes = await storage.getAutomatizacoesByEtapa(req.params.etapaId);
+      res.json(automatizacoes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/etapas/:etapaId/automatizacoes", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { insertAutomatizacaoEtapaSchema } = await import("@shared/schema");
+      const automatizacaoData = insertAutomatizacaoEtapaSchema.parse(req.body);
+      const automatizacao = await storage.createAutomatizacaoEtapa({
+        ...automatizacaoData,
+        etapaId: req.params.etapaId
+      });
+      res.status(201).json(automatizacao);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/automatizacoes/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { updateAutomatizacaoEtapaSchema } = await import("@shared/schema");
+      const automatizacaoData = updateAutomatizacaoEtapaSchema.parse(req.body);
+      const automatizacao = await storage.updateAutomatizacaoEtapa(req.params.id, automatizacaoData);
+      if (!automatizacao) {
+        return res.status(404).json({ message: "Automatização não encontrada" });
+      }
+      res.json(automatizacao);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/automatizacoes/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deleteAutomatizacaoEtapa(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Automatização não encontrada" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Templates de Automatização endpoints
+  app.get("/api/automation/templates", requireAuth, async (req, res, next) => {
+    try {
+      const { AutomationTemplatesService } = await import("./services/automation-templates");
+      const templates = AutomationTemplatesService.getAllTemplates();
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/etapas/:etapaId/automatizacoes/template", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { tipoEtapa } = req.body;
+      if (!tipoEtapa) {
+        return res.status(400).json({ message: "Tipo de etapa é obrigatório" });
+      }
+
+      const { AutomationTemplatesService } = await import("./services/automation-templates");
+      const automatizacoes = await AutomationTemplatesService.criarAutomatizacoesPadraoParaEtapa(
+        req.params.etapaId, 
+        tipoEtapa
+      );
+      
+      res.status(201).json(automatizacoes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Execução de Automatizações
+  app.post("/api/automatizacoes/:id/executar", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { vagaCandidatoId } = req.body;
+      if (!vagaCandidatoId) {
+        return res.status(400).json({ message: "ID do candidato é obrigatório" });
+      }
+
+      const resultado = await storage.executarAutomatizacao(req.params.id, vagaCandidatoId);
+      res.json(resultado);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Logs de Automatizações
+  app.get("/api/automatizacoes/:id/logs", requireAuth, async (req, res, next) => {
+    try {
+      const logs = await storage.getLogsAutomatizacao(req.params.id);
+      res.json(logs);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Motivos de Reprovação endpoints
+  app.get("/api/empresas/:empresaId/motivos-reprovacao", requireAuth, async (req, res, next) => {
+    try {
+      const motivos = await storage.getMotivosReprovacaoByEmpresa(req.params.empresaId);
+      res.json(motivos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/empresas/:empresaId/motivos-reprovacao", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { insertMotivoReprovacaoSchema } = await import("@shared/schema");
+      const motivoData = insertMotivoReprovacaoSchema.parse(req.body);
+      const motivo = await storage.createMotivoReprovacao({
+        ...motivoData,
+        empresaId: req.params.empresaId
+      });
+      res.status(201).json(motivo);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/motivos-reprovacao/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { updateMotivoReprovacaoSchema } = await import("@shared/schema");
+      const motivoData = updateMotivoReprovacaoSchema.parse(req.body);
+      const motivo = await storage.updateMotivoReprovacao(req.params.id, motivoData);
+      if (!motivo) {
+        return res.status(404).json({ message: "Motivo não encontrado" });
+      }
+      res.json(motivo);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/motivos-reprovacao/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deleteMotivoReprovacao(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Motivo não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Templates de Motivos de Reprovação endpoints
+  app.get("/api/rejection/templates", requireAuth, async (req, res, next) => {
+    try {
+      const { RejectionTemplatesService } = await import("./services/rejection-templates");
+      const templates = RejectionTemplatesService.getAllTemplates();
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/empresas/:empresaId/motivos-reprovacao/template", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { categoria } = req.body;
+      const { RejectionTemplatesService } = await import("./services/rejection-templates");
+      
+      let motivos;
+      if (categoria) {
+        motivos = await RejectionTemplatesService.criarMotivosPorCategoria(req.params.empresaId, categoria);
+      } else {
+        motivos = await RejectionTemplatesService.criarMotivosPadraoParaEmpresa(req.params.empresaId);
+      }
+      
+      res.status(201).json(motivos);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Histórico de Reprovações endpoints
+  app.get("/api/vaga-candidatos/:vagaCandidatoId/historico-reprovacoes", requireAuth, async (req, res, next) => {
+    try {
+      const historico = await storage.getHistoricoReprovacoesByCandidato(req.params.vagaCandidatoId);
+      res.json(historico);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/vaga-candidatos/:vagaCandidatoId/reprovar", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { motivoId, motivoCustomizado, observacoes } = req.body;
+      if (!motivoId && !motivoCustomizado) {
+        return res.status(400).json({ message: "Motivo de reprovação é obrigatório" });
+      }
+
+      const historico = await storage.criarHistoricoReprovacao({
+        vagaCandidatoId: req.params.vagaCandidatoId,
+        motivoId,
+        motivoCustomizado,
+        observacoes,
+        etapaReprovacao: "reprovado", // Será atualizado pelo pipeline
+        reprovadoPor: (req as any).user.id,
+        dataReprovacao: new Date()
+      });
+      
+      res.status(201).json(historico);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // SLA endpoints
+  app.get("/api/etapas/:etapaId/slas", requireAuth, async (req, res, next) => {
+    try {
+      const slas = await storage.getSlasByEtapa(req.params.etapaId);
+      res.json(slas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/etapas/:etapaId/slas", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { insertSlaEtapaSchema } = await import("@shared/schema");
+      const slaData = insertSlaEtapaSchema.parse(req.body);
+      const sla = await storage.createSlaEtapa({
+        ...slaData,
+        etapaId: req.params.etapaId
+      });
+      res.status(201).json(sla);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.put("/api/slas/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { updateSlaEtapaSchema } = await import("@shared/schema");
+      const slaData = updateSlaEtapaSchema.parse(req.body);
+      const sla = await storage.updateSlaEtapa(req.params.id, slaData);
+      if (!sla) {
+        return res.status(404).json({ message: "SLA não encontrado" });
+      }
+      res.json(sla);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  app.delete("/api/slas/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const deleted = await storage.deleteSlaEtapa(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "SLA não encontrado" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Templates de SLA endpoints
+  app.get("/api/sla/templates", requireAuth, async (req, res, next) => {
+    try {
+      const { SlaTemplatesService } = await import("./services/sla-templates");
+      const templates = SlaTemplatesService.getAllTemplates();
+      res.json(templates);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/etapas/:etapaId/slas/template", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { tipoEtapa } = req.body;
+      if (!tipoEtapa) {
+        return res.status(400).json({ message: "Tipo de etapa é obrigatório" });
+      }
+
+      const { SlaTemplatesService } = await import("./services/sla-templates");
+      const slas = await SlaTemplatesService.criarSlasPadraoParaEtapa(
+        req.params.etapaId, 
+        tipoEtapa
+      );
+      
+      res.status(201).json(slas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Alertas de SLA endpoints
+  app.get("/api/sla/alertas/pendentes", requireAuth, async (req, res, next) => {
+    try {
+      const alertas = await storage.getAlertasSlaPendentes();
+      res.json(alertas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/vaga-candidatos/:vagaCandidatoId/sla-alertas", requireAuth, async (req, res, next) => {
+    try {
+      const alertas = await storage.getAlertasSlaByCandidato(req.params.vagaCandidatoId);
+      res.json(alertas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/sla-alertas/:id/resolver", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const alerta = await storage.resolverAlertaSla(req.params.id, (req as any).user.id);
+      res.json(alerta);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Notificações de SLA endpoints
+  app.get("/api/sla/notificacoes/pendentes", requireAuth, async (req, res, next) => {
+    try {
+      const notificacoes = await storage.getNotificacoesSlaPendentes();
+      res.json(notificacoes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Verificação de SLAs vencidos (para job/cron)
+  app.post("/api/sla/verificar-vencidos", requireAuth, async (req, res, next) => {
+    try {
+      if ((req as any).user.perfil !== 'admin') {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const slasVencidos = await storage.verificarSlasVencidos();
+      res.json({ 
+        total: slasVencidos.length, 
+        slas: slasVencidos 
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   const httpServer = createServer(app);

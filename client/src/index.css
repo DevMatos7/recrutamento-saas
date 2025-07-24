@@ -82,3 +82,29 @@
 .card-shadow {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
+
+/* React Select styles for pipeline configuration */
+.react-select__menu {
+  z-index: 9999 !important;
+}
+
+.react-select__menu-portal {
+  z-index: 9999 !important;
+}
+
+/* Ensure dropdowns are not cut off in modals */
+.react-select__menu-portal .react-select__menu {
+  position: fixed !important;
+  z-index: 9999 !important;
+}
+
+/* Modal improvements */
+.modal-horizontal {
+  max-height: 90vh !important;
+  overflow: hidden !important;
+}
+
+.modal-horizontal .etapas-horizontal-lista {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}

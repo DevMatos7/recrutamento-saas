@@ -426,13 +426,13 @@ export default function VagasEnhancedPage() {
         !vaga.local.toLowerCase().includes(filters.search.toLowerCase())) {
       return false;
     }
-    if (filters.status && vaga.status !== filters.status) return false;
-    if (filters.tipoContratacao && vaga.tipoContratacao !== filters.tipoContratacao) return false;
-    if (filters.departamento && vaga.departamentoId !== filters.departamento) return false;
+    if (filters.status && filters.status !== "todos" && vaga.status !== filters.status) return false;
+    if (filters.tipoContratacao && filters.tipoContratacao !== "todos" && vaga.tipoContratacao !== filters.tipoContratacao) return false;
+    if (filters.departamento && filters.departamento !== "todos" && vaga.departamentoId !== filters.departamento) return false;
     if (filters.local && !vaga.local.toLowerCase().includes(filters.local.toLowerCase())) return false;
     
     // Period filter
-    if (filters.periodo) {
+    if (filters.periodo && filters.periodo !== "todos") {
       const now = new Date();
       const vagaDate = new Date(vaga.dataAbertura);
       const diffTime = Math.abs(now.getTime() - vagaDate.getTime());
@@ -479,11 +479,11 @@ export default function VagasEnhancedPage() {
   const clearFilters = () => {
     setFilters({
       search: "",
-      status: "",
-      tipoContratacao: "",
-      departamento: "",
+      status: "todos",
+      tipoContratacao: "todos",
+      departamento: "todos",
       local: "",
-      periodo: "",
+      periodo: "todos",
     });
   };
 
@@ -567,7 +567,7 @@ export default function VagasEnhancedPage() {
                           <SelectValue placeholder="Todos" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todos</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
                           <SelectItem value="aberta">Aberta</SelectItem>
                           <SelectItem value="em_triagem">Em Triagem</SelectItem>
                           <SelectItem value="entrevistas">Entrevistas</SelectItem>
@@ -584,7 +584,7 @@ export default function VagasEnhancedPage() {
                           <SelectValue placeholder="Todos" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todos</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
                           <SelectItem value="CLT">CLT</SelectItem>
                           <SelectItem value="PJ">PJ</SelectItem>
                           <SelectItem value="Estágio">Estágio</SelectItem>
@@ -601,7 +601,7 @@ export default function VagasEnhancedPage() {
                           <SelectValue placeholder="Todos" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todos</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
                           {departamentos.map((dept) => (
                             <SelectItem key={dept.id} value={dept.id}>
                               {dept.nome}
@@ -618,7 +618,7 @@ export default function VagasEnhancedPage() {
                           <SelectValue placeholder="Todos" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todos</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
                           <SelectItem value="7">Últimos 7 dias</SelectItem>
                           <SelectItem value="30">Últimos 30 dias</SelectItem>
                           <SelectItem value="90">Últimos 90 dias</SelectItem>

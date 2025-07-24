@@ -133,6 +133,18 @@ export function Sidebar() {
       show: ["admin"].includes(user?.perfil || ""),
     },
     {
+      name: "Modelos de Pipeline",
+      href: "/modelos-pipeline",
+      icon: GitBranch,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Configurações do Pipeline",
+      href: "/pipeline-config",
+      icon: GitBranch,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
       name: "Comunicações",
       href: "/configuracoes/comunicacoes",
       icon: MessageSquare,

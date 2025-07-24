@@ -17,6 +17,22 @@ import { MultiSelect } from '@/components/ui/multiselect';
 import axios from 'axios';
 import SkillsAutocomplete from '@/components/skills-autocomplete';
 
+// Modelo padrão do sistema
+const MODELO_PADRAO_SISTEMA = [
+  { nome: "Triagem de Currículos", cor: "#1976d2", ordem: 1 },
+  { nome: "Entrevista com o Candidato", cor: "#fbc02d", ordem: 2 },
+  { nome: "Resultado da Entrevista – Aprovado", cor: "#388e3c", ordem: 3 },
+  { nome: "Resultado da Entrevista – Reprovado", cor: "#d32f2f", ordem: 4 },
+  { nome: "Recebimento da Documentação Admissional", cor: "#7b1fa2", ordem: 5 },
+  { nome: "Realização de Exames Médicos", cor: "#0288d1", ordem: 6 },
+  { nome: "Contratado", cor: "#388e3c", ordem: 7 },
+  { nome: "Integração e Ambientação", cor: "#ffa000", ordem: 8 },
+  { nome: "Período de Experiência – Fase 1", cor: "#455a64", ordem: 9 },
+  { nome: "Prorrogação do Contrato de Experiência", cor: "#8d6e63", ordem: 10 },
+  { nome: "Efetivação – Após 90 dias", cor: "#388e3c", ordem: 11 },
+  { nome: "Avaliação de Desempenho – 6 meses", cor: "#1976d2", ordem: 12 }
+];
+
 interface Skill { id: string; nome: string; categoria?: string; codigoExterno?: string; }
 
 interface VagaModalProps {
@@ -122,6 +138,41 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
     enabled: isOpen && !editingVaga, // Só busca ao criar nova vaga
   });
 
+  // Função para aplicar modelo padrão
+  const aplicarModeloPadrao = async (vagaId: string, empresaId: string) => {
+    try {
+      // 1. Buscar modelo padrão da empresa
+      const resModelo = await fetch(`/api/empresas/${empresaId}/modelos-pipeline?padrao=true`);
+      
+      if (resModelo.ok) {
+        const modelos = await resModelo.json();
+        const modeloPadrao = modelos.find((m: any) => m.padrao);
+        
+        if (modeloPadrao && modeloPadrao.etapas && modeloPadrao.etapas.length > 0) {
+          // Aplicar modelo padrão da empresa
+          const resEtapas = await fetch(`/api/vagas/${vagaId}/etapas`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ etapas: modeloPadrao.etapas })
+          });
+          return { tipo: 'empresa', modelo: modeloPadrao.nome };
+        }
+      }
+      
+      // 2. Se não tem modelo padrão, aplicar modelo básico do sistema
+      const resEtapas = await fetch(`/api/vagas/${vagaId}/etapas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ etapas: MODELO_PADRAO_SISTEMA })
+      });
+      
+      return { tipo: 'sistema', modelo: 'Modelo Básico do Sistema' };
+    } catch (error) {
+      console.error('Erro ao aplicar modelo padrão:', error);
+      return null;
+    }
+  };
+
   // Handler para preencher campos a partir do perfil selecionado
   const handlePerfilVagaChange = (perfilId: string) => {
     const perfil = (perfisVaga as any[]).find((p) => p.id === perfilId);
@@ -148,14 +199,41 @@ export function VagaModal({ isOpen, onClose, editingVaga }: VagaModalProps) {
       const url = editingVaga ? `/api/vagas/${editingVaga.id}` : "/api/vagas";
       const method = editingVaga ? "PUT" : "POST";
       const res = await apiRequest(method, url, vagaData);
-      return await res.json();
+      const vagaCriada = await res.json();
+      
+      // Se é uma nova vaga, aplicar modelo padrão
+      if (!editingVaga && vagaCriada.id) {
+              const resultadoModelo = await aplicarModeloPadrao(vagaCriada.id, vagaData.empresaId);
+        if (resultadoModelo) {
+          vagaCriada.modeloAplicado = resultadoModelo;
+        }
+      }
+      
+      return vagaCriada;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/vagas"] });
-      toast({
-        title: "Sucesso",
-        description: editingVaga ? "Vaga atualizada com sucesso!" : "Vaga criada com sucesso!",
-      });
+      
+      // Mostrar mensagem específica sobre o modelo aplicado
+      if (data.modeloAplicado) {
+        if (data.modeloAplicado.tipo === 'empresa') {
+          toast({
+            title: "Sucesso",
+            description: `Vaga criada com sucesso! Modelo padrão "${data.modeloAplicado.modelo}" aplicado automaticamente.`,
+          });
+        } else {
+          toast({
+            title: "Sucesso",
+            description: `Vaga criada com sucesso! ${data.modeloAplicado.modelo} aplicado automaticamente.`,
+          });
+        }
+      } else {
+        toast({
+          title: "Sucesso",
+          description: editingVaga ? "Vaga atualizada com sucesso!" : "Vaga criada com sucesso!",
+        });
+      }
+      
       onClose();
     },
     onError: (error: Error) => {

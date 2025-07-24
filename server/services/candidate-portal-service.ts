@@ -7,11 +7,13 @@ import {
   testesResultados, 
   comunicacoes,
   departamentos,
-  empresas 
+  empresas,
+  testes
 } from "../../shared/schema";
 import { eq, and, desc, count, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { nanoid } from "nanoid";
+import { TimelineService } from './timeline-service';
 
 export class CandidatePortalService {
   
@@ -22,6 +24,7 @@ export class CandidatePortalService {
     telefone: string;
     password: string;
     empresaId: string;
+    curriculoUrl?: string;
   }) {
     try {
       // Verificar se já existe candidato com esse email
@@ -76,11 +79,27 @@ export class CandidatePortalService {
           modalidadeTrabalho: data.modalidadeTrabalho || null,
           
           status: 'ativo',
-          origem: 'portal_candidato'
+          origem: 'portal_candidato',
+          curriculoUrl: data.curriculoUrl || null
         })
         .returning();
 
-      return newCandidate[0];
+      const candidato = newCandidate[0];
+
+      // Registrar evento na timeline se houver currículo
+      if (candidato && candidato.id && candidato.curriculoUrl) {
+        await TimelineService.criarEvento({
+          candidatoId: candidato.id,
+          tipoEvento: 'curriculo_enviado',
+          descricao: `Currículo enviado: <a href='${candidato.curriculoUrl}' target='_blank'>Ver arquivo</a>`,
+          usuarioResponsavelId: candidato.id, // O próprio candidato
+          dataEvento: new Date(),
+          origem: 'portal',
+          visivelParaCandidato: true
+        });
+      }
+
+      return candidato;
     } catch (error) {
       console.error('Erro ao registrar candidato:', error);
       throw error;
@@ -299,8 +318,12 @@ export class CandidatePortalService {
     try {
       // Verificar se o teste pertence ao candidato e está pendente
       const testResult = await db
-        .select()
+        .select({
+          ...testesResultados,
+          testeTipo: testes.tipo
+        })
         .from(testesResultados)
+        .innerJoin(testes, eq(testesResultados.testeId, testes.id))
         .where(and(
           eq(testesResultados.id, testResultId),
           eq(testesResultados.candidatoId, candidateId),
@@ -322,6 +345,38 @@ export class CandidatePortalService {
         })
         .where(eq(testesResultados.id, testResultId))
         .returning();
+
+      // Registrar evento na timeline
+      if (updatedTest[0] && updatedTest[0].candidatoId) {
+        const { TimelineService } = await import('./timeline-service');
+        if (testResult[0].testeTipo === 'DISC') {
+          // Buscar resultado DISC salvo (pode estar em outra tabela ou no próprio resultado)
+          // Aqui assumimos que o resultado DISC é salvo em testesResultados.resultado
+          const resultado = updatedTest[0].resultado;
+          let descricao = 'Perfil DISC concluído.';
+          if (resultado) {
+            descricao = `Perfil DISC concluído: ${resultado}`;
+          }
+          await TimelineService.criarEvento({
+            candidatoId: updatedTest[0].candidatoId,
+            tipoEvento: 'disc_concluido',
+            descricao,
+            usuarioResponsavelId: candidateId,
+            dataEvento: new Date(),
+            origem: 'disc',
+            visivelParaCandidato: true
+          });
+        } else {
+          await TimelineService.criarEvento({
+            candidatoId: updatedTest[0].candidatoId,
+            tipoEvento: 'teste_respondido',
+            descricao: `Teste respondido pelo candidato. ID do teste: ${updatedTest[0].testeId}`,
+            usuarioResponsavelId: candidateId,
+            dataEvento: new Date(),
+            origem: 'teste'
+          });
+        }
+      }
 
       return updatedTest[0];
     } catch (error) {

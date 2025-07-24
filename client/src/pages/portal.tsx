@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Link } from 'react-router-dom';
 
 interface CandidatePortalProps {
   isAuthenticated: boolean;
@@ -56,6 +57,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       password: string;
       cpf: string;
       dataNascimento: string;
+      genero: string;
       endereco: string;
       cidade: string;
       estado: string;
@@ -94,6 +96,10 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       pretensoSalarial: string;
       disponibilidade: string;
       modalidadeTrabalho: string;
+      curriculoUrl: string;
+      cidadesMorou: Array<{ cidade: string; estado: string }>;
+      contatosAdicionais: Array<{ nome: string; telefone: string; parentesco: string }>;
+      referencias: Array<{ nome: string; telefone: string; empresa?: string }>;
     }>({
       // Basic info
       nome: "",
@@ -104,6 +110,7 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       // Personal info
       cpf: "",
       dataNascimento: "",
+      genero: "prefiro_nao_informar",
       endereco: "",
       cidade: "",
       estado: "",
@@ -121,11 +128,19 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
       // Links
       linkedin: "",
       portfolio: "",
+      curriculoUrl: "",
       
       // Preferences
       pretensoSalarial: "",
       disponibilidade: "",
-      modalidadeTrabalho: ""
+      modalidadeTrabalho: "",
+      // Extras
+      cidadesMorou: [],
+      contatosAdicionais: [
+        { nome: '', telefone: '', parentesco: '' },
+        { nome: '', telefone: '', parentesco: '' },
+      ],
+      referencias: [],
     });
 
     const addExperience = () => {
@@ -403,6 +418,53 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                     onChange={(e) => setFormData(prev => ({ ...prev, cep: e.target.value }))}
                   />
                 </div>
+              </div>
+              {/* Gênero */}
+              <div>
+                <Label htmlFor="genero">Gênero</Label>
+                <select
+                  id="genero"
+                  value={formData.genero}
+                  onChange={e => setFormData(prev => ({ ...prev, genero: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg"
+                >
+                  <option value="prefiro_nao_informar">Prefiro não informar</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="feminino">Feminino</option>
+                  <option value="nao_binario">Não-binário</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </div>
+              {/* Currículo URL - agora upload */}
+              <div>
+                <Label htmlFor="curriculoUrl">Currículo (PDF ou DOC)</Label>
+                <Input
+                  id="curriculoUrl"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formDataFile = new FormData();
+                    formDataFile.append('file', file);
+                    try {
+                      const res = await fetch('/api/upload/curriculo', {
+                        method: 'POST',
+                        body: formDataFile
+                      });
+                      if (!res.ok) throw new Error('Falha no upload');
+                      const data = await res.json();
+                      if (data.url) {
+                        setFormData(prev => ({ ...prev, curriculoUrl: data.url }));
+                      }
+                    } catch (err) {
+                      alert('Erro ao fazer upload do currículo.');
+                    }
+                  }}
+                />
+                {formData.curriculoUrl && (
+                  <a href={formData.curriculoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm mt-1 block">Ver currículo enviado</a>
+                )}
               </div>
             </div>
           )}
@@ -817,6 +879,123 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                   </Select>
                 </div>
               </div>
+              {/* Cidades que morou */}
+              <div>
+                <Label>Últimas cidades em que morou</Label>
+                {(formData.cidadesMorou || []).map((item, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2">
+                    <Input
+                      type="text"
+                      value={item.cidade}
+                      onChange={e => {
+                        const arr = [...formData.cidadesMorou];
+                        arr[idx].cidade = e.target.value;
+                        setFormData(prev => ({ ...prev, cidadesMorou: arr }));
+                      }}
+                      placeholder="Cidade"
+                    />
+                    <Input
+                      type="text"
+                      value={item.estado}
+                      onChange={e => {
+                        const arr = [...formData.cidadesMorou];
+                        arr[idx].estado = e.target.value;
+                        setFormData(prev => ({ ...prev, cidadesMorou: arr }));
+                      }}
+                      placeholder="Estado"
+                      maxLength={2}
+                    />
+                    <Button type="button" variant="destructive" size="sm" onClick={() => {
+                      setFormData(prev => ({ ...prev, cidadesMorou: prev.cidadesMorou.filter((_, i) => i !== idx) }));
+                    }}>Remover</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => {
+                  setFormData(prev => ({ ...prev, cidadesMorou: [...prev.cidadesMorou, { cidade: '', estado: '' }] }));
+                }}>Adicionar Cidade</Button>
+              </div>
+              {/* Contatos Adicionais */}
+              <div>
+                <Label>Contatos Adicionais</Label>
+                {formData.contatosAdicionais.map((contato, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                    <Input
+                      type="text"
+                      value={contato.nome}
+                      onChange={e => {
+                        const arr = [...formData.contatosAdicionais];
+                        arr[idx].nome = e.target.value;
+                        setFormData(prev => ({ ...prev, contatosAdicionais: arr }));
+                      }}
+                      placeholder="Nome"
+                    />
+                    <Input
+                      type="text"
+                      value={contato.telefone}
+                      onChange={e => {
+                        const arr = [...formData.contatosAdicionais];
+                        arr[idx].telefone = e.target.value;
+                        setFormData(prev => ({ ...prev, contatosAdicionais: arr }));
+                      }}
+                      placeholder="Telefone"
+                    />
+                    <Input
+                      type="text"
+                      value={contato.parentesco}
+                      onChange={e => {
+                        const arr = [...formData.contatosAdicionais];
+                        arr[idx].parentesco = e.target.value;
+                        setFormData(prev => ({ ...prev, contatosAdicionais: arr }));
+                      }}
+                      placeholder="Parentesco"
+                    />
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => {
+                  setFormData(prev => ({ ...prev, contatosAdicionais: [...prev.contatosAdicionais, { nome: '', telefone: '', parentesco: '' }] }));
+                }}>Adicionar Contato</Button>
+              </div>
+              {/* Referências */}
+              <div>
+                <Label>Referências Profissionais</Label>
+                {formData.referencias.map((ref, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                    <Input
+                      type="text"
+                      value={ref.nome}
+                      onChange={e => {
+                        const arr = [...formData.referencias];
+                        arr[idx].nome = e.target.value;
+                        setFormData(prev => ({ ...prev, referencias: arr }));
+                      }}
+                      placeholder="Nome"
+                    />
+                    <Input
+                      type="text"
+                      value={ref.telefone}
+                      onChange={e => {
+                        const arr = [...formData.referencias];
+                        arr[idx].telefone = e.target.value;
+                        setFormData(prev => ({ ...prev, referencias: arr }));
+                      }}
+                      placeholder="Telefone"
+                    />
+                    <Input
+                      type="text"
+                      value={ref.empresa}
+                      onChange={e => {
+                        const arr = [...formData.referencias];
+                        arr[idx].empresa = e.target.value;
+                        setFormData(prev => ({ ...prev, referencias: arr }));
+                      }}
+                      placeholder="Empresa (opcional)"
+                    />
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => {
+                  setFormData(prev => ({ ...prev, referencias: [...prev.referencias, { nome: '', telefone: '', empresa: '' }] }));
+                }}>Adicionar Referência</Button>
+              </div>
             </div>
           )}
         </div>
@@ -1037,14 +1216,15 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">Vagas Disponíveis</h1>
-              <Button onClick={() => setAuthMode('login')}>
-                Fazer Login
-              </Button>
+              <div className="flex gap-4">
+                <Button onClick={() => setAuthMode('login')}>Entrar</Button>
+                <Button variant="outline" onClick={() => setAuthMode('register')}>Cadastre-se</Button>
+              </div>
             </div>
           </div>
         </header>
-
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Listagem de vagas */}
           {jobsLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -1062,9 +1242,16 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
                         <span className="text-gray-500">{jornadaMap[job.jornadaId].horarios?.map((h: any) => `${h.label}: ${h.hora}`).join(", ")}</span>
                       </div>
                     )}
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Building2 className="h-4 w-4" />
-                    {job.empresa}
+                  <div className="flex items-center gap-2 text-sm text-blue-700 font-semibold">
+                    {/* Nome da empresa como link */}
+                    <a href={`/empresa/${job.empresa.toLowerCase().normalize('NFD').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')}`}
+                      className="hover:underline flex items-center gap-2">
+                      {/* Se houver logo, exibe */}
+                      {job.logoUrl && (
+                        <img src={job.logoUrl} alt={job.empresa} className="h-6 w-6 object-contain rounded bg-white border p-1" />
+                      )}
+                      {job.empresa}
+                    </a>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <MapPin className="h-4 w-4" />
@@ -1382,9 +1569,10 @@ export default function CandidatePortal({ isAuthenticated, candidate, onLogin, o
 
   // Show different views based on authentication state
   if (!isAuthenticated) {
-    if (authMode !== null) {
+    if (authMode === 'login' || authMode === 'register') {
       return <AuthForms />;
     }
+    // Exibir apenas a listagem de vagas com os botões no header
     return <JobsListingView />;
   }
 

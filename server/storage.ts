@@ -106,6 +106,7 @@ export interface IStorage {
   // Vaga-Candidato relationship methods
   getCandidatosByVaga(vagaId: string): Promise<any[]>;
   getVagasByCanditato(candidatoId: string): Promise<VagaCandidato[]>;
+  getVagaCandidato(id: string): Promise<VagaCandidato | undefined>;
   inscreverCandidatoVaga(data: InsertVagaCandidato): Promise<VagaCandidato>;
   moverCandidatoEtapa(vagaId: string, candidatoId: string, etapa: string, comentarios?: string, nota?: number, responsavelId?: string): Promise<VagaCandidato | undefined>;
   
@@ -209,6 +210,69 @@ export interface IStorage {
   // Histórico de Solicitação de Vaga
   getHistoricoSolicitacaoVaga(solicitacaoId: string): Promise<HistoricoSolicitacaoVaga[]>;
   createHistoricoSolicitacaoVaga(data: InsertHistoricoSolicitacaoVaga): Promise<HistoricoSolicitacaoVaga>;
+  
+  // Modelos de Pipeline methods
+  getModelosPipelineByEmpresa(empresaId: string): Promise<any[]>;
+  getModeloPipeline(id: string): Promise<any | undefined>;
+  createModeloPipeline(modelo: any): Promise<any>;
+  updateModeloPipeline(id: string, modelo: Partial<any>): Promise<any | undefined>;
+  deleteModeloPipeline(id: string): Promise<boolean>;
+  getModeloPipelinePadrao(empresaId: string): Promise<any | undefined>;
+  setModeloPipelinePadrao(modeloId: string, empresaId: string): Promise<void>;
+  getEtapasPipelineByEmpresa(empresaId: string): Promise<any[]>;
+  getEtapasModeloPipeline(modeloId: string): Promise<any[]>;
+  createEtapaModeloPipeline(etapa: any): Promise<any>;
+  updateEtapaModeloPipeline(id: string, etapa: Partial<any>): Promise<any | undefined>;
+  deleteEtapaModeloPipeline(id: string): Promise<boolean>;
+  aplicarModeloPipelineAVaga(vagaId: string, modeloId: string): Promise<void>;
+  
+  // Checklist methods
+  getChecklistsByEtapa(etapaId: string): Promise<any[]>;
+  createChecklistEtapa(checklist: any): Promise<any>;
+  updateChecklistEtapa(id: string, checklist: Partial<any>): Promise<any | undefined>;
+  deleteChecklistEtapa(id: string): Promise<boolean>;
+  getItensChecklistByCandidato(vagaCandidatoId: string): Promise<any[]>;
+  createItemChecklistCandidato(item: any): Promise<any>;
+  updateItemChecklistCandidato(id: string, item: Partial<any>): Promise<any | undefined>;
+  deleteItemChecklistCandidato(id: string): Promise<boolean>;
+  verificarChecklistCompleto(vagaCandidatoId: string): Promise<boolean>;
+  moverCandidatoSeChecklistCompleto(vagaCandidatoId: string): Promise<void>;
+  
+  // Automatização methods
+  getAutomatizacoesByEtapa(etapaId: string): Promise<any[]>;
+  createAutomatizacaoEtapa(automatizacao: any): Promise<any>;
+  updateAutomatizacaoEtapa(id: string, automatizacao: Partial<any>): Promise<any | undefined>;
+  deleteAutomatizacaoEtapa(id: string): Promise<boolean>;
+  getAutomatizacoesPendentes(): Promise<any[]>;
+  executarAutomatizacao(automatizacaoId: string, vagaCandidatoId: string): Promise<any>;
+  criarLogAutomatizacao(log: any): Promise<any>;
+  atualizarLogAutomatizacao(id: string, log: Partial<any>): Promise<any | undefined>;
+  getLogsAutomatizacao(automatizacaoId: string): Promise<any[]>;
+  
+  // Motivos de Reprovação methods
+  getMotivosReprovacaoByEmpresa(empresaId: string): Promise<any[]>;
+  createMotivoReprovacao(motivo: any): Promise<any>;
+  updateMotivoReprovacao(id: string, motivo: Partial<any>): Promise<any | undefined>;
+  deleteMotivoReprovacao(id: string): Promise<boolean>;
+  getHistoricoReprovacoesByCandidato(vagaCandidatoId: string): Promise<any[]>;
+  criarHistoricoReprovacao(historico: any): Promise<any>;
+  reprovarCandidato(vagaCandidatoId: string, motivoId: string, motivoCustomizado: string, observacoes: string, reprovadoPor: string): Promise<any>;
+  
+  // SLA methods
+  getSlasByEtapa(etapaId: string): Promise<any[]>;
+  createSlaEtapa(sla: any): Promise<any>;
+  updateSlaEtapa(id: string, sla: Partial<any>): Promise<any | undefined>;
+  deleteSlaEtapa(id: string): Promise<boolean>;
+  getAlertasSlaPendentes(): Promise<any[]>;
+  getAlertasSlaByCandidato(vagaCandidatoId: string): Promise<any[]>;
+  criarAlertaSla(alerta: any): Promise<any>;
+  atualizarAlertaSla(id: string, alerta: Partial<any>): Promise<any | undefined>;
+  resolverAlertaSla(id: string, resolvidoPor: string): Promise<any>;
+  getNotificacoesSlaPendentes(): Promise<any[]>;
+  criarNotificacaoSla(notificacao: any): Promise<any>;
+  atualizarNotificacaoSla(id: string, notificacao: Partial<any>): Promise<any | undefined>;
+  verificarSlasVencidos(): Promise<any[]>;
+  calcularPrazoVencimento(slaId: string, dataInicio: Date): Promise<Date>;
   
   sessionStore: any;
 }
@@ -476,6 +540,11 @@ export class DatabaseStorage implements IStorage {
 
   async getVagasByCanditato(candidatoId: string): Promise<VagaCandidato[]> {
     return await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.candidatoId, candidatoId)).orderBy(desc(vagaCandidatos.dataMovimentacao));
+  }
+
+  async getVagaCandidato(id: string): Promise<VagaCandidato | undefined> {
+    const [vagaCandidato] = await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.id, id));
+    return vagaCandidato || undefined;
   }
 
   async inscreverCandidatoVaga(data: InsertVagaCandidato): Promise<VagaCandidato> {
@@ -1048,6 +1117,600 @@ export class DatabaseStorage implements IStorage {
   async createHistoricoSolicitacaoVaga(data: InsertHistoricoSolicitacaoVaga): Promise<HistoricoSolicitacaoVaga> {
     const [created] = await db.insert(historicoSolicitacaoVaga).values(data).returning();
     return created;
+  }
+
+  // Modelos de Pipeline methods
+  async getModelosPipelineByEmpresa(empresaId: string): Promise<any[]> {
+    const { modelosPipeline } = await import("@shared/schema");
+    return await db.select().from(modelosPipeline).where(eq(modelosPipeline.empresaId, empresaId));
+  }
+
+  async getModeloPipeline(id: string): Promise<any | undefined> {
+    const { modelosPipeline } = await import("@shared/schema");
+    const [modelo] = await db.select().from(modelosPipeline).where(eq(modelosPipeline.id, id));
+    return modelo || undefined;
+  }
+
+  async createModeloPipeline(modelo: any): Promise<any> {
+    const { modelosPipeline } = await import("@shared/schema");
+    const [created] = await db.insert(modelosPipeline).values(modelo).returning();
+    return created;
+  }
+
+  async updateModeloPipeline(id: string, modelo: Partial<any>): Promise<any | undefined> {
+    const { modelosPipeline } = await import("@shared/schema");
+    const [updated] = await db
+      .update(modelosPipeline)
+      .set({ ...modelo, dataAtualizacao: new Date() })
+      .where(eq(modelosPipeline.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteModeloPipeline(id: string): Promise<boolean> {
+    const { modelosPipeline } = await import("@shared/schema");
+    const result = await db.delete(modelosPipeline).where(eq(modelosPipeline.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async getModeloPipelinePadrao(empresaId: string): Promise<any | undefined> {
+    const { modelosPipeline } = await import("@shared/schema");
+    const [padrao] = await db.select().from(modelosPipeline).where(and(eq(modelosPipeline.empresaId, empresaId), eq(modelosPipeline.padrao, true)));
+    return padrao || undefined;
+  }
+
+  async setModeloPipelinePadrao(modeloId: string, empresaId: string): Promise<void> {
+    const { modelosPipeline } = await import("@shared/schema");
+    await db.update(modelosPipeline).set({ padrao: false }).where(eq(modelosPipeline.empresaId, empresaId));
+    await db.update(modelosPipeline).set({ padrao: true }).where(and(eq(modelosPipeline.id, modeloId), eq(modelosPipeline.empresaId, empresaId)));
+  }
+
+  async getEtapasPipelineByEmpresa(empresaId: string): Promise<any[]> {
+    const { modelosPipeline, etapasModeloPipeline } = await import("@shared/schema");
+    
+    // Buscar o modelo padrão da empresa
+    const modeloPadrao = await db.select()
+      .from(modelosPipeline)
+      .where(and(
+        eq(modelosPipeline.empresaId, empresaId),
+        eq(modelosPipeline.padrao, true)
+      ))
+      .limit(1);
+    
+    if (modeloPadrao.length === 0) {
+      // Se não há modelo padrão, retorna etapas padrão sugeridas
+      return [
+        { id: "recebidos", nome: "Recebidos", descricao: "Candidatos recém-inscritos", ordem: 1 },
+        { id: "triagem_curriculos", nome: "Triagem de Currículos", descricao: "Análise inicial de currículos", ordem: 2 },
+        { id: "entrevista_rh", nome: "Entrevista RH", descricao: "Entrevista com Recursos Humanos", ordem: 3 },
+        { id: "testes_tecnicos", nome: "Testes Técnicos", descricao: "Avaliações técnicas e comportamentais", ordem: 4 },
+        { id: "entrevista_gestor", nome: "Entrevista com Gestor", descricao: "Entrevista com gestor da área", ordem: 5 },
+        { id: "aprovacao_final", nome: "Aprovação Final", descricao: "Aprovação final da contratação", ordem: 6 },
+        { id: "documentacao_admissional", nome: "Recebimento da Documentação Admissional", descricao: "Coleta de documentos para admissão", ordem: 7 },
+        { id: "exames_medicos", nome: "Realização de Exames Médicos", descricao: "Exames médicos admissionais", ordem: 8 },
+        { id: "contratacao", nome: "Contratação", descricao: "Assinatura do contrato de trabalho", ordem: 9 },
+        { id: "integracao", nome: "Integração e Ambientação", descricao: "Processo de integração do novo colaborador", ordem: 10 },
+        { id: "periodo_experiencia", nome: "Período de Experiência – Fase 1", descricao: "Primeiros 30 dias de experiência", ordem: 11 },
+        { id: "efetivacao", nome: "Efetivação – Após 90 dias", descricao: "Efetivação após período de experiência", ordem: 12 }
+      ];
+    }
+    
+    // Buscar etapas do modelo padrão
+    const etapas = await db.select()
+      .from(etapasModeloPipeline)
+      .where(eq(etapasModeloPipeline.modeloId, modeloPadrao[0].id))
+      .orderBy(asc(etapasModeloPipeline.ordem));
+    
+    // Se há poucas etapas (menos de 10), usar as etapas padrão
+    if (etapas.length < 10) {
+      return [
+        { id: "recebidos", nome: "Recebidos", descricao: "Candidatos recém-inscritos", ordem: 1 },
+        { id: "triagem_curriculos", nome: "Triagem de Currículos", descricao: "Análise inicial de currículos", ordem: 2 },
+        { id: "entrevista_rh", nome: "Entrevista RH", descricao: "Entrevista com Recursos Humanos", ordem: 3 },
+        { id: "testes_tecnicos", nome: "Testes Técnicos", descricao: "Avaliações técnicas e comportamentais", ordem: 4 },
+        { id: "entrevista_gestor", nome: "Entrevista com Gestor", descricao: "Entrevista com gestor da área", ordem: 5 },
+        { id: "aprovacao_final", nome: "Aprovação Final", descricao: "Aprovação final da contratação", ordem: 6 },
+        { id: "documentacao_admissional", nome: "Recebimento da Documentação Admissional", descricao: "Coleta de documentos para admissão", ordem: 7 },
+        { id: "exames_medicos", nome: "Realização de Exames Médicos", descricao: "Exames médicos admissionais", ordem: 8 },
+        { id: "contratacao", nome: "Contratação", descricao: "Assinatura do contrato de trabalho", ordem: 9 },
+        { id: "integracao", nome: "Integração e Ambientação", descricao: "Processo de integração do novo colaborador", ordem: 10 },
+        { id: "periodo_experiencia", nome: "Período de Experiência – Fase 1", descricao: "Primeiros 30 dias de experiência", ordem: 11 },
+        { id: "efetivacao", nome: "Efetivação – Após 90 dias", descricao: "Efetivação após período de experiência", ordem: 12 }
+      ];
+    }
+    
+    return etapas;
+  }
+
+  async getEtapasModeloPipeline(modeloId: string): Promise<any[]> {
+    const { etapasModeloPipeline } = await import("@shared/schema");
+    return await db.select().from(etapasModeloPipeline).where(eq(etapasModeloPipeline.modeloId, modeloId)).orderBy(asc(etapasModeloPipeline.ordem));
+  }
+
+  async createEtapaModeloPipeline(etapa: any): Promise<any> {
+    const { etapasModeloPipeline } = await import("@shared/schema");
+    const [created] = await db.insert(etapasModeloPipeline).values(etapa).returning();
+    return created;
+  }
+
+  async updateEtapaModeloPipeline(id: string, etapa: Partial<any>): Promise<any | undefined> {
+    const { etapasModeloPipeline } = await import("@shared/schema");
+    const [updated] = await db
+      .update(etapasModeloPipeline)
+      .set({ ...etapa, dataAtualizacao: new Date() })
+      .where(eq(etapasModeloPipeline.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteEtapaModeloPipeline(id: string): Promise<boolean> {
+    const { etapasModeloPipeline } = await import("@shared/schema");
+    const result = await db.delete(etapasModeloPipeline).where(eq(etapasModeloPipeline.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async aplicarModeloPipelineAVaga(vagaId: string, modeloId: string): Promise<void> {
+    const { etapasModeloPipeline, pipelineEtapas } = await import("@shared/schema");
+    const etapasModelo = await this.getEtapasModeloPipeline(modeloId);
+    
+    // Limpar etapas existentes da vaga
+    await db.delete(pipelineEtapas).where(eq(pipelineEtapas.vagaId, vagaId));
+    
+    // Aplicar etapas do modelo à vaga
+    for (let i = 0; i < etapasModelo.length; i++) {
+      const etapaModelo = etapasModelo[i];
+      await db.insert(pipelineEtapas).values({
+        vagaId,
+        nome: etapaModelo.nome,
+        descricao: etapaModelo.descricao,
+        ordem: i + 1,
+        cor: etapaModelo.cor,
+        camposObrigatorios: etapaModelo.camposObrigatorios,
+        responsaveis: etapaModelo.responsaveis
+      });
+    }
+  }
+
+  // Checklist methods
+  async getChecklistsByEtapa(etapaId: string): Promise<any[]> {
+    const { checklistsEtapas } = await import("@shared/schema");
+    return await db.select().from(checklistsEtapas).where(eq(checklistsEtapas.etapaId, etapaId)).orderBy(asc(checklistsEtapas.ordem));
+  }
+
+  async createChecklistEtapa(checklist: any): Promise<any> {
+    const { checklistsEtapas } = await import("@shared/schema");
+    const [created] = await db.insert(checklistsEtapas).values({
+      ...checklist,
+      dataAtualizacao: new Date()
+    }).returning();
+    return created;
+  }
+
+  async updateChecklistEtapa(id: string, checklist: Partial<any>): Promise<any | undefined> {
+    const { checklistsEtapas } = await import("@shared/schema");
+    const [updated] = await db
+      .update(checklistsEtapas)
+      .set({ ...checklist, dataAtualizacao: new Date() })
+      .where(eq(checklistsEtapas.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteChecklistEtapa(id: string): Promise<boolean> {
+    const { checklistsEtapas } = await import("@shared/schema");
+    const result = await db.delete(checklistsEtapas).where(eq(checklistsEtapas.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async getItensChecklistByCandidato(vagaCandidatoId: string): Promise<any[]> {
+    const { itensChecklistCandidato } = await import("@shared/schema");
+    return await db.select().from(itensChecklistCandidato).where(eq(itensChecklistCandidato.vagaCandidatoId, vagaCandidatoId));
+  }
+
+  async createItemChecklistCandidato(item: any): Promise<any> {
+    const { itensChecklistCandidato } = await import("@shared/schema");
+    const [created] = await db.insert(itensChecklistCandidato).values({
+      ...item,
+      dataAtualizacao: new Date()
+    }).returning();
+    return created;
+  }
+
+  async updateItemChecklistCandidato(id: string, item: Partial<any>): Promise<any | undefined> {
+    const { itensChecklistCandidato } = await import("@shared/schema");
+    const [updated] = await db
+      .update(itensChecklistCandidato)
+      .set({ ...item, dataAtualizacao: new Date() })
+      .where(eq(itensChecklistCandidato.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteItemChecklistCandidato(id: string): Promise<boolean> {
+    const { itensChecklistCandidato } = await import("@shared/schema");
+    const result = await db.delete(itensChecklistCandidato).where(eq(itensChecklistCandidato.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async verificarChecklistCompleto(vagaCandidatoId: string): Promise<boolean> {
+    const { itensChecklistCandidato } = await import("@shared/schema");
+    const itens = await db.select().from(itensChecklistCandidato).where(eq(itensChecklistCandidato.vagaCandidatoId, vagaCandidatoId));
+    return itens.every(item => item.status === 'aprovado');
+  }
+
+  async moverCandidatoSeChecklistCompleto(vagaCandidatoId: string): Promise<void> {
+    const { vagaCandidatos } = await import("@shared/schema");
+    const completado = await this.verificarChecklistCompleto(vagaCandidatoId);
+    if (completado) {
+      const [vagaCandidato] = await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.id, vagaCandidatoId));
+      if (vagaCandidato) {
+        // Mover para próxima etapa automaticamente
+        await this.moverCandidatoEtapa(
+          vagaCandidato.vagaId,
+          vagaCandidato.candidatoId,
+          'proxima_etapa',
+          'Checklist completo - movido automaticamente',
+          undefined,
+          vagaCandidato.responsavelId
+        );
+      }
+    }
+  }
+
+  // Automatização methods
+  async getAutomatizacoesByEtapa(etapaId: string): Promise<any[]> {
+    const { automatizacoesEtapas } = await import("@shared/schema");
+    return await db.select().from(automatizacoesEtapas).where(eq(automatizacoesEtapas.etapaId, etapaId));
+  }
+
+  async createAutomatizacaoEtapa(automatizacao: any): Promise<any> {
+    const { automatizacoesEtapas } = await import("@shared/schema");
+    const [created] = await db.insert(automatizacoesEtapas).values({
+      ...automatizacao,
+      dataAtualizacao: new Date()
+    }).returning();
+    return created;
+  }
+
+  async updateAutomatizacaoEtapa(id: string, automatizacao: Partial<any>): Promise<any | undefined> {
+    const { automatizacoesEtapas } = await import("@shared/schema");
+    const [updated] = await db
+      .update(automatizacoesEtapas)
+      .set({ ...automatizacao, dataAtualizacao: new Date() })
+      .where(eq(automatizacoesEtapas.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteAutomatizacaoEtapa(id: string): Promise<boolean> {
+    const { automatizacoesEtapas } = await import("@shared/schema");
+    const result = await db.delete(automatizacoesEtapas).where(eq(automatizacoesEtapas.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async getAutomatizacoesPendentes(): Promise<any[]> {
+    const { automatizacoesEtapas } = await import("@shared/schema");
+    return await db.select().from(automatizacoesEtapas).where(eq(automatizacoesEtapas.ativo, true));
+  }
+
+  async executarAutomatizacao(automatizacaoId: string, vagaCandidatoId: string): Promise<any> {
+    const { automatizacoesEtapas, vagaCandidatos, logsAutomatizacoes } = await import("@shared/schema");
+    const [automatizacao] = await db.select().from(automatizacoesEtapas).where(eq(automatizacoesEtapas.id, automatizacaoId));
+    if (!automatizacao) throw new Error("Automatização não encontrada");
+
+    const [vagaCandidato] = await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.id, vagaCandidatoId));
+    if (!vagaCandidato) throw new Error("Vaga Candidato não encontrado");
+
+    // Criar log da execução
+    const [log] = await db.insert(logsAutomatizacoes).values({
+      automatizacaoId,
+      vagaCandidatoId,
+      status: 'executando',
+      dadosEntrada: { automatizacao, vagaCandidato },
+      tentativa: 1
+    }).returning();
+
+    try {
+      // Executar ações baseadas no tipo de automatização
+      let resultado = {};
+      
+      switch (automatizacao.tipo) {
+        case 'movimento':
+          // Mover candidato para próxima etapa
+          resultado = await this.moverCandidatoEtapa(
+            vagaCandidato.vagaId,
+            vagaCandidato.candidatoId,
+            'automatico',
+            `Movido automaticamente por: ${automatizacao.nome}`,
+            undefined,
+            vagaCandidato.responsavelId
+          );
+          break;
+          
+        case 'webhook':
+          // Executar webhook
+          if (automatizacao.webhookUrl) {
+            const response = await fetch(automatizacao.webhookUrl, {
+              method: automatizacao.webhookMethod || 'POST',
+              headers: automatizacao.webhookHeaders || { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                vagaCandidatoId,
+                etapaId: automatizacao.etapaId,
+                automatizacaoId,
+                timestamp: new Date().toISOString()
+              })
+            });
+            resultado = { status: response.status, ok: response.ok };
+          }
+          break;
+          
+        case 'notificacao':
+          // Enviar notificação (implementar conforme necessário)
+          resultado = { tipo: 'notificacao', enviada: true };
+          break;
+          
+        default:
+          resultado = { tipo: 'acao_personalizada', executada: true };
+      }
+
+      // Atualizar log com sucesso
+      await db.update(logsAutomatizacoes)
+        .set({ 
+          status: 'sucesso', 
+          resultado,
+          dataExecucao: new Date()
+        })
+        .where(eq(logsAutomatizacoes.id, log.id));
+
+      // Atualizar automatização
+      await db.update(automatizacoesEtapas)
+        .set({ 
+          ultimaExecucao: new Date(),
+          tentativasAtuais: 0
+        })
+        .where(eq(automatizacoesEtapas.id, automatizacaoId));
+
+      return { ...log, status: 'sucesso', resultado };
+    } catch (error) {
+      // Atualizar log com erro
+      await db.update(logsAutomatizacoes)
+        .set({ 
+          status: 'erro', 
+          erro: error instanceof Error ? error.message : String(error),
+          dataExecucao: new Date()
+        })
+        .where(eq(logsAutomatizacoes.id, log.id));
+
+      // Incrementar tentativas
+      await db.update(automatizacoesEtapas)
+        .set({ 
+          tentativasAtuais: automatizacao.tentativasAtuais + 1,
+          ultimaExecucao: new Date()
+        })
+        .where(eq(automatizacoesEtapas.id, automatizacaoId));
+
+      throw error;
+    }
+  }
+
+  async criarLogAutomatizacao(log: any): Promise<any> {
+    const { logsAutomatizacoes } = await import("@shared/schema");
+    const [created] = await db.insert(logsAutomatizacoes).values(log).returning();
+    return created;
+  }
+
+  async atualizarLogAutomatizacao(id: string, log: Partial<any>): Promise<any | undefined> {
+    const { logsAutomatizacoes } = await import("@shared/schema");
+    const [updated] = await db
+      .update(logsAutomatizacoes)
+      .set(log)
+      .where(eq(logsAutomatizacoes.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getLogsAutomatizacao(automatizacaoId: string): Promise<any[]> {
+    const { logsAutomatizacoes } = await import("@shared/schema");
+    return await db.select().from(logsAutomatizacoes).where(eq(logsAutomatizacoes.automatizacaoId, automatizacaoId)).orderBy(desc(logsAutomatizacoes.dataExecucao));
+  }
+
+  // Motivos de Reprovação methods
+  async getMotivosReprovacaoByEmpresa(empresaId: string): Promise<any[]> {
+    const { motivosReprovacao } = await import("@shared/schema");
+    return await db.select().from(motivosReprovacao).where(eq(motivosReprovacao.empresaId, empresaId));
+  }
+
+  async createMotivoReprovacao(motivo: any): Promise<any> {
+    const { motivosReprovacao } = await import("@shared/schema");
+    const [created] = await db.insert(motivosReprovacao).values(motivo).returning();
+    return created;
+  }
+
+  async updateMotivoReprovacao(id: string, motivo: Partial<any>): Promise<any | undefined> {
+    const { motivosReprovacao } = await import("@shared/schema");
+    const [updated] = await db
+      .update(motivosReprovacao)
+      .set({ ...motivo, dataAtualizacao: new Date() })
+      .where(eq(motivosReprovacao.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteMotivoReprovacao(id: string): Promise<boolean> {
+    const { motivosReprovacao } = await import("@shared/schema");
+    const result = await db.delete(motivosReprovacao).where(eq(motivosReprovacao.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async getHistoricoReprovacoesByCandidato(vagaCandidatoId: string): Promise<any[]> {
+    const { historicoReprovacoes } = await import("@shared/schema");
+    return await db.select().from(historicoReprovacoes).where(eq(historicoReprovacoes.vagaCandidatoId, vagaCandidatoId)).orderBy(desc(historicoReprovacoes.data));
+  }
+
+  async criarHistoricoReprovacao(historico: any): Promise<any> {
+    const { historicoReprovacoes } = await import("@shared/schema");
+    const [created] = await db.insert(historicoReprovacoes).values(historico).returning();
+    return created;
+  }
+
+  async reprovarCandidato(vagaCandidatoId: string, motivoId: string, motivoCustomizado: string, observacoes: string, reprovadoPor: string): Promise<any> {
+    const { vagaCandidatos, historicoReprovacoes } = await import("@shared/schema");
+    const [vagaCandidato] = await db.select().from(vagaCandidatos).where(eq(vagaCandidatos.id, vagaCandidatoId));
+    if (!vagaCandidato) throw new Error("Vaga Candidato não encontrado");
+
+    const [motivo] = await db.select().from(motivosReprovacao).where(eq(motivosReprovacao.id, motivoId));
+    if (!motivo) throw new Error("Motivo de reprovação não encontrado");
+
+    const [historico] = await db.insert(historicoReprovacoes).values({
+      vagaCandidatoId,
+      motivoId,
+      motivoCustomizado,
+      observacoes,
+      reprovadoPor,
+      data: new Date()
+    }).returning();
+
+    // Atualizar o status do candidato para 'reprovado'
+    await db.update(vagaCandidatos)
+      .set({ status: 'reprovado', dataAtualizacao: new Date() })
+      .where(eq(vagaCandidatos.id, vagaCandidatoId));
+
+    return historico;
+  }
+
+  // SLA methods
+  async getSlasByEtapa(etapaId: string): Promise<any[]> {
+    const { slasEtapas } = await import("@shared/schema");
+    return await db.select().from(slasEtapas).where(eq(slasEtapas.etapaId, etapaId));
+  }
+
+  async createSlaEtapa(sla: any): Promise<any> {
+    const { slasEtapas } = await import("@shared/schema");
+    const [created] = await db.insert(slasEtapas).values({
+      ...sla,
+      dataAtualizacao: new Date()
+    }).returning();
+    return created;
+  }
+
+  async updateSlaEtapa(id: string, sla: Partial<any>): Promise<any | undefined> {
+    const { slasEtapas } = await import("@shared/schema");
+    const [updated] = await db
+      .update(slasEtapas)
+      .set({ ...sla, dataAtualizacao: new Date() })
+      .where(eq(slasEtapas.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteSlaEtapa(id: string): Promise<boolean> {
+    const { slasEtapas } = await import("@shared/schema");
+    const result = await db.delete(slasEtapas).where(eq(slasEtapas.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async getAlertasSlaPendentes(): Promise<any[]> {
+    const { alertasSla } = await import("@shared/schema");
+    return await db.select().from(alertasSla).where(eq(alertasSla.status, 'pendente'));
+  }
+
+  async getAlertasSlaByCandidato(vagaCandidatoId: string): Promise<any[]> {
+    const { alertasSla } = await import("@shared/schema");
+    return await db.select().from(alertasSla).where(eq(alertasSla.vagaCandidatoId, vagaCandidatoId));
+  }
+
+  async criarAlertaSla(alerta: any): Promise<any> {
+    const { alertasSla } = await import("@shared/schema");
+    const [created] = await db.insert(alertasSla).values(alerta).returning();
+    return created;
+  }
+
+  async atualizarAlertaSla(id: string, alerta: Partial<any>): Promise<any | undefined> {
+    const { alertasSla } = await import("@shared/schema");
+    const [updated] = await db
+      .update(alertasSla)
+      .set(alerta)
+      .where(eq(alertasSla.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async resolverAlertaSla(id: string, resolvidoPor: string): Promise<any> {
+    const { alertasSla } = await import("@shared/schema");
+    const [updated] = await db
+      .update(alertasSla)
+      .set({ 
+        status: 'resolvido', 
+        resolvidoPor,
+        dataResolucao: new Date()
+      })
+      .where(eq(alertasSla.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getNotificacoesSlaPendentes(): Promise<any[]> {
+    const { notificacoesSla } = await import("@shared/schema");
+    return await db.select().from(notificacoesSla).where(eq(notificacoesSla.status, 'pendente'));
+  }
+
+  async criarNotificacaoSla(notificacao: any): Promise<any> {
+    const { notificacoesSla } = await import("@shared/schema");
+    const [created] = await db.insert(notificacoesSla).values(notificacao).returning();
+    return created;
+  }
+
+  async atualizarNotificacaoSla(id: string, notificacao: Partial<any>): Promise<any | undefined> {
+    const { notificacoesSla } = await import("@shared/schema");
+    const [updated] = await db
+      .update(notificacoesSla)
+      .set(notificacao)
+      .where(eq(notificacoesSla.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async verificarSlasVencidos(): Promise<any[]> {
+    const { alertasSla, slasEtapas, vagaCandidatos } = await import("@shared/schema");
+    const agora = new Date();
+    
+    // Buscar alertas vencidos
+    const alertasVencidos = await db
+      .select()
+      .from(alertasSla)
+      .where(and(
+        eq(alertasSla.status, 'pendente'),
+        lt(alertasSla.dataVencimento, agora)
+      ));
+
+    return alertasVencidos;
+  }
+
+  async calcularPrazoVencimento(slaId: string, dataInicio: Date): Promise<Date> {
+    const { slasEtapas } = await import("@shared/schema");
+    const [sla] = await db.select().from(slasEtapas).where(eq(slasEtapas.id, slaId));
+    
+    if (!sla) {
+      throw new Error("SLA não encontrado");
+    }
+
+    const dataVencimento = new Date(dataInicio);
+    
+    switch (sla.tipoPrazo) {
+      case 'horas':
+        dataVencimento.setHours(dataVencimento.getHours() + sla.prazoHoras);
+        break;
+      case 'dias':
+        dataVencimento.setDate(dataVencimento.getDate() + sla.prazoDias);
+        break;
+      case 'semanas':
+        dataVencimento.setDate(dataVencimento.getDate() + (sla.prazoDias * 7));
+        break;
+      default:
+        dataVencimento.setDate(dataVencimento.getDate() + sla.prazoDias);
+    }
+
+    return dataVencimento;
   }
 
   // Alertas/Gaps do Quadro Ideal

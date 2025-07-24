@@ -1,4 +1,5 @@
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+PGPASSWORD=jm190124 psql -U postgres -h localhost -d genteproCREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE pipeline_etapas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

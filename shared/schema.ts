@@ -2,7 +2,6 @@ import { pgTable, text, serial, uuid, timestamp, varchar, decimal, boolean, uniq
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { solicitacoesVaga } from './schema'; // garantir import correto se necessário
 
 export const empresas = pgTable("empresas", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -46,7 +45,9 @@ export const vagas = pgTable("vagas", {
   salario: varchar("salario", { length: 100 }), // Optional salary range
   beneficios: text("beneficios"),
   tipoContratacao: varchar("tipo_contratacao", { length: 50 }).notNull(), // CLT, PJ, Estágio, Temporário, Freelancer
-  status: varchar("status", { length: 50 }).notNull().default("aberta"), // aberta, em_triagem, entrevistas, encerrada, cancelada
+  status: varchar("status", { length: 50 }).notNull().default("aberta"), // aberta, em_triagem, entrevistas, encerrada, cancelada, preenchida
+  visivel: boolean("visivel").notNull().default(true),
+  quantidade: integer("quantidade").notNull().default(1),
   dataAbertura: timestamp("data_abertura").defaultNow().notNull(),
   dataFechamento: timestamp("data_fechamento"),
   empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
@@ -103,7 +104,7 @@ export const vagaCandidatos = pgTable("vaga_candidatos", {
   id: uuid("id").primaryKey().defaultRandom(),
   vagaId: uuid("vaga_id").notNull().references(() => vagas.id),
   candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
-  etapa: varchar("etapa", { length: 50 }).notNull().default("recebido"), // recebido, triagem, entrevista, avaliacao, aprovado, reprovado
+  etapa: varchar("etapa", { length: 50 }).notNull().default("recebido"), // recebido, triagem, entrevista, avaliacao, aprovado, reprovado, contratado
   nota: decimal("nota", { precision: 3, scale: 1 }), // 0.0 a 10.0
   comentarios: text("comentarios"),
   dataMovimentacao: timestamp("data_movimentacao").defaultNow().notNull(),
@@ -502,6 +503,11 @@ export const insertEntrevistaSchema = createInsertSchema(entrevistas).omit({
   id: true,
   dataCriacao: true,
   dataAtualizacao: true,
+}).extend({
+  dataHora: z.preprocess(
+    (arg) => (typeof arg === 'string' || arg instanceof Date) ? new Date(arg) : arg,
+    z.date()
+  ),
 });
 
 export type Entrevista = typeof entrevistas.$inferSelect;
@@ -730,3 +736,468 @@ export const historicoSolicitacaoVaga = pgTable('historico_solicitacao_vaga', {
 
 export type HistoricoSolicitacaoVaga = typeof historicoSolicitacaoVaga.$inferSelect;
 export type InsertHistoricoSolicitacaoVaga = typeof historicoSolicitacaoVaga.$inferInsert;
+
+// === Timeline do Candidato ===
+export const eventosTimeline = pgTable("eventos_timeline", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
+  dataEvento: timestamp("data_evento").defaultNow().notNull(),
+  tipoEvento: varchar("tipo_evento", { length: 30 }).notNull(), // Enum: cadastro, movimentacao, entrevista, teste, observacao, reaproveitamento, mensagem
+  descricao: text("descricao").notNull(),
+  usuarioResponsavelId: uuid("usuario_responsavel_id").notNull().references(() => usuarios.id),
+  visivelParaCandidato: boolean("visivel_para_candidato").default(false),
+  observacaoInterna: text("observacao_interna"),
+  tipoObservacao: varchar("tipo_observacao", { length: 10 }), // Enum: alerta, positiva, neutra
+  tags: text("tags").array(),
+  anexos: text("anexos").array(), // URLs dos arquivos
+  origem: varchar("origem", { length: 20 }), // Enum: manual, sistema, ia
+  origemExterna: text("origem_externa"),
+  mencoes: uuid("mencoes").array(), // IDs de usuários mencionados
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().notNull(),
+}, (table) => ({
+  idxCandidato: uniqueIndex("idx_eventos_timeline_candidato").on(table.candidatoId, table.dataEvento, table.tipoEvento),
+}));
+
+export const insertEventoTimelineSchema = createInsertSchema(eventosTimeline).omit({
+  id: true,
+  criadoEm: true,
+  atualizadoEm: true,
+}).extend({
+  dataEvento: z.preprocess(
+    (val) => typeof val === 'string' ? new Date(val) : val,
+    z.date()
+  )
+});
+
+export type EventoTimeline = typeof eventosTimeline.$inferSelect;
+export type InsertEventoTimeline = z.infer<typeof insertEventoTimelineSchema>;
+
+// Relações
+export const eventosTimelineRelations = relations(eventosTimeline, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [eventosTimeline.candidatoId],
+    references: [candidatos.id],
+  }),
+  usuarioResponsavel: one(usuarios, {
+    fields: [eventosTimeline.usuarioResponsavelId],
+    references: [usuarios.id],
+  }),
+}));
+
+// Modelos de Pipeline Padrão por Empresa
+export const modelosPipeline = pgTable("modelos_pipeline", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  ativo: boolean("ativo").notNull().default(true),
+  padrao: boolean("padrao").notNull().default(false), // se é o modelo padrão da empresa
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+// Etapas dos Modelos de Pipeline
+export const etapasModeloPipeline = pgTable("etapas_modelo_pipeline", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  modeloId: uuid("modelo_id").notNull().references(() => modelosPipeline.id, { onDelete: "cascade" }),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  ordem: integer("ordem").notNull(),
+  tipo: varchar("tipo", { length: 50 }).notNull().default("intermediaria"), // inicial, intermediaria, decisao, final, pos_contrato
+  cor: varchar("cor", { length: 7 }).default("#3B82F6"), // hex color
+  obrigatoria: boolean("obrigatoria").notNull().default(true),
+  podeReprovar: boolean("pode_reprovar").notNull().default(false),
+  sla: integer("sla"), // dias para completar a etapa
+  acoesAutomaticas: json("acoes_automaticas"), // array de ações automáticas
+  camposObrigatorios: json("campos_obrigatorios"), // array de campos obrigatórios
+  responsaveis: json("responsaveis"), // array de IDs de usuários responsáveis
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+// Schemas para Modelos de Pipeline
+export const insertModeloPipelineSchema = createInsertSchema(modelosPipeline).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updateModeloPipelineSchema = insertModeloPipelineSchema.partial();
+
+export const insertEtapaModeloPipelineSchema = createInsertSchema(etapasModeloPipeline).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updateEtapaModeloPipelineSchema = insertEtapaModeloPipelineSchema.partial();
+
+// Tipos para Modelos de Pipeline
+export type ModeloPipeline = typeof modelosPipeline.$inferSelect;
+export type InsertModeloPipeline = z.infer<typeof insertModeloPipelineSchema>;
+export type EtapaModeloPipeline = typeof etapasModeloPipeline.$inferSelect;
+export type InsertEtapaModeloPipeline = z.infer<typeof insertEtapaModeloPipelineSchema>;
+
+// Relações para Modelos de Pipeline
+export const modelosPipelineRelations = relations(modelosPipeline, ({ one, many }) => ({
+  empresa: one(empresas, {
+    fields: [modelosPipeline.empresaId],
+    references: [empresas.id],
+  }),
+  etapas: many(etapasModeloPipeline),
+}));
+
+export const etapasModeloPipelineRelations = relations(etapasModeloPipeline, ({ one }) => ({
+  modelo: one(modelosPipeline, {
+    fields: [etapasModeloPipeline.modeloId],
+    references: [modelosPipeline.id],
+  }),
+}));
+
+// Checklists de Etapas do Pipeline
+export const checklistsEtapas = pgTable("checklists_etapas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  etapaId: uuid("etapa_id").notNull().references(() => etapasModeloPipeline.id, { onDelete: "cascade" }),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  tipo: varchar("tipo", { length: 50 }).notNull().default("documento"), // documento, exame, tarefa, validacao
+  obrigatorio: boolean("obrigatorio").notNull().default(true),
+  ordem: integer("ordem").notNull(),
+  validacaoAutomatica: boolean("validacao_automatica").notNull().default(false),
+  criteriosValidacao: json("criterios_validacao"), // critérios para validação automática
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+// Itens de Checklist por Candidato
+export const itensChecklistCandidato = pgTable("itens_checklist_candidato", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  checklistId: uuid("checklist_id").notNull().references(() => checklistsEtapas.id, { onDelete: "cascade" }),
+  vagaCandidatoId: uuid("vaga_candidato_id").notNull().references(() => vagaCandidatos.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 50 }).notNull().default("pendente"), // pendente, em_andamento, aprovado, reprovado
+  observacoes: text("observacoes"),
+  anexos: json("anexos"), // array de URLs de arquivos
+  validadoPor: uuid("validado_por").references(() => usuarios.id),
+  dataValidacao: timestamp("data_validacao"),
+  dataConclusao: timestamp("data_conclusao"),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+// Schemas para Checklists
+export const insertChecklistEtapaSchema = createInsertSchema(checklistsEtapas).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updateChecklistEtapaSchema = insertChecklistEtapaSchema.partial();
+
+export const insertItemChecklistCandidatoSchema = createInsertSchema(itensChecklistCandidato).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updateItemChecklistCandidatoSchema = insertItemChecklistCandidatoSchema.partial();
+
+// Tipos para Checklists
+export type ChecklistEtapa = typeof checklistsEtapas.$inferSelect;
+export type InsertChecklistEtapa = z.infer<typeof insertChecklistEtapaSchema>;
+export type ItemChecklistCandidato = typeof itensChecklistCandidato.$inferSelect;
+export type InsertItemChecklistCandidato = z.infer<typeof insertItemChecklistCandidatoSchema>;
+
+// Relações para Checklists
+export const checklistsEtapasRelations = relations(checklistsEtapas, ({ one, many }) => ({
+  etapa: one(etapasModeloPipeline, {
+    fields: [checklistsEtapas.etapaId],
+    references: [etapasModeloPipeline.id],
+  }),
+  itensCandidato: many(itensChecklistCandidato),
+}));
+
+export const itensChecklistCandidatoRelations = relations(itensChecklistCandidato, ({ one }) => ({
+  checklist: one(checklistsEtapas, {
+    fields: [itensChecklistCandidato.checklistId],
+    references: [checklistsEtapas.id],
+  }),
+  vagaCandidato: one(vagaCandidatos, {
+    fields: [itensChecklistCandidato.vagaCandidatoId],
+    references: [vagaCandidatos.id],
+  }),
+  validadoPor: one(usuarios, {
+    fields: [itensChecklistCandidato.validadoPor],
+    references: [usuarios.id],
+  }),
+}));
+
+// Automatizações de Etapas do Pipeline
+export const automatizacoesEtapas = pgTable("automatizacoes_etapas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  etapaId: uuid("etapa_id").notNull().references(() => etapasModeloPipeline.id, { onDelete: "cascade" }),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  tipo: varchar("tipo", { length: 50 }).notNull().default("movimento"), // movimento, notificacao, webhook, acao_personalizada
+  ativo: boolean("ativo").notNull().default(true),
+  condicoes: json("condicoes"), // array de condições que devem ser atendidas
+  acoes: json("acoes"), // array de ações a serem executadas
+  webhookUrl: varchar("webhook_url", { length: 500 }),
+  webhookHeaders: json("webhook_headers"),
+  webhookMethod: varchar("webhook_method", { length: 10 }).default("POST"),
+  delayExecucao: integer("delay_execucao"), // delay em minutos antes da execução
+  maxTentativas: integer("max_tentativas").default(3),
+  tentativasAtuais: integer("tentativas_atuais").default(0),
+  ultimaExecucao: timestamp("ultima_execucao"),
+  proximaExecucao: timestamp("proxima_execucao"),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+// Log de Execução de Automatizações
+export const logsAutomatizacoes = pgTable("logs_automatizacoes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  automatizacaoId: uuid("automatizacao_id").notNull().references(() => automatizacoesEtapas.id, { onDelete: "cascade" }),
+  vagaCandidatoId: uuid("vaga_candidato_id").notNull().references(() => vagaCandidatos.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 50 }).notNull().default("pendente"), // pendente, executando, sucesso, erro, cancelado
+  dadosEntrada: json("dados_entrada"), // dados que foram usados na execução
+  resultado: json("resultado"), // resultado da execução
+  erro: text("erro"), // mensagem de erro se houver
+  tentativa: integer("tentativa").notNull().default(1),
+  dataExecucao: timestamp("data_execucao").defaultNow().notNull(),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+});
+
+// Schemas para Automatizações
+export const insertAutomatizacaoEtapaSchema = createInsertSchema(automatizacoesEtapas).omit({
+  id: true,
+  tentativasAtuais: true,
+  ultimaExecucao: true,
+  proximaExecucao: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updateAutomatizacaoEtapaSchema = insertAutomatizacaoEtapaSchema.partial();
+
+export const insertLogAutomatizacaoSchema = createInsertSchema(logsAutomatizacoes).omit({
+  id: true,
+  dataCriacao: true,
+});
+
+// Tipos para Automatizações
+export type AutomatizacaoEtapa = typeof automatizacoesEtapas.$inferSelect;
+export type InsertAutomatizacaoEtapa = z.infer<typeof insertAutomatizacaoEtapaSchema>;
+export type LogAutomatizacao = typeof logsAutomatizacoes.$inferSelect;
+export type InsertLogAutomatizacao = z.infer<typeof insertLogAutomatizacaoSchema>;
+
+// Relações para Automatizações
+export const automatizacoesEtapasRelations = relations(automatizacoesEtapas, ({ one, many }) => ({
+  etapa: one(etapasModeloPipeline, {
+    fields: [automatizacoesEtapas.etapaId],
+    references: [etapasModeloPipeline.id],
+  }),
+  logs: many(logsAutomatizacoes),
+}));
+
+export const logsAutomatizacoesRelations = relations(logsAutomatizacoes, ({ one }) => ({
+  automatizacao: one(automatizacoesEtapas, {
+    fields: [logsAutomatizacoes.automatizacaoId],
+    references: [automatizacoesEtapas.id],
+  }),
+  vagaCandidato: one(vagaCandidatos, {
+    fields: [logsAutomatizacoes.vagaCandidatoId],
+    references: [vagaCandidatos.id],
+  }),
+}));
+
+// Motivos de Reprovação Padrão
+export const motivosReprovacao = pgTable("motivos_reprovacao", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  categoria: varchar("categoria", { length: 100 }).notNull().default("geral"), // geral, tecnico, comportamental, documental, outros
+  ativo: boolean("ativo").notNull().default(true),
+  obrigatorio: boolean("obrigatorio").notNull().default(false), // se é obrigatório selecionar
+  ordem: integer("ordem").notNull().default(0),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+// Histórico de Reprovações
+export const historicoReprovacoes = pgTable("historico_reprovacoes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaCandidatoId: uuid("vaga_candidato_id").notNull().references(() => vagaCandidatos.id, { onDelete: "cascade" }),
+  motivoId: uuid("motivo_id").references(() => motivosReprovacao.id),
+  motivoCustomizado: text("motivo_customizado"), // para motivos não padronizados
+  observacoes: text("observacoes"),
+  etapaReprovacao: varchar("etapa_reprovacao", { length: 100 }).notNull(),
+  reprovadoPor: uuid("reprovado_por").notNull().references(() => usuarios.id),
+  dataReprovacao: timestamp("data_reprovacao").defaultNow().notNull(),
+  dadosAdicionais: json("dados_adicionais"), // dados extras da reprovação
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+});
+
+// Schemas para Motivos de Reprovação
+export const insertMotivoReprovacaoSchema = createInsertSchema(motivosReprovacao).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updateMotivoReprovacaoSchema = insertMotivoReprovacaoSchema.partial();
+
+export const insertHistoricoReprovacaoSchema = createInsertSchema(historicoReprovacoes).omit({
+  id: true,
+  dataCriacao: true,
+});
+
+// Tipos para Motivos de Reprovação
+export type MotivoReprovacao = typeof motivosReprovacao.$inferSelect;
+export type InsertMotivoReprovacao = z.infer<typeof insertMotivoReprovacaoSchema>;
+export type HistoricoReprovacao = typeof historicoReprovacoes.$inferSelect;
+export type InsertHistoricoReprovacao = z.infer<typeof insertHistoricoReprovacaoSchema>;
+
+// Relações para Motivos de Reprovação
+export const motivosReprovacaoRelations = relations(motivosReprovacao, ({ one, many }) => ({
+  empresa: one(empresas, {
+    fields: [motivosReprovacao.empresaId],
+    references: [empresas.id],
+  }),
+  historicoReprovacoes: many(historicoReprovacoes),
+}));
+
+export const historicoReprovacoesRelations = relations(historicoReprovacoes, ({ one }) => ({
+  vagaCandidato: one(vagaCandidatos, {
+    fields: [historicoReprovacoes.vagaCandidatoId],
+    references: [vagaCandidatos.id],
+  }),
+  motivo: one(motivosReprovacao, {
+    fields: [historicoReprovacoes.motivoId],
+    references: [motivosReprovacao.id],
+  }),
+  reprovadoPor: one(usuarios, {
+    fields: [historicoReprovacoes.reprovadoPor],
+    references: [usuarios.id],
+  }),
+}));
+
+// SLAs de Etapas do Pipeline
+export const slasEtapas = pgTable("slas_etapas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  etapaId: uuid("etapa_id").notNull().references(() => etapasModeloPipeline.id, { onDelete: "cascade" }),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  prazoHoras: integer("prazo_horas").notNull().default(24), // prazo em horas
+  prazoDias: integer("prazo_dias").notNull().default(1), // prazo em dias
+  tipoPrazo: varchar("tipo_prazo", { length: 20 }).notNull().default("dias"), // horas, dias, semanas
+  ativo: boolean("ativo").notNull().default(true),
+  alertaAntes: integer("alerta_antes").notNull().default(2), // alerta X horas/dias antes
+  alertaApos: integer("alerta_apos").notNull().default(1), // alerta X horas/dias após vencimento
+  acoesAutomaticas: json("acoes_automaticas"), // ações a serem executadas quando SLA é violado
+  notificacoes: json("notificacoes"), // configuração de notificações
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
+});
+
+// Alertas de SLA
+export const alertasSla = pgTable("alertas_sla", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slaId: uuid("sla_id").notNull().references(() => slasEtapas.id, { onDelete: "cascade" }),
+  vagaCandidatoId: uuid("vaga_candidato_id").notNull().references(() => vagaCandidatos.id, { onDelete: "cascade" }),
+  tipo: varchar("tipo", { length: 50 }).notNull().default("vencimento"), // vencimento, atraso, proximo_vencimento
+  status: varchar("status", { length: 50 }).notNull().default("pendente"), // pendente, enviado, lido, resolvido
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  mensagem: text("mensagem"),
+  nivelUrgencia: varchar("nivel_urgencia", { length: 20 }).notNull().default("medio"), // baixo, medio, alto, critico
+  dataVencimento: timestamp("data_vencimento").notNull(),
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+  dataEnvio: timestamp("data_envio"),
+  dataLeitura: timestamp("data_leitura"),
+  dataResolucao: timestamp("data_resolucao"),
+  resolvidoPor: uuid("resolvido_por").references(() => usuarios.id),
+  dadosAdicionais: json("dados_adicionais"), // dados extras do alerta
+});
+
+// Notificações de SLA
+export const notificacoesSla = pgTable("notificacoes_sla", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  alertaId: uuid("alerta_id").notNull().references(() => alertasSla.id, { onDelete: "cascade" }),
+  destinatarioId: uuid("destinatario_id").notNull().references(() => usuarios.id),
+  tipo: varchar("tipo", { length: 50 }).notNull().default("email"), // email, push, sms, webhook
+  status: varchar("status", { length: 50 }).notNull().default("pendente"), // pendente, enviado, entregue, falhou
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  conteudo: text("conteudo"),
+  dadosEnvio: json("dados_envio"), // dados da tentativa de envio
+  tentativas: integer("tentativas").notNull().default(0),
+  maxTentativas: integer("max_tentativas").notNull().default(3),
+  proximaTentativa: timestamp("proxima_tentativa"),
+  dataEnvio: timestamp("data_envio"),
+  dataEntrega: timestamp("data_entrega"),
+  erro: text("erro"), // mensagem de erro se houver
+  dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
+});
+
+// Schemas para SLAs
+export const insertSlaEtapaSchema = createInsertSchema(slasEtapas).omit({
+  id: true,
+  dataCriacao: true,
+  dataAtualizacao: true,
+});
+
+export const updateSlaEtapaSchema = insertSlaEtapaSchema.partial();
+
+export const insertAlertaSlaSchema = createInsertSchema(alertasSla).omit({
+  id: true,
+  dataCriacao: true,
+});
+
+export const insertNotificacaoSlaSchema = createInsertSchema(notificacoesSla).omit({
+  id: true,
+  dataCriacao: true,
+});
+
+// Tipos para SLAs
+export type SlaEtapa = typeof slasEtapas.$inferSelect;
+export type InsertSlaEtapa = z.infer<typeof insertSlaEtapaSchema>;
+export type AlertaSla = typeof alertasSla.$inferSelect;
+export type InsertAlertaSla = z.infer<typeof insertAlertaSlaSchema>;
+export type NotificacaoSla = typeof notificacoesSla.$inferSelect;
+export type InsertNotificacaoSla = z.infer<typeof insertNotificacaoSlaSchema>;
+
+// Relações para SLAs
+export const slasEtapasRelations = relations(slasEtapas, ({ one, many }) => ({
+  etapa: one(etapasModeloPipeline, {
+    fields: [slasEtapas.etapaId],
+    references: [etapasModeloPipeline.id],
+  }),
+  alertas: many(alertasSla),
+}));
+
+export const alertasSlaRelations = relations(alertasSla, ({ one, many }) => ({
+  sla: one(slasEtapas, {
+    fields: [alertasSla.slaId],
+    references: [slasEtapas.id],
+  }),
+  vagaCandidato: one(vagaCandidatos, {
+    fields: [alertasSla.vagaCandidatoId],
+    references: [vagaCandidatos.id],
+  }),
+  resolvidoPor: one(usuarios, {
+    fields: [alertasSla.resolvidoPor],
+    references: [usuarios.id],
+  }),
+  notificacoes: many(notificacoesSla),
+}));
+
+export const notificacoesSlaRelations = relations(notificacoesSla, ({ one }) => ({
+  alerta: one(alertasSla, {
+    fields: [notificacoesSla.alertaId],
+    references: [alertasSla.id],
+  }),
+  destinatario: one(usuarios, {
+    fields: [notificacoesSla.destinatarioId],
+    references: [usuarios.id],
+  }),
+}));

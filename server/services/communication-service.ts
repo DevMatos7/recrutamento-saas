@@ -185,6 +185,18 @@ export class CommunicationService {
       };
 
       const comunicacao = await storage.createComunicacao(comunicacaoData);
+      // Registrar evento na timeline
+      if (data.candidatoId) {
+        const { TimelineService } = await import('./timeline-service');
+        await TimelineService.criarEvento({
+          candidatoId: data.candidatoId,
+          tipoEvento: 'comunicacao_enviada',
+          descricao: `Comunicação enviada (${data.tipo} - ${data.canal}): ${data.assunto || '-'} - ${data.mensagem.substring(0, 100)}...`,
+          usuarioResponsavelId: data.enviadoPor,
+          dataEvento: new Date(),
+          origem: 'comunicacao'
+        });
+      }
 
       // Send immediately if no schedule date or if scheduled time has passed
       const shouldSendNow = !data.dataAgendada || data.dataAgendada <= new Date();

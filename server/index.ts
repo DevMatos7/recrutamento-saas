@@ -6,8 +6,11 @@ import { apiLimiter } from "./middleware/rate-limit.middleware";
 import cron from "node-cron";
 import { EntrevistaService } from "./services/entrevista-service";
 import { CommunicationService } from "./services/communication-service";
+// import cors from 'cors'; // Removido para testar sem CORS
 
 const app = express();
+
+// Removido: app.use(cors({ ... }))
 
 // Desabilitar ETag para evitar respostas 304 e garantir sempre status 200
 app.disable('etag');
@@ -74,7 +77,7 @@ app.use((req, res, next) => {
   const port = 5000;
   server.listen({
     port,
-    host: "0.0.0.0",
+    host: "192.168.77.3",
     reusePort: true,
   }, async () => {
     log(`serving on port ${port}`);

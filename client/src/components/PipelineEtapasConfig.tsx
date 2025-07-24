@@ -80,28 +80,69 @@ export default function PipelineEtapasConfig({ vagaId, open, onClose }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="modal-horizontal" style={{ minWidth: '90vw', maxWidth: '98vw' }}>
-        <DialogHeader>
+      <DialogContent 
+        className="modal-horizontal" 
+        style={{ 
+          minWidth: '90vw', 
+          maxWidth: '98vw',
+          maxHeight: '90vh',
+          height: 'auto',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <DialogHeader style={{ flexShrink: 0 }}>
           <DialogTitle>Configurar Etapas do Pipeline</DialogTitle>
           <DialogDescription>Arraste, edite e personalize as etapas do pipeline.</DialogDescription>
         </DialogHeader>
-        <div className="etapas-horizontal-lista" style={{ display: 'flex', flexDirection: 'row', gap: 16, overflowX: 'auto', padding: '16px 0' }}>
+        
+        <div 
+          className="etapas-horizontal-lista" 
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'row', 
+            gap: 16, 
+            overflowX: 'auto', 
+            overflowY: 'hidden',
+            padding: '16px 0',
+            flex: 1,
+            minHeight: 0
+          }}
+        >
           {etapas.map((etapa, idx) => (
-            <div className="etapa-coluna" key={etapa.id || idx} style={{ minWidth: 220, background: '#fff', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'stretch', padding: 12, position: 'relative' }}>
+            <div 
+              className="etapa-coluna" 
+              key={etapa.id || idx} 
+              style={{ 
+                minWidth: 280, 
+                maxWidth: 280,
+                background: '#fff', 
+                borderRadius: 10, 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'stretch', 
+                padding: 12, 
+                position: 'relative',
+                height: 'fit-content'
+              }}
+            >
               <div className="etapa-header" style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: '8px 8px 0 0', padding: 8, background: etapa.cor }}>
                 <Input
                   value={etapa.nome}
                   onChange={e => setEtapas(etapas.map((et, i) => i === idx ? { ...et, nome: e.target.value } : et))}
                   placeholder="Nome"
                   className="etapa-nome"
+                  style={{ flex: 1, minWidth: 0 }}
                 />
                 <button
                   className="cor-btn"
-                  style={{ background: etapa.cor, width: 24, height: 24, border: 'none', borderRadius: '50%', cursor: 'pointer', outline: '2px solid #eee' }}
+                  style={{ background: etapa.cor, width: 24, height: 24, border: 'none', borderRadius: '50%', cursor: 'pointer', outline: '2px solid #eee', flexShrink: 0 }}
                   onClick={() => setColorPickerIdx(idx)}
                 />
                 {colorPickerIdx === idx && (
-                  <div className="color-popover" style={{ position: 'absolute', zIndex: 10, top: 40, left: 0 }}>
+                  <div className="color-popover" style={{ position: 'absolute', zIndex: 1000, top: 40, left: 0 }}>
                     <SketchPicker
                       color={etapa.cor}
                       onChange={c => {
@@ -112,7 +153,8 @@ export default function PipelineEtapasConfig({ vagaId, open, onClose }: Props) {
                   </div>
                 )}
               </div>
-              <div className="etapa-body" style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '8px 0' }}>
+              
+              <div className="etapa-body" style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '12px 0', flex: 1 }}>
                 {CAMPOS_POSSIVEIS.map(campo => (
                   <label key={campo.key} className="checkbox-compact" style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <input
@@ -128,18 +170,41 @@ export default function PipelineEtapasConfig({ vagaId, open, onClose }: Props) {
                     {campo.label}
                   </label>
                 ))}
-                <Select
-                  isMulti
-                  value={usuarios.filter(u => (etapa.responsaveis || []).includes(u.id)).map(u => ({ value: u.id, label: u.nome.split(' ')[0] }))}
-                  onChange={selected => {
-                    const values = selected.map(opt => opt.value);
-                    setEtapas(etapas.map((et, i) => i === idx ? { ...et, responsaveis: values } : et));
-                  }}
-                  options={usuarios.map(u => ({ value: u.id, label: u.nome.split(' ')[0] }))}
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                  placeholder="Selecione responsáveis..."
-                />
+                
+                                <div style={{ position: 'relative', zIndex: 100 }}>
+                  <Select
+                    isMulti
+                    value={usuarios.filter(u => (etapa.responsaveis || []).includes(u.id)).map(u => ({ value: u.id, label: u.nome.split(' ')[0] }))}
+                    onChange={selected => {
+                      const values = selected.map(opt => opt.value);
+                      setEtapas(etapas.map((et, i) => i === idx ? { ...et, responsaveis: values } : et));
+                    }}
+                    options={usuarios.map(u => ({ value: u.id, label: u.nome.split(' ')[0] }))}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    placeholder="Selecione responsáveis..."
+                    menuPosition="fixed"
+                    menuPlacement="auto"
+                    closeMenuOnScroll={false}
+                    styles={{
+                      menu: (provided) => ({
+                        ...provided,
+                        zIndex: 9999,
+                        position: 'fixed'
+                      }),
+                      menuPortal: (provided) => ({
+                        ...provided,
+                        zIndex: 9999
+                      }),
+                      control: (provided) => ({
+                        ...provided,
+                        minHeight: '36px'
+                      })
+                    }}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                  />
+                </div>
+                
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                   {(etapa.responsaveis || []).map(id => {
                     const user = usuarios.find(u => u.id === id);
@@ -148,20 +213,25 @@ export default function PipelineEtapasConfig({ vagaId, open, onClose }: Props) {
                   })}
                 </div>
               </div>
-              <div className="etapa-actions" style={{ display: 'flex', gap: 4, justifyContent: 'space-between', marginTop: 8 }}>
+              
+              <div className="etapa-actions" style={{ display: 'flex', gap: 4, justifyContent: 'space-between', marginTop: 8, flexShrink: 0 }}>
                 <Button onClick={() => removeEtapa(idx)} variant="destructive" size="sm">Remover</Button>
                 <Button onClick={() => moveEtapa(idx, idx - 1)} disabled={idx === 0} size="sm">←</Button>
                 <Button onClick={() => moveEtapa(idx, idx + 1)} disabled={idx === etapas.length - 1} size="sm">→</Button>
               </div>
             </div>
           ))}
-          <div className="etapa-coluna add-coluna" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 120, background: 'transparent', boxShadow: 'none' }}>
+          
+          <div className="etapa-coluna add-coluna" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 120, background: 'transparent', boxShadow: 'none', flexShrink: 0 }}>
             <Button onClick={addEtapa} variant="outline">+ Nova Etapa</Button>
           </div>
         </div>
-        <Button onClick={confirmarAlteracoes} className="w-full mt-4" style={{ background: '#22c55e', color: '#fff', fontWeight: 600 }}>
-          {salvando ? "Salvando..." : "Confirmar alterações"}
-        </Button>
+        
+        <div style={{ flexShrink: 0, marginTop: 16 }}>
+          <Button onClick={confirmarAlteracoes} className="w-full" style={{ background: '#22c55e', color: '#fff', fontWeight: 600 }}>
+            {salvando ? "Salvando..." : "Confirmar alterações"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

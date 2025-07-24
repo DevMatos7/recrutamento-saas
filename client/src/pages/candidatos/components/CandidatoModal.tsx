@@ -716,6 +716,38 @@ export function CandidatoModal({ isOpen, onClose, editingCandidato }: CandidatoM
                       </div>
                     )}
                   </div>
+                  {/* Campo de upload de currículo */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Currículo (PDF ou DOC)
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const formDataFile = new FormData();
+                        formDataFile.append('file', file);
+                        try {
+                          const res = await fetch('/api/upload/curriculo', {
+                            method: 'POST',
+                            body: formDataFile
+                          });
+                          if (!res.ok) throw new Error('Falha no upload');
+                          const data = await res.json();
+                          if (data.url) {
+                            handleFieldChange('curriculoUrl', data.url);
+                          }
+                        } catch (err) {
+                          alert('Erro ao fazer upload do currículo.');
+                        }
+                      }}
+                    />
+                    {formData.curriculoUrl && (
+                      <a href={formData.curriculoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm mt-1 block">Ver currículo enviado</a>
+                    )}
+                  </div>
               </div>
             </TabsContent>
 

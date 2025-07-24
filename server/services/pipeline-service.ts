@@ -203,7 +203,8 @@ export class PipelineService {
     novaEtapa: string,
     usuarioLogado: Usuario,
     nota?: number,
-    comentarios?: string
+    comentarios?: string,
+    motivoReprovacao?: { motivoId: string; motivoCustomizado?: string; observacoes?: string }
   ): Promise<{
     vagaCandidato: VagaCandidato;
     historico: MovimentacaoHistorico;
@@ -278,6 +279,16 @@ export class PipelineService {
       }
     }
 
+    // VALIDAÇÃO DE MOTIVO OBRIGATÓRIO PARA REPROVAÇÃO
+    if (novaEtapa.toLowerCase().includes('reprovado') || novaEtapa.toLowerCase().includes('reprovacao')) {
+      if (!motivoReprovacao || (!motivoReprovacao.motivoId && !motivoReprovacao.motivoCustomizado)) {
+        throw new PipelineServiceError(
+          "É obrigatório informar o motivo da reprovação.",
+          "MISSING_REJECTION_REASON"
+        );
+      }
+    }
+
     // 5. Check if movement is necessary
     if (inscricaoAtual.etapa === novaEtapa) {
       throw new PipelineServiceError(
@@ -295,7 +306,21 @@ export class PipelineService {
       comentarios
     );
 
-    // 7. Update candidate stage with complete audit trail
+    // 7. Criar histórico de reprovação se necessário
+    if ((novaEtapa.toLowerCase().includes('reprovado') || novaEtapa.toLowerCase().includes('reprovacao')) && motivoReprovacao) {
+      const { storage } = await import("../storage");
+      await storage.criarHistoricoReprovacao({
+        vagaCandidatoId: inscricaoAtual.id,
+        motivoId: motivoReprovacao.motivoId,
+        motivoCustomizado: motivoReprovacao.motivoCustomizado,
+        observacoes: motivoReprovacao.observacoes,
+        etapaReprovacao: inscricaoAtual.etapa,
+        reprovadoPor: usuarioLogado.id,
+        dataReprovacao: new Date()
+      });
+    }
+
+    // 8. Update candidate stage with complete audit trail
     const [vagaCandidatoAtualizado] = await db
       .update(vagaCandidatos)
       .set({
@@ -310,6 +335,25 @@ export class PipelineService {
         eq(vagaCandidatos.candidatoId, candidatoId)
       ))
       .returning();
+
+    // Lógica automática: se etapa for 'contratado', verificar preenchimento da vaga
+    if (novaEtapa === 'contratado') {
+      // Buscar quantidade máxima da vaga
+      const [vaga] = await db.select().from(vagas).where(eq(vagas.id, vagaId));
+      if (vaga) {
+        // Contar quantos candidatos já estão na etapa 'contratado'
+        const contratados = await db
+          .select()
+          .from(vagaCandidatos)
+          .where(and(eq(vagaCandidatos.vagaId, vagaId), eq(vagaCandidatos.etapa, 'contratado')));
+        if (contratados.length >= vaga.quantidade) {
+          // Atualizar status da vaga para 'preenchida'
+          await db.update(vagas)
+            .set({ status: 'preenchida', dataFechamento: new Date() })
+            .where(eq(vagas.id, vagaId));
+        }
+      }
+    }
 
     if (!vagaCandidatoAtualizado) {
       throw new PipelineServiceError(
