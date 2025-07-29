@@ -193,6 +193,30 @@ function MoveModal({
     }
   }, [etapa, candidate]);
 
+  // NOVO: Checklist da etapa de origem
+  const etapaOrigem = etapas.find(e => e.nome === candidate?.etapa || e.title === candidate?.etapa);
+  const checklistOrigem = etapaOrigem?.camposObrigatorios || [];
+
+  // NOVO: Buscar checklist avançado da etapa de origem
+  const [checklistAvancado, setChecklistAvancado] = useState<any[]>([]);
+  useEffect(() => {
+    if (etapaOrigem?.id) {
+      fetch(`/api/etapas/${etapaOrigem.id}/checklists`)
+        .then(res => res.json())
+        .then(data => {
+          console.log("Checklist avançado:", data);
+          setChecklistAvancado(data);
+        })
+        .catch(() => setChecklistAvancado([]));
+    } else {
+      setChecklistAvancado([]);
+    }
+  }, [etapaOrigem]);
+
+  // LOG para depuração
+  console.log("Checklist avançado:", checklistAvancado);
+  console.log("Etapa origem:", etapaOrigem);
+
   const handleSubmit = () => {
     if (!etapa) {
       setError("Por favor, selecione uma etapa");
@@ -221,6 +245,37 @@ function MoveModal({
         
         <div className="space-y-4">
           {error && <div className="text-red-600 text-sm font-medium">{error}</div>}
+
+          {/* Checklist avançado visual da etapa de origem */}
+          {checklistAvancado.length > 0 && (
+            <div className="mb-2">
+              <strong>Checklist obrigatório para sair da etapa <span className="capitalize">{etapaOrigem?.nome || etapaOrigem?.title}</span>:</strong>
+              <ul className="list-disc ml-5 text-sm">
+                {checklistAvancado.map(item => (
+                  <li key={item.id}>
+                    {item.nome || item.titulo || item.label || item.descricao || JSON.stringify(item)} {item.obrigatorio && <span className="text-red-500">(Obrigatório)</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Checklist simples (camposObrigatorios) - opcional, pode remover se não quiser duplicidade */}
+          {checklistOrigem.length > 0 && (
+            <div className="mb-2">
+              <strong>Campos obrigatórios adicionais:</strong>
+              <ul className="list-disc ml-5 text-sm">
+                {checklistOrigem.map((campo: string) => (
+                  <li key={campo}>
+                    {campo === "score" && "Score de Avaliação"}
+                    {campo === "observacao" && "Observação"}
+                    {campo !== "score" && campo !== "observacao" && campo}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="etapa">Nova Etapa</Label>
             <Select value={etapa} onValueChange={setEtapa}>

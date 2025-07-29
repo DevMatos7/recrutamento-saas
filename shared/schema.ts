@@ -53,6 +53,7 @@ export const vagas = pgTable("vagas", {
   empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
   departamentoId: uuid("departamento_id").notNull().references(() => departamentos.id),
   gestorId: uuid("gestor_id").notNull().references(() => usuarios.id),
+  responsavelId: uuid("responsavel_id").references(() => usuarios.id), // Recrutador responsável pela vaga
   dataCriacao: timestamp("data_criacao").defaultNow().notNull(),
   dataAtualizacao: timestamp("data_atualizacao").defaultNow().notNull(),
 });
@@ -1201,3 +1202,72 @@ export const notificacoesSlaRelations = relations(notificacoesSla, ({ one }) => 
     references: [usuarios.id],
   }),
 }));
+
+// Tabelas para Análise de Engajamento no Pipeline
+export const logsMovimentacaoPipeline = pgTable("logs_movimentacao_pipeline", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaCandidatoId: uuid("vaga_candidato_id").notNull().references(() => vagaCandidatos.id, { onDelete: "cascade" }),
+  etapaAnterior: varchar("etapa_anterior", { length: 50 }),
+  etapaNova: varchar("etapa_nova", { length: 50 }).notNull(),
+  tempoNaEtapa: integer("tempo_na_etapa"), // tempo em dias na etapa anterior
+  responsavelId: uuid("responsavel_id").references(() => usuarios.id),
+  motivoMovimentacao: varchar("motivo_movimentacao", { length: 100 }), // aprovado, reprovado, desistiu, etc
+  comentarios: text("comentarios"),
+  dataMovimentacao: timestamp("data_movimentacao").defaultNow().notNull(),
+  dadosAdicionais: jsonb("dados_adicionais"), // dados extras da movimentação
+});
+
+export const metricasEngajamento = pgTable("metricas_engajamento", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaId: uuid("vaga_id").references(() => vagas.id),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  etapa: varchar("etapa", { length: 50 }).notNull(),
+  periodo: varchar("periodo", { length: 20 }).notNull(), // diario, semanal, mensal
+  dataInicio: date("data_inicio").notNull(),
+  dataFim: date("data_fim").notNull(),
+  tempoMedio: decimal("tempo_medio", { precision: 5, scale: 2 }), // tempo médio em dias
+  totalCandidatos: integer("total_candidatos").notNull().default(0),
+  candidatosAprovados: integer("candidatos_aprovados").notNull().default(0),
+  candidatosReprovados: integer("candidatos_reprovados").notNull().default(0),
+  candidatosDesistiram: integer("candidatos_desistiram").notNull().default(0),
+  slaEstourado: integer("sla_estourado").notNull().default(0),
+  dataCalculo: timestamp("data_calculo").defaultNow().notNull(),
+});
+
+export const candidatosParados = pgTable("candidatos_parados", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  vagaCandidatoId: uuid("vaga_candidato_id").notNull().references(() => vagaCandidatos.id, { onDelete: "cascade" }),
+  etapa: varchar("etapa", { length: 50 }).notNull(),
+  diasParado: integer("dias_parado").notNull(),
+  limiteSla: integer("limite_sla"), // limite em dias para esta etapa
+  statusAlerta: varchar("status_alerta", { length: 20 }).notNull().default("normal"), // normal, atencao, critico
+  responsavelId: uuid("responsavel_id").references(() => usuarios.id),
+  ultimaAtividade: timestamp("ultima_atividade"),
+  dataCalculo: timestamp("data_calculo").defaultNow().notNull(),
+  notificado: boolean("notificado").notNull().default(false),
+  dataNotificacao: timestamp("data_notificacao"),
+});
+
+// Schemas para Engajamento
+export const insertLogMovimentacaoSchema = createInsertSchema(logsMovimentacaoPipeline).omit({
+  id: true,
+  dataMovimentacao: true,
+});
+
+export const insertMetricaEngajamentoSchema = createInsertSchema(metricasEngajamento).omit({
+  id: true,
+  dataCalculo: true,
+});
+
+export const insertCandidatoParadoSchema = createInsertSchema(candidatosParados).omit({
+  id: true,
+  dataCalculo: true,
+});
+
+// Tipos para Engajamento
+export type LogMovimentacaoPipeline = typeof logsMovimentacaoPipeline.$inferSelect;
+export type InsertLogMovimentacaoPipeline = z.infer<typeof insertLogMovimentacaoSchema>;
+export type MetricaEngajamento = typeof metricasEngajamento.$inferSelect;
+export type InsertMetricaEngajamento = z.infer<typeof insertMetricaEngajamentoSchema>;
+export type CandidatoParado = typeof candidatosParados.$inferSelect;
+export type InsertCandidatoParado = z.infer<typeof insertCandidatoParadoSchema>;

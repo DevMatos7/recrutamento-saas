@@ -23,7 +23,8 @@ import {
   ChevronDown,
   ChevronRight,
   Edit,
-  Tag
+  Tag,
+  Activity
 } from "lucide-react";
 
 export function Sidebar() {
@@ -70,6 +71,24 @@ export function Sidebar() {
       name: "Pipeline",
       href: "/pipeline",
       icon: GitBranch,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Análise de Engajamento",
+      href: "/pipeline-engagement",
+      icon: Activity,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Atribuição de Candidatos",
+      href: "/candidate-assignment",
+      icon: Users,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "Gerenciador de Vagas",
+      href: "/vaga-assignment-manager",
+      icon: Briefcase,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {

@@ -39,6 +39,9 @@ import PipelineConfigPage from "@/pages/pipeline-config";
 import ModelosPipelinePage from "@/pages/modelos-pipeline";
 import UploadCandidatoPage from "@/pages/upload-candidato";
 import EmpresaVagasPage from './pages/empresa/[slug]';
+import PipelineEngagementPage from "@/pages/PipelineEngagementPage";
+import CandidateAssignmentPage from "@/pages/CandidateAssignmentPage";
+import VagaAssignmentManagerPage from "@/pages/VagaAssignmentManagerPage";
 
 function Router() {
   return (
@@ -72,6 +75,9 @@ function Router() {
       <ProtectedRoute path="/quadro-ideal/:id" component={QuadroIdealFormPage} />
       <ProtectedRoute path="/quadro-ideal/:id/historico" component={QuadroIdealHistoricoPage} />
       <ProtectedRoute path="/solicitacoes-vaga" component={SolicitacoesVagaPage} />
+              <ProtectedRoute path="/pipeline-engagement" component={PipelineEngagementPage} />
+        <ProtectedRoute path="/candidate-assignment" component={CandidateAssignmentPage} />
+        <ProtectedRoute path="/vaga-assignment-manager" component={VagaAssignmentManagerPage} />
       <Route path="/portal" component={CandidatePortalPage} />
       <Route path="/portal/disc" component={CandidateDiscTest} />
       <Route path="/upload/candidato/:vagaCandidatoId" component={UploadCandidatoPage} />

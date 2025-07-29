@@ -75,21 +75,19 @@ export default function ChecklistManager({
     obrigatorio: true,
     validacaoAutomatica: false
   });
-  const [localChecklists, setLocalChecklists] = useState<ChecklistItem[]>([]);
 
-  // Buscar checklists da etapa
+
+
+
+  // Buscar checklists da etapa (sempre do banco, pois todas as etapas são reais)
   const { data: checklists = [], isLoading } = useQuery({
-    queryKey: ["/api/etapas-tipo", etapaId, "checklists"],
+    queryKey: ["/api/etapas", etapaId, "checklists"],
     queryFn: async () => {
-      const response = await fetch(`/api/etapas-tipo/${etapaId}/checklists`);
+      const response = await fetch(`/api/etapas/${etapaId}/checklists`);
       if (!response.ok) return [];
       return response.json();
     },
     enabled: !!etapaId,
-    onSuccess: () => {
-      // Limpar checklists locais quando mudar de etapa
-      setLocalChecklists([]);
-    },
   });
 
   // Buscar templates de checklist
@@ -115,22 +113,19 @@ export default function ChecklistManager({
       return await res.json();
     },
     onSuccess: (data) => {
-      // Adicionar ao estado local se for um checklist temporário
-      if (data.message && data.message.includes("não persistido")) {
-        setLocalChecklists(prev => [...prev, data]);
-      }
-      queryClient.invalidateQueries({ queryKey: ["/api/etapas-tipo", etapaId, "checklists"] });
+      // Sempre invalidar a query de etapas reais
+      queryClient.invalidateQueries({ queryKey: ["/api/etapas", etapaId, "checklists"] });
       setIsCreateModalOpen(false);
       setFormData({ nome: "", descricao: "", tipo: "documento", obrigatorio: true, validacaoAutomatica: false });
       toast({
         title: "Sucesso",
-        description: "Item de checklist criado com sucesso!",
+        description: data.message || "Item de checklist criado com sucesso!",
       });
     },
     onError: (error) => {
       toast({
         title: "Erro",
-        description: "Erro ao criar item de checklist",
+        description: error instanceof Error ? error.message : "Erro ao criar item de checklist",
         variant: "destructive",
       });
     },
@@ -138,17 +133,16 @@ export default function ChecklistManager({
 
   const updateChecklistMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await apiRequest("PUT", `/api/checklists/${editingChecklist?.id}`, data);
+      // Verificar se o ID é válido antes de fazer PUT
+      if (!editingChecklist?.id) {
+        throw new Error('Não é possível editar itens sem ID válido.');
+      }
+      const res = await apiRequest("PUT", `/api/checklists/${editingChecklist.id}`, data);
       return await res.json();
     },
     onSuccess: (data) => {
-      // Atualizar no estado local se for um checklist temporário
-      if (editingChecklist?.id.startsWith('temp_')) {
-        setLocalChecklists(prev => prev.map(item => 
-          item.id === editingChecklist.id ? { ...item, ...formData } : item
-        ));
-      }
-      queryClient.invalidateQueries({ queryKey: ["/api/etapas-tipo", etapaId, "checklists"] });
+      // Sempre invalidar a query de etapas reais
+      queryClient.invalidateQueries({ queryKey: ["/api/etapas", etapaId, "checklists"] });
       setIsEditModalOpen(false);
       setEditingChecklist(null);
       setFormData({ nome: "", descricao: "", tipo: "documento", obrigatorio: true, validacaoAutomatica: false });
@@ -160,7 +154,7 @@ export default function ChecklistManager({
     onError: (error) => {
       toast({
         title: "Erro",
-        description: "Erro ao atualizar item de checklist",
+        description: error instanceof Error ? error.message : "Erro ao atualizar item de checklist",
         variant: "destructive",
       });
     },
@@ -172,11 +166,8 @@ export default function ChecklistManager({
       return await res.json();
     },
     onSuccess: (data) => {
-      // Adicionar templates ao estado local
-      if (Array.isArray(data)) {
-        setLocalChecklists(prev => [...prev, ...data]);
-      }
-      queryClient.invalidateQueries({ queryKey: ["/api/etapas-tipo", etapaId, "checklists"] });
+      // Sempre invalidar a query de etapas reais
+      queryClient.invalidateQueries({ queryKey: ["/api/etapas", etapaId, "checklists"] });
       setIsTemplateModalOpen(false);
       toast({
         title: "Sucesso",
@@ -202,15 +193,25 @@ export default function ChecklistManager({
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Verificar se o ID é válido antes de deletar
+      if (!id) {
+        throw new Error('Não é possível deletar itens sem ID válido.');
+      }
       await apiRequest("DELETE", `/api/checklists/${id}`);
     },
     onSuccess: (_, id) => {
-      // Remover do estado local se for um checklist temporário
-      setLocalChecklists(prev => prev.filter(item => item.id !== id));
-      queryClient.invalidateQueries({ queryKey: ["/api/etapas-tipo", etapaId, "checklists"] });
+      // Sempre invalidar a query de etapas reais
+      queryClient.invalidateQueries({ queryKey: ["/api/etapas", etapaId, "checklists"] });
       toast({
         title: "Sucesso",
         description: "Item removido com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao deletar item de checklist",
+        variant: "destructive",
       });
     },
   });
@@ -314,14 +315,18 @@ export default function ChecklistManager({
     }
   };
 
-  // Combinar checklists do servidor com os locais
-  const allChecklists = [...checklists, ...localChecklists];
+  // Combinar checklists reais e de template conforme necessário
+  const allChecklists = checklists;
   
   const progresso = calcularProgresso();
   const percentualCompleto = progresso.total > 0 ? (progresso.completados / progresso.total) * 100 : 0;
 
+
+
   return (
     <div className="space-y-6">
+
+
       {/* Header com progresso */}
       <Card>
         <CardHeader>

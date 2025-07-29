@@ -471,18 +471,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/vagas/:id", requireAuth, async (req, res, next) => {
-    try {
-      const vaga = await storage.getVaga(req.params.id);
-      if (!vaga) {
-        return res.status(404).json({ message: "Vaga não encontrada" });
-      }
-      res.json(vaga);
-    } catch (error) {
-      next(error);
-    }
-  });
-
   app.post("/api/vagas", requireAuth, async (req, res, next) => {
     try {
       if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
@@ -1676,6 +1664,381 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pipeline Engagement Analytics routes
+  app.get("/api/analytics/pipeline-engajamento", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const { vagaId } = req.query;
+      const dashboard = await engagementService.getDashboardEngajamento(user.empresaId, vagaId as string);
+      
+      res.json(dashboard);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/pipeline-engajamento/tempo-medio", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const { vagaId } = req.query;
+      const tempoMedio = await engagementService.getTempoMedioPorEtapa(user.empresaId, vagaId as string);
+      
+      res.json(tempoMedio);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/pipeline-engajamento/desistencia", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const { periodoDias = 30 } = req.query;
+      const desistencia = await engagementService.getEtapasComMaiorDesistencia(user.empresaId, Number(periodoDias));
+      
+      res.json(desistencia);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/pipeline-engajamento/movimentacao", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const { periodoDias = 7 } = req.query;
+      const movimentacao = await engagementService.getTaxaMovimentacao(user.empresaId, Number(periodoDias));
+      
+      res.json(movimentacao);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/pipeline-engajamento/sla-estourado", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const slaEstourado = await engagementService.getSlaEstourado(user.empresaId);
+      
+      res.json(slaEstourado);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/pipeline-engajamento/conversao", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const { vagaId } = req.query;
+      const conversao = await engagementService.getConversaoPorEtapa(user.empresaId, vagaId as string);
+      
+      res.json(conversao);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/pipeline-engajamento/candidatos-parados", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const { diasMinimo = 3 } = req.query;
+      const candidatosParados = await engagementService.getCandidatosParados(user.empresaId, Number(diasMinimo));
+      
+      res.json(candidatosParados);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/analytics/pipeline-engajamento/produtividade", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      console.log("Usuário logado:", user.nome, "Empresa ID:", user.empresaId);
+
+      const { PipelineEngagementService } = await import('./services/pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      const { periodoDias = 30 } = req.query;
+      const produtividade = await engagementService.getProdutividadeRecrutadores(user.empresaId, Number(periodoDias));
+      
+      console.log("Produtividade retornada:", produtividade);
+      res.json(produtividade);
+    } catch (error) {
+      console.error("Erro na rota de produtividade:", error);
+      next(error);
+    }
+  });
+
+  // Rota de teste para verificar recrutadores (sem autenticação para debug)
+  app.get("/api/test/recrutadores/:empresaId", async (req, res) => {
+    try {
+      const empresaId = req.params.empresaId;
+      console.log("Testando empresa ID:", empresaId);
+      
+      const { db } = await import('./db');
+      const { usuarios, empresas } = await import('../../shared/schema');
+      const { eq, and, sql } = await import('drizzle-orm');
+      
+      const recrutadores = await db
+        .select({
+          recrutadorId: usuarios.id,
+          recrutadorNome: usuarios.nome,
+          recrutadorEmail: usuarios.email,
+          empresaNome: empresas.nome
+        })
+        .from(usuarios)
+        .innerJoin(empresas, eq(usuarios.empresaId, empresas.id))
+        .where(
+          and(
+            eq(usuarios.empresaId, empresaId),
+            sql`${usuarios.perfil} IN ('recrutador', 'admin', 'gestor')`
+          )
+        );
+      
+      console.log("Recrutadores encontrados:", recrutadores);
+      res.json({ empresaId, recrutadores });
+    } catch (error) {
+      console.error("Erro no teste:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Rota para buscar vaga-candidatos com dados completos
+  app.get("/api/vaga-candidatos", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { db } = await import('./db');
+      const { vagaCandidatos, candidatos, vagas, usuarios } = await import('@shared/schema');
+      const { eq, sql } = await import('drizzle-orm');
+
+      const vagaCandidatosCompletos = await db
+        .select({
+          id: vagaCandidatos.id,
+          candidatoId: vagaCandidatos.candidatoId,
+          vagaId: vagaCandidatos.vagaId,
+          responsavelId: vagaCandidatos.responsavelId,
+          candidatoNome: candidatos.nome,
+          vagaTitulo: vagas.titulo,
+          responsavelNome: usuarios.nome
+        })
+        .from(vagaCandidatos)
+        .innerJoin(candidatos, eq(vagaCandidatos.candidatoId, candidatos.id))
+        .innerJoin(vagas, eq(vagaCandidatos.vagaId, vagas.id))
+        .leftJoin(usuarios, eq(vagaCandidatos.responsavelId, usuarios.id));
+
+      res.json(vagaCandidatosCompletos);
+    } catch (error) {
+      console.error("Erro ao buscar vaga-candidatos:", error);
+      next(error);
+    }
+  });
+
+  // Rota para buscar usuários por perfil
+  app.get("/api/usuarios", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { perfil } = req.query;
+      const { db } = await import('./db');
+      const { usuarios, empresas } = await import('@shared/schema');
+      const { eq, sql, inArray } = await import('drizzle-orm');
+
+      let query = db
+        .select({
+          id: usuarios.id,
+          nome: usuarios.nome,
+          email: usuarios.email,
+          perfil: usuarios.perfil,
+          empresaNome: empresas.nome
+        })
+        .from(usuarios)
+        .innerJoin(empresas, eq(usuarios.empresaId, empresas.id));
+
+      if (perfil) {
+        const perfis = (perfil as string).split(',');
+        query = query.where(inArray(usuarios.perfil, perfis));
+      }
+
+      const usuariosData = await query;
+      res.json(usuariosData);
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+      next(error);
+    }
+  });
+
+  // Rota para atribuir recrutador a um candidato
+  app.put("/api/vaga-candidatos/:id/assign", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { id } = req.params;
+      const { responsavelId } = req.body;
+
+      if (!responsavelId) {
+        return res.status(400).json({ error: "ID do responsável é obrigatório" });
+      }
+
+      const { db } = await import('./db');
+      const { vagaCandidatos } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const [updated] = await db
+        .update(vagaCandidatos)
+        .set({ responsavelId })
+        .where(eq(vagaCandidatos.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "Vaga-candidato não encontrada" });
+      }
+
+      res.json({ message: "Responsável atribuído com sucesso", vagaCandidato: updated });
+    } catch (error) {
+      console.error("Erro ao atribuir responsável:", error);
+      next(error);
+    }
+  });
+
+  // Rotas para atribuição automática de vagas
+  app.put("/api/vagas/:id/assign-responsavel", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { id } = req.params;
+      const { responsavelId } = req.body;
+
+      if (!responsavelId) {
+        return res.status(400).json({ error: "ID do responsável é obrigatório" });
+      }
+
+      const { vagaAssignmentService } = await import('./services/vaga-assignment-service');
+      const resultado = await vagaAssignmentService.atribuirResponsavelVaga(id, responsavelId);
+
+      if (resultado.success) {
+        res.json({ message: resultado.message });
+      } else {
+        res.status(400).json({ error: resultado.message });
+      }
+    } catch (error) {
+      console.error("Erro ao atribuir responsável à vaga:", error);
+      next(error);
+    }
+  });
+
+  app.post("/api/vagas/:id/auto-assign-candidates", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { id } = req.params;
+      const { vagaAssignmentService } = await import('./services/vaga-assignment-service');
+      const resultado = await vagaAssignmentService.atribuirCandidatosAutomaticamente(id);
+
+      if (resultado.success) {
+        res.json({ 
+          message: resultado.message, 
+          candidatosAtribuidos: resultado.candidatosAtribuidos 
+        });
+      } else {
+        res.status(400).json({ error: resultado.message });
+      }
+    } catch (error) {
+      console.error("Erro na atribuição automática:", error);
+      next(error);
+    }
+  });
+
+  app.post("/api/vagas/global-auto-assign", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado - Apenas administradores" });
+      }
+
+      const { vagaAssignmentService } = await import('./services/vaga-assignment-service');
+      const resultado = await vagaAssignmentService.executarAtribuicaoAutomaticaGlobal();
+
+      if (resultado.success) {
+        res.json({ 
+          message: resultado.message, 
+          totalAtribuidos: resultado.totalAtribuidos 
+        });
+      } else {
+        res.status(400).json({ error: resultado.message });
+      }
+    } catch (error) {
+      console.error("Erro na atribuição automática global:", error);
+      next(error);
+    }
+  });
+
   // Candidate Portal routes
   app.post("/api/candidate-portal/register", candidatePortalLimiter, async (req, res, next) => {
     // Força o uso do ID da empresa padrão GentePRO
@@ -2628,6 +2991,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const etapas = await storage.getEtapasByVaga(req.params.vagaId);
       res.json(etapas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/etapas-pipeline", requireAuth, async (req, res, next) => {
+    try {
+      const { empresaId } = req.query;
+      if (!empresaId) {
+        return res.status(400).json({ message: "empresaId é obrigatório" });
+      }
+      const etapas = await storage.getEtapasPipelineByEmpresa(empresaId as string);
+      res.json(etapas);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/etapas-pipeline", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const etapa = await storage.createEtapaPipelineEmpresa(req.body);
+      res.json(etapa);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/etapas-pipeline/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const etapa = await storage.updateEtapaPipelineEmpresa(req.params.id, req.body);
+      res.json(etapa);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/etapas-pipeline/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      await storage.deleteEtapaPipelineEmpresa(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/etapas-pipeline/reorder", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { etapas } = req.body;
+      await storage.reorderEtapasPipelineEmpresa(etapas);
+      res.json({ message: "Ordem atualizada com sucesso" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/modelos-pipeline/:id/padrao", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const { empresaId } = req.body;
+      await storage.setModeloPipelinePadrao(req.params.id, empresaId);
+      res.json({ message: "Modelo definido como padrão" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Endpoints para migração de dados existentes
+  app.get("/api/migracao/status", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado - Apenas administradores" });
+      }
+      const { verificarStatusMigracao } = await import("./migration-script");
+      const status = await verificarStatusMigracao();
+      res.json(status);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/migracao/executar", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado - Apenas administradores" });
+      }
+      const { migrarEmpresasEVagasExistentes } = await import("./migration-script");
+      await migrarEmpresasEVagasExistentes();
+      res.json({ message: "Migração executada com sucesso" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/migracao/empresa/:empresaId", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado - Apenas administradores" });
+      }
+      const { migrarEmpresaEspecifica } = await import("./migration-script");
+      await migrarEmpresaEspecifica(req.params.empresaId);
+      res.json({ message: "Migração da empresa executada com sucesso" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/migracao/vaga/:vagaId", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado - Apenas administradores" });
+      }
+      const { migrarVagaEspecifica } = await import("./migration-script");
+      await migrarVagaEspecifica(req.params.vagaId);
+      res.json({ message: "Migração da vaga executada com sucesso" });
     } catch (error) {
       next(error);
     }
@@ -3933,7 +4424,7 @@ Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente es
   // Checklist endpoints por tipo de etapa (para configuração)
   app.get("/api/etapas-tipo/:tipoEtapa/checklists", requireAuth, async (req, res, next) => {
     try {
-      // Buscar checklists por tipo de etapa (recebido, triagem, aprovado, etc.)
+      // Buscar checklists por tipo de etapa (recebidos, triagem, aprovado, etc.)
       const { tipoEtapa } = req.params;
       const { ChecklistTemplatesService } = await import("./services/checklist-templates");
       
@@ -4036,6 +4527,56 @@ Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente es
       if (!deleted) {
         return res.status(404).json({ message: "Checklist não encontrado" });
       }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Checklist por empresa endpoints
+  app.get("/api/checklists-empresa", requireAuth, async (req, res, next) => {
+    try {
+      const { empresaId } = req.query;
+      if (!empresaId) {
+        return res.status(400).json({ message: "empresaId é obrigatório" });
+      }
+      const checklists = await storage.getChecklistsByEmpresa(empresaId as string);
+      res.json(checklists);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/checklists-empresa", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const checklist = await storage.createChecklistEtapa(req.body);
+      res.json(checklist);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/checklists-empresa/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      const checklist = await storage.updateChecklistEtapa(req.params.id, req.body);
+      res.json(checklist);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/checklists-empresa/:id", requireAuth, async (req, res, next) => {
+    try {
+      if (!["admin", "recrutador"].includes((req as any).user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      await storage.deleteChecklistEtapa(req.params.id);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -4658,6 +5199,60 @@ Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente es
         total: slasVencidos.length, 
         slas: slasVencidos 
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Rotas específicas de vagas (devem vir antes das rotas com parâmetros)
+  app.get("/api/vagas/with-responsavel", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin', 'recrutador', 'gestor'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { vagaAssignmentService } = await import('./services/vaga-assignment-service');
+      const vagas = await vagaAssignmentService.getVagasComResponsavel();
+
+      res.json(vagas);
+    } catch (error) {
+      console.error("Erro ao buscar vagas com responsável:", error);
+      next(error);
+    }
+  });
+
+  app.post("/api/vagas/global-auto-assign", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as any;
+      if (!user || !['admin'].includes(user.perfil)) {
+        return res.status(403).json({ message: "Acesso negado - Apenas administradores" });
+      }
+
+      const { vagaAssignmentService } = await import('./services/vaga-assignment-service');
+      const resultado = await vagaAssignmentService.executarAtribuicaoAutomaticaGlobal();
+
+      if (resultado.success) {
+        res.json({ 
+          message: resultado.message, 
+          totalAtribuidos: resultado.totalAtribuidos 
+        });
+      } else {
+        res.status(400).json({ error: resultado.message });
+      }
+    } catch (error) {
+      console.error("Erro na atribuição automática global:", error);
+      next(error);
+    }
+  });
+
+  app.get("/api/vagas/:id", requireAuth, async (req, res, next) => {
+    try {
+      const vaga = await storage.getVaga(req.params.id);
+      if (!vaga) {
+        return res.status(404).json({ message: "Vaga não encontrada" });
+      }
+      res.json(vaga);
     } catch (error) {
       next(error);
     }

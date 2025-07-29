@@ -381,6 +381,24 @@ export class PipelineService {
       }
     });
 
+    // 9. Registrar movimentação para análise de engajamento
+    try {
+      const { PipelineEngagementService } = await import('./pipeline-engagement-service');
+      const engagementService = new PipelineEngagementService();
+      
+      await engagementService.registrarMovimentacao(
+        vagaCandidatoAtualizado.id,
+        inscricaoAtual.etapa,
+        novaEtapa,
+        usuarioLogado.id,
+        motivoReprovacao ? 'reprovado' : 'movimentado',
+        comentarios
+      );
+    } catch (error) {
+      console.error("Erro ao registrar movimentação para engajamento:", error);
+      // Não falhar a operação principal por causa do log de engajamento
+    }
+
     return {
       vagaCandidato: vagaCandidatoAtualizado,
       historico

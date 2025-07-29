@@ -1,0 +1,47 @@
+                                              Table "public.vagas"
+         Column          |            Type             | Collation | Nullable |             Default             
+-------------------------+-----------------------------+-----------+----------+---------------------------------
+ id                      | uuid                        |           | not null | gen_random_uuid()
+ titulo                  | character varying(255)      |           | not null | 
+ descricao               | text                        |           | not null | 
+ requisitos              | text                        |           |          | 
+ local                   | character varying(255)      |           | not null | 
+ salario                 | character varying(100)      |           |          | 
+ beneficios              | text                        |           |          | 
+ tipo_contratacao        | character varying(50)       |           | not null | 
+ status                  | character varying(50)       |           | not null | 'aberta'::character varying
+ data_abertura           | timestamp without time zone |           | not null | now()
+ data_fechamento         | timestamp without time zone |           |          | 
+ empresa_id              | uuid                        |           | not null | 
+ departamento_id         | uuid                        |           | not null | 
+ gestor_id               | uuid                        |           | not null | 
+ data_criacao            | timestamp without time zone |           | not null | now()
+ data_atualizacao        | timestamp without time zone |           | not null | now()
+ cidade                  | character varying(100)      |           |          | 
+ estado                  | character varying(2)        |           |          | 
+ modalidade              | character varying(20)       |           |          | 'presencial'::character varying
+ nivel                   | character varying(20)       |           |          | 'pleno'::character varying
+ pcd                     | boolean                     |           |          | false
+ faixa_salarial          | character varying(50)       |           |          | 
+ publicar_portal_global  | boolean                     |           |          | true
+ publicar_portal_privado | boolean                     |           |          | false
+ visivel                 | boolean                     |           | not null | true
+ quantidade              | integer                     |           | not null | 1
+Indexes:
+    "vagas_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "vagas_departamento_id_departamentos_id_fk" FOREIGN KEY (departamento_id) REFERENCES departamentos(id)
+    "vagas_empresa_id_empresas_id_fk" FOREIGN KEY (empresa_id) REFERENCES empresas(id)
+    "vagas_gestor_id_usuarios_id_fk" FOREIGN KEY (gestor_id) REFERENCES usuarios(id)
+Referenced by:
+    TABLE "entrevistas" CONSTRAINT "entrevistas_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "match_feedback" CONSTRAINT "match_feedback_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "metricas_engajamento" CONSTRAINT "metricas_engajamento_vaga_id_fkey" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "pipeline_auditoria" CONSTRAINT "pipeline_auditoria_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "pipeline_etapas" CONSTRAINT "pipeline_etapas_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "testes_resultados" CONSTRAINT "testes_resultados_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "vaga_auditoria" CONSTRAINT "vaga_auditoria_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "vaga_candidatos" CONSTRAINT "vaga_candidatos_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "vaga_matching_config" CONSTRAINT "vaga_matching_config_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+    TABLE "vaga_skills" CONSTRAINT "vaga_skills_vaga_id_vagas_id_fk" FOREIGN KEY (vaga_id) REFERENCES vagas(id)
+

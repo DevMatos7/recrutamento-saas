@@ -320,7 +320,44 @@ export class DatabaseStorage implements IStorage {
       .insert(empresas)
       .values(empresa)
       .returning();
+    
+    // Criar etapas padrão automaticamente para a nova empresa
+    await this.criarEtapasPadraoParaEmpresa(newEmpresa.id);
+    
     return newEmpresa;
+  }
+
+  // Método para criar etapas padrão para uma nova empresa
+  async criarEtapasPadraoParaEmpresa(empresaId: string): Promise<void> {
+    const { pipelineEtapas } = await import("@shared/schema");
+    
+    // Etapas padrão do pipeline (12 etapas)
+    const etapasPadrao = [
+      { nome: "Recebidos", descricao: "Candidatos recém-inscritos", cor: "#3B82F6", ordem: 1, camposObrigatorios: [] },
+      { nome: "Triagem de Currículos", descricao: "Análise inicial de currículos", cor: "#F59E0B", ordem: 2, camposObrigatorios: ["observacao"] },
+      { nome: "Entrevista RH", descricao: "Entrevista com Recursos Humanos", cor: "#10B981", ordem: 3, camposObrigatorios: ["observacao", "score"] },
+      { nome: "Entrevista Gestor", descricao: "Entrevista com gestor da área", cor: "#8B5CF6", ordem: 4, camposObrigatorios: ["observacao", "score"] },
+      { nome: "Testes Técnicos", descricao: "Avaliações técnicas e comportamentais", cor: "#EF4444", ordem: 5, camposObrigatorios: ["observacao", "score"] },
+      { nome: "Aprovação Final", descricao: "Aprovação final da contratação", cor: "#059669", ordem: 6, camposObrigatorios: ["observacao"] },
+      { nome: "Documentação Admissional", descricao: "Coleta de documentos para admissão", cor: "#7C3AED", ordem: 7, camposObrigatorios: [] },
+      { nome: "Exames Médicos", descricao: "Exames médicos admissionais", cor: "#DC2626", ordem: 8, camposObrigatorios: [] },
+      { nome: "Assinatura de Contrato", descricao: "Assinatura do contrato de trabalho", cor: "#EA580C", ordem: 9, camposObrigatorios: [] },
+      { nome: "Onboarding", descricao: "Processo de integração do novo colaborador", cor: "#0891B2", ordem: 10, camposObrigatorios: [] },
+      { nome: "Primeiro Dia", descricao: "Primeiro dia de trabalho", cor: "#16A34A", ordem: 11, camposObrigatorios: [] },
+      { nome: "Contratação", descricao: "Efetivação após período de experiência", cor: "#15803D", ordem: 12, camposObrigatorios: [] }
+    ];
+
+    // Inserir etapas no banco
+    for (const etapa of etapasPadrao) {
+      await db.insert(pipelineEtapas).values({
+        empresaId,
+        nome: etapa.nome,
+        ordem: etapa.ordem,
+        cor: etapa.cor,
+        camposObrigatorios: etapa.camposObrigatorios,
+        responsaveis: []
+      });
+    }
   }
 
   async updateEmpresa(id: string, empresa: Partial<InsertEmpresa>): Promise<Empresa | undefined> {
@@ -425,7 +462,62 @@ export class DatabaseStorage implements IStorage {
 
   async createVaga(vaga: InsertVaga): Promise<Vaga> {
     const [created] = await db.insert(vagas).values(vaga).returning();
+    
+    // Criar etapas padrão automaticamente para a nova vaga
+    await this.criarEtapasPadraoParaVaga(created.id, vaga.empresaId);
+    
     return created;
+  }
+
+  // Método para criar etapas padrão para uma vaga (herdando da empresa)
+  private async criarEtapasPadraoParaVaga(vagaId: string, empresaId: string): Promise<void> {
+    const { pipelineEtapas } = await import("@shared/schema");
+    
+    // Buscar etapas padrão da empresa
+    const etapasEmpresa = await this.getEtapasPipelineByEmpresa(empresaId);
+    
+    if (etapasEmpresa.length > 0) {
+      // Se a empresa tem etapas configuradas, usar elas
+      for (const etapa of etapasEmpresa) {
+        await db.insert(pipelineEtapas).values({
+          vagaId,
+          empresaId,
+          nome: etapa.nome,
+          ordem: etapa.ordem,
+          cor: etapa.cor,
+          camposObrigatorios: etapa.camposObrigatorios || [],
+          responsaveis: etapa.responsaveis || []
+        });
+      }
+    } else {
+      // Se não tem, criar etapas padrão do sistema (fallback)
+      const etapasPadrao = [
+        { nome: "Recebidos", cor: "#3B82F6", ordem: 1, camposObrigatorios: [] },
+        { nome: "Triagem de Currículos", cor: "#F59E0B", ordem: 2, camposObrigatorios: ["observacao"] },
+        { nome: "Entrevista RH", cor: "#10B981", ordem: 3, camposObrigatorios: ["observacao", "score"] },
+        { nome: "Entrevista Gestor", cor: "#8B5CF6", ordem: 4, camposObrigatorios: ["observacao", "score"] },
+        { nome: "Testes Técnicos", cor: "#EF4444", ordem: 5, camposObrigatorios: ["observacao", "score"] },
+        { nome: "Aprovação Final", cor: "#059669", ordem: 6, camposObrigatorios: ["observacao"] },
+        { nome: "Documentação Admissional", cor: "#7C3AED", ordem: 7, camposObrigatorios: [] },
+        { nome: "Exames Médicos", cor: "#DC2626", ordem: 8, camposObrigatorios: [] },
+        { nome: "Assinatura de Contrato", cor: "#EA580C", ordem: 9, camposObrigatorios: [] },
+        { nome: "Onboarding", cor: "#0891B2", ordem: 10, camposObrigatorios: [] },
+        { nome: "Primeiro Dia", cor: "#16A34A", ordem: 11, camposObrigatorios: [] },
+        { nome: "Contratação", cor: "#15803D", ordem: 12, camposObrigatorios: [] }
+      ];
+
+      for (const etapa of etapasPadrao) {
+        await db.insert(pipelineEtapas).values({
+          vagaId,
+          empresaId,
+          nome: etapa.nome,
+          ordem: etapa.ordem,
+          cor: etapa.cor,
+          camposObrigatorios: etapa.camposObrigatorios,
+          responsaveis: []
+        });
+      }
+    }
   }
 
   async updateVaga(id: string, vaga: Partial<InsertVaga>): Promise<Vaga | undefined> {
@@ -1166,60 +1258,54 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEtapasPipelineByEmpresa(empresaId: string): Promise<any[]> {
-    const { modelosPipeline, etapasModeloPipeline } = await import("@shared/schema");
+    const { pipelineEtapas } = await import("@shared/schema");
+    const { isNull } = await import("drizzle-orm");
     
-    // Buscar o modelo padrão da empresa
-    const modeloPadrao = await db.select()
-      .from(modelosPipeline)
-      .where(and(
-        eq(modelosPipeline.empresaId, empresaId),
-        eq(modelosPipeline.padrao, true)
-      ))
-      .limit(1);
-    
-    if (modeloPadrao.length === 0) {
-      // Se não há modelo padrão, retorna etapas padrão sugeridas
-      return [
-        { id: "recebidos", nome: "Recebidos", descricao: "Candidatos recém-inscritos", ordem: 1 },
-        { id: "triagem_curriculos", nome: "Triagem de Currículos", descricao: "Análise inicial de currículos", ordem: 2 },
-        { id: "entrevista_rh", nome: "Entrevista RH", descricao: "Entrevista com Recursos Humanos", ordem: 3 },
-        { id: "testes_tecnicos", nome: "Testes Técnicos", descricao: "Avaliações técnicas e comportamentais", ordem: 4 },
-        { id: "entrevista_gestor", nome: "Entrevista com Gestor", descricao: "Entrevista com gestor da área", ordem: 5 },
-        { id: "aprovacao_final", nome: "Aprovação Final", descricao: "Aprovação final da contratação", ordem: 6 },
-        { id: "documentacao_admissional", nome: "Recebimento da Documentação Admissional", descricao: "Coleta de documentos para admissão", ordem: 7 },
-        { id: "exames_medicos", nome: "Realização de Exames Médicos", descricao: "Exames médicos admissionais", ordem: 8 },
-        { id: "contratacao", nome: "Contratação", descricao: "Assinatura do contrato de trabalho", ordem: 9 },
-        { id: "integracao", nome: "Integração e Ambientação", descricao: "Processo de integração do novo colaborador", ordem: 10 },
-        { id: "periodo_experiencia", nome: "Período de Experiência – Fase 1", descricao: "Primeiros 30 dias de experiência", ordem: 11 },
-        { id: "efetivacao", nome: "Efetivação – Após 90 dias", descricao: "Efetivação após período de experiência", ordem: 12 }
-      ];
-    }
-    
-    // Buscar etapas do modelo padrão
+    // Buscar etapas da empresa na tabela pipeline_etapas
     const etapas = await db.select()
-      .from(etapasModeloPipeline)
-      .where(eq(etapasModeloPipeline.modeloId, modeloPadrao[0].id))
-      .orderBy(asc(etapasModeloPipeline.ordem));
-    
-    // Se há poucas etapas (menos de 10), usar as etapas padrão
-    if (etapas.length < 10) {
-      return [
-        { id: "recebidos", nome: "Recebidos", descricao: "Candidatos recém-inscritos", ordem: 1 },
-        { id: "triagem_curriculos", nome: "Triagem de Currículos", descricao: "Análise inicial de currículos", ordem: 2 },
-        { id: "entrevista_rh", nome: "Entrevista RH", descricao: "Entrevista com Recursos Humanos", ordem: 3 },
-        { id: "testes_tecnicos", nome: "Testes Técnicos", descricao: "Avaliações técnicas e comportamentais", ordem: 4 },
-        { id: "entrevista_gestor", nome: "Entrevista com Gestor", descricao: "Entrevista com gestor da área", ordem: 5 },
-        { id: "aprovacao_final", nome: "Aprovação Final", descricao: "Aprovação final da contratação", ordem: 6 },
-        { id: "documentacao_admissional", nome: "Recebimento da Documentação Admissional", descricao: "Coleta de documentos para admissão", ordem: 7 },
-        { id: "exames_medicos", nome: "Realização de Exames Médicos", descricao: "Exames médicos admissionais", ordem: 8 },
-        { id: "contratacao", nome: "Contratação", descricao: "Assinatura do contrato de trabalho", ordem: 9 },
-        { id: "integracao", nome: "Integração e Ambientação", descricao: "Processo de integração do novo colaborador", ordem: 10 },
-        { id: "periodo_experiencia", nome: "Período de Experiência – Fase 1", descricao: "Primeiros 30 dias de experiência", ordem: 11 },
-        { id: "efetivacao", nome: "Efetivação – Após 90 dias", descricao: "Efetivação após período de experiência", ordem: 12 }
-      ];
-    }
+      .from(pipelineEtapas)
+      .where(and(
+        eq(pipelineEtapas.empresaId, empresaId),
+        isNull(pipelineEtapas.vagaId)
+      ))
+      .orderBy(asc(pipelineEtapas.ordem));
     
     return etapas;
+  }
+
+  async createEtapaPipelineEmpresa(etapa: any): Promise<any> {
+    const { pipelineEtapas } = await import("@shared/schema");
+    const [created] = await db.insert(pipelineEtapas).values({
+      ...etapa
+    }).returning();
+    return created;
+  }
+
+  async updateEtapaPipelineEmpresa(id: string, etapa: any): Promise<any | undefined> {
+    const { pipelineEtapas } = await import("@shared/schema");
+    const [updated] = await db
+      .update(pipelineEtapas)
+      .set(etapa)
+      .where(eq(pipelineEtapas.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteEtapaPipelineEmpresa(id: string): Promise<boolean> {
+    const { pipelineEtapas } = await import("@shared/schema");
+    const result = await db.delete(pipelineEtapas).where(eq(pipelineEtapas.id, id));
+    return result.rowCount! > 0;
+  }
+
+  async reorderEtapasPipelineEmpresa(etapas: {id: string, ordem: number}[]): Promise<void> {
+    const { pipelineEtapas } = await import("@shared/schema");
+    
+    for (const etapa of etapas) {
+      await db
+        .update(pipelineEtapas)
+        .set({ ordem: etapa.ordem })
+        .where(eq(pipelineEtapas.id, etapa.id));
+    }
   }
 
   async getEtapasModeloPipeline(modeloId: string): Promise<any[]> {
@@ -1272,15 +1358,58 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Checklist methods
-  async getChecklistsByEtapa(etapaId: string): Promise<any[]> {
+  async getChecklistsByEmpresa(empresaId: string): Promise<any[]> {
     const { checklistsEtapas } = await import("@shared/schema");
-    return await db.select().from(checklistsEtapas).where(eq(checklistsEtapas.etapaId, etapaId)).orderBy(asc(checklistsEtapas.ordem));
+    return await db.select().from(checklistsEtapas)
+      .where(eq(checklistsEtapas.empresaId, empresaId))
+      .orderBy(asc(checklistsEtapas.ordem));
+  }
+
+  async getChecklistsByNomeEtapa(nomeEtapa: string, empresaId: string): Promise<any[]> {
+    const { checklistsEtapas } = await import("@shared/schema");
+    return await db.select().from(checklistsEtapas)
+      .where(and(
+        eq(checklistsEtapas.nomeEtapa, nomeEtapa),
+        eq(checklistsEtapas.empresaId, empresaId)
+      ))
+      .orderBy(asc(checklistsEtapas.ordem));
+  }
+
+  async getChecklistsByEtapa(etapaId: string): Promise<any[]> {
+    const { pipelineEtapas } = await import("@shared/schema");
+    
+    // Verificar se é um UUID válido
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(etapaId);
+    
+    if (isUUID) {
+      // Buscar a etapa para obter o nome e empresaId
+      const [etapa] = await db.select().from(pipelineEtapas).where(eq(pipelineEtapas.id, etapaId));
+      
+      if (etapa) {
+        // Buscar checklists por nome da etapa e empresa
+        return await this.getChecklistsByNomeEtapa(etapa.nome, etapa.empresaId);
+      }
+      
+      return [];
+    } else {
+      // Se for slug de template, retornar array vazio
+      return [];
+    }
   }
 
   async createChecklistEtapa(checklist: any): Promise<any> {
-    const { checklistsEtapas } = await import("@shared/schema");
+    const { checklistsEtapas, pipelineEtapas } = await import("@shared/schema");
+    
+    // Buscar o nome da etapa
+    const [etapa] = await db.select().from(pipelineEtapas).where(eq(pipelineEtapas.id, checklist.etapaId));
+    
+    if (!etapa) {
+      throw new Error("Etapa não encontrada");
+    }
+    
     const [created] = await db.insert(checklistsEtapas).values({
       ...checklist,
+      nomeEtapa: etapa.nome,
       dataAtualizacao: new Date()
     }).returning();
     return created;

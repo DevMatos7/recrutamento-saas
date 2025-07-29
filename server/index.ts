@@ -6,11 +6,17 @@ import { apiLimiter } from "./middleware/rate-limit.middleware";
 import cron from "node-cron";
 import { EntrevistaService } from "./services/entrevista-service";
 import { CommunicationService } from "./services/communication-service";
-// import cors from 'cors'; // Removido para testar sem CORS
+import cors from 'cors';
 
 const app = express();
 
-// Removido: app.use(cors({ ... }))
+// CORS configuration
+app.use(cors({
+  origin: ['http://192.168.77.3:5000', 'http://localhost:5000', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Desabilitar ETag para evitar respostas 304 e garantir sempre status 200
 app.disable('etag');
