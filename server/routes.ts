@@ -15,8 +15,9 @@ import { HfInference } from '@huggingface/inference';
 import fs from 'fs';
 import ExcelJS from "exceljs";
 import { db } from './db';
-import { like, eq, ilike } from 'drizzle-orm';
-import { candidatoSkills, vagaSkills, skills } from "@shared/schema";
+import { like, eq, ilike, and, desc, asc, gte, lte, count, sql } from 'drizzle-orm';
+import { candidatoSkills, vagaSkills, skills, whatsappSessoes, templatesMensagem, respostasRapidas, mensagensWhatsapp, filaEnvio, configuracoesHorario, intencoesChatbot, logsNlp, candidatos } from "@shared/schema";
+import { webhookService, validateWebhook } from "./webhooks";
 import OpenAI from "openai";
 import { parse as csvParse } from 'csv-parse';
 import { validate as isUuid } from 'uuid';
@@ -26,6 +27,14 @@ import { TimelineService } from './services/timeline-service';
 import { insertEventoTimelineSchema } from '@shared/schema';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// Importar serviços do WhatsApp
+import { WhatsAppService } from "./whatsapp/service";
+import { WhatsAppBot } from "./whatsapp/bot";
+import { NLPService } from "./nlp/analyzer";
+import { FilaEnvioService } from "./cron/filaEnvio";
+import { whatsappSessionManager } from "./whatsapp/session";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -33,6 +42,12 @@ const scryptAsync = promisify(scrypt);
 const upload = multer({ dest: '/tmp' });
 const hf = new HfInference(process.env.HF_API_KEY || undefined);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Instanciar serviços do WhatsApp
+const whatsappService = new WhatsAppService();
+const whatsappBot = new WhatsAppBot();
+const nlpService = new NLPService();
+const filaEnvioService = new FilaEnvioService();
 
 const parseCSV = (filePath: string) => {
   return new Promise<any[]>((resolve, reject) => {
@@ -5255,6 +5270,730 @@ Gere e retorne APENAS um JSON válido com os seguintes campos (use exatamente es
       res.json(vaga);
     } catch (error) {
       next(error);
+    }
+  });
+
+  // ===== ROTAS WEBHOOK =====
+
+// Webhook para eventos de recrutamento
+app.post('/api/webhook/evento-recrutamento', validateWebhook, async (req, res) => {
+  try {
+    const evento = req.body;
+    
+    const resultado = await webhookService.processarEventoRecrutamento(evento);
+    
+    if (resultado.success) {
+      // Notificar via WebSocket
+      await webhookService.notificarViaWebSocket(evento);
+      
+      res.json({ 
+        success: true, 
+        message: 'Evento processado com sucesso' 
+      });
+    } else {
+      res.status(400).json({ 
+        success: false, 
+        error: resultado.error 
+      });
+    }
+  } catch (error) {
+    console.error('Erro no webhook:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno do servidor' 
+    });
+  }
+});
+
+// ===== ROTAS WHATSAPP =====
+
+// Sessões do WhatsApp
+  app.get('/api/whatsapp/sessoes', async (req, res) => {
+    try {
+      const sessoes = await db.select().from(whatsappSessoes);
+      res.json(sessoes);
+    } catch (error) {
+      console.error('Erro ao buscar sessões:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/sessoes', async (req, res) => {
+    try {
+      const { empresaId, nome, numero } = req.body;
+      const [sessao] = await db.insert(whatsappSessoes).values({
+        empresaId,
+        nome,
+        numero,
+        status: 'desconectado'
+      }).returning();
+      res.json(sessao);
+    } catch (error) {
+      console.error('Erro ao criar sessão:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/sessoes/:id/conectar', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const sessao = await whatsappSessionManager.initializeSession(id);
+      
+      if (!sessao) {
+        return res.status(404).json({ error: 'Sessão não encontrada' });
+      }
+
+      // Aguardar um pouco para o QR Code ser gerado
+      setTimeout(async () => {
+        const qrCode = whatsappSessionManager.getSessionQRCode(id);
+        res.json({ 
+          success: true, 
+          sessao: {
+            id: sessao.id,
+            empresaId: sessao.empresaId,
+            nome: sessao.nome,
+            numero: sessao.numero,
+            status: sessao.status
+          },
+          qrCode,
+          message: qrCode ? 'QR Code gerado com sucesso' : 'Sessão já conectada'
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Erro ao conectar sessão:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.get('/api/whatsapp/sessoes/:id/qrcode', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const qrCode = whatsappSessionManager.getSessionQRCode(id);
+      
+      if (!qrCode) {
+        return res.status(404).json({ error: 'QR Code não disponível' });
+      }
+
+      res.json({ qrCode });
+    } catch (error) {
+      console.error('Erro ao obter QR Code:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/sessoes/:id/desconectar', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const sucesso = await whatsappSessionManager.disconnectSession(id);
+      
+      if (sucesso) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: 'Sessão não encontrada' });
+      }
+    } catch (error) {
+      console.error('Erro ao desconectar sessão:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Templates de mensagem
+  app.get('/api/whatsapp/templates', async (req, res) => {
+    try {
+      const templates = await db.select().from(templatesMensagem);
+      res.json(templates);
+    } catch (error) {
+      console.error('Erro ao buscar templates:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/templates', async (req, res) => {
+    try {
+      const { empresaId, titulo, evento, corpo } = req.body;
+      const [template] = await db.insert(templatesMensagem).values({
+        empresaId,
+        titulo,
+        evento,
+        corpo,
+        ativo: true
+      }).returning();
+      res.json(template);
+    } catch (error) {
+      console.error('Erro ao criar template:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.put('/api/whatsapp/templates/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [template] = await db
+        .update(templatesMensagem)
+        .set({ ...req.body, atualizadoEm: new Date() })
+        .where(eq(templatesMensagem.id, id))
+        .returning();
+      
+      if (template) {
+        res.json(template);
+      } else {
+        res.status(404).json({ error: 'Template não encontrado' });
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar template:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.delete('/api/whatsapp/templates/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      await db.delete(templatesMensagem).where(eq(templatesMensagem.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Erro ao deletar template:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Respostas rápidas
+  app.get('/api/whatsapp/respostas-rapidas', async (req, res) => {
+    try {
+      const respostas = await db.select().from(respostasRapidas);
+      res.json(respostas);
+    } catch (error) {
+      console.error('Erro ao buscar respostas rápidas:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/respostas-rapidas', async (req, res) => {
+    try {
+      const { empresaId, evento, opcao, texto, acao } = req.body;
+      const [resposta] = await db.insert(respostasRapidas).values({
+        empresaId,
+        evento,
+        opcao,
+        texto,
+        acao,
+        ativo: true
+      }).returning();
+      res.json(resposta);
+    } catch (error) {
+      console.error('Erro ao criar resposta rápida:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Mensagens do WhatsApp
+  app.get('/api/whatsapp/mensagens/:candidatoId', async (req, res) => {
+    try {
+      const { candidatoId } = req.params;
+      const historico = await whatsappService.obterHistorico(candidatoId);
+      res.json(historico);
+    } catch (error) {
+      console.error('Erro ao buscar histórico:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Mensagens por telefone (para não candidatos)
+  app.get('/api/whatsapp/mensagens/telefone/:telefone', async (req, res) => {
+    try {
+      const { telefone } = req.params;
+      const historico = await whatsappService.obterHistoricoPorTelefone(telefone);
+      res.json(historico);
+    } catch (error) {
+      console.error('Erro ao buscar histórico por telefone:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Listar conversas (incluindo não candidatos)
+  app.get('/api/whatsapp/conversas', async (req, res) => {
+    try {
+      const conversas = await whatsappService.listarConversas();
+      res.json(conversas);
+    } catch (error) {
+      console.error('Erro ao listar conversas:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/mensagens/enviar', async (req, res) => {
+    try {
+      const resultado = await whatsappService.enviarMensagem(req.body);
+      
+      if (resultado.success) {
+        res.json(resultado);
+      } else {
+        res.status(400).json(resultado);
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/mensagens/template', async (req, res) => {
+    try {
+      const resultado = await whatsappService.enviarMensagemComTemplate(req.body);
+      
+      if (resultado.success) {
+        res.json(resultado);
+      } else {
+        res.status(400).json(resultado);
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem com template:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Disparo por evento
+  app.post('/api/whatsapp/eventos/disparar', async (req, res) => {
+    try {
+      const resultado = await whatsappService.dispararPorEvento(req.body);
+      
+      if (resultado.success) {
+        res.json(resultado);
+      } else {
+        res.status(400).json(resultado);
+      }
+    } catch (error) {
+      console.error('Erro ao disparar evento:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Webhook para eventos de recrutamento
+  app.post('/api/webhook/evento-recrutamento', async (req, res) => {
+    try {
+      const { evento, candidatoId, variables, sessaoId } = req.body;
+      
+      if (!evento || !candidatoId) {
+        return res.status(400).json({ error: 'Evento e candidatoId são obrigatórios' });
+      }
+      
+      const resultado = await whatsappService.dispararPorEvento({
+        sessaoId: sessaoId || await obterSessaoPadrao(candidatoId),
+        candidatoId,
+        evento,
+        variables
+      });
+      
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro no webhook:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Chatbot
+  app.post('/api/whatsapp/chatbot/processar', async (req, res) => {
+    try {
+      const { candidatoId, mensagem } = req.body;
+      const resultado = await whatsappBot.processarMensagem(candidatoId, mensagem);
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro ao processar mensagem com chatbot:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/chatbot/resposta-rapida', async (req, res) => {
+    try {
+      const { candidatoId, resposta } = req.body;
+      const resultado = await whatsappBot.processarRespostaRapida(candidatoId, resposta);
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro ao processar resposta rápida:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // NLP
+  app.post('/api/nlp/analisar', async (req, res) => {
+    try {
+      const { mensagem } = req.body;
+      const analise = await nlpService.analisarIntencao(mensagem);
+      res.json(analise);
+    } catch (error) {
+      console.error('Erro na análise NLP:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Fila de envio
+  app.get('/api/whatsapp/fila/estatisticas', async (req, res) => {
+    try {
+      const estatisticas = await filaEnvioService.obterEstatisticas();
+      res.json(estatisticas);
+    } catch (error) {
+      console.error('Erro ao obter estatísticas da fila:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/fila/reprocessar', async (req, res) => {
+    try {
+      const resultado = await filaEnvioService.reprocessarMensagensComErro();
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro ao reprocessar fila:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/fila/limpar', async (req, res) => {
+    try {
+      const resultado = await filaEnvioService.limparMensagensAntigas();
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro ao limpar fila:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Configurações de horário
+  app.get('/api/whatsapp/configuracoes/horario', async (req, res) => {
+    try {
+      const configs = await db.select().from(configuracoesHorario);
+      res.json(configs);
+    } catch (error) {
+      console.error('Erro ao buscar configurações:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/configuracoes/horario', async (req, res) => {
+    try {
+      const { empresaId, evento, horaInicio, horaFim, diasSemana } = req.body;
+      const [config] = await db.insert(configuracoesHorario).values({
+        empresaId,
+        evento,
+        horaInicio,
+        horaFim,
+        diasSemana,
+        ativo: true
+      }).returning();
+      res.json(config);
+    } catch (error) {
+      console.error('Erro ao criar configuração:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Intenções do chatbot
+  app.get('/api/whatsapp/intencoes', async (req, res) => {
+    try {
+      const intencoes = await db.select().from(intencoesChatbot);
+      res.json(intencoes);
+    } catch (error) {
+      console.error('Erro ao buscar intenções:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/intencoes/treinar', async (req, res) => {
+    try {
+      const resultado = await whatsappBot.treinarIntencao(req.body);
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro ao treinar intenção:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Estatísticas
+  app.get('/api/whatsapp/estatisticas/:empresaId', async (req, res) => {
+    try {
+      const { empresaId } = req.params;
+      
+      const [estatisticasMensagens, estatisticasChatbot] = await Promise.all([
+        whatsappService.obterEstatisticas(empresaId),
+        whatsappBot.obterEstatisticas(empresaId)
+      ]);
+      
+      res.json({
+        mensagens: estatisticasMensagens,
+        chatbot: estatisticasChatbot
+      });
+    } catch (error) {
+      console.error('Erro ao obter estatísticas:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Função auxiliar para obter sessão padrão
+  async function obterSessaoPadrao(candidatoId: string): Promise<string | null> {
+    try {
+      const [candidato] = await db
+        .select()
+        .from(candidatos)
+        .where(eq(candidatos.id, candidatoId));
+      
+      if (!candidato) return null;
+      
+      const [sessao] = await db
+        .select()
+        .from(whatsappSessoes)
+        .where(
+          and(
+            eq(whatsappSessoes.empresaId, candidato.empresaId),
+            eq(whatsappSessoes.status, 'conectado')
+          )
+        );
+      
+      return sessao?.id || null;
+    } catch (error) {
+      console.error('Erro ao obter sessão padrão:', error);
+      return null;
+    }
+  }
+
+  app.get('/api/whatsapp/sessoes/:id/status', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Buscar sessão no banco
+      const [sessao] = await db
+        .select()
+        .from(whatsappSessoes)
+        .where(eq(whatsappSessoes.id, id));
+
+      if (!sessao) {
+        return res.status(404).json({ error: 'Sessão não encontrada' });
+      }
+
+      const sessaoMemoria = whatsappSessionManager.getSession(id);
+      const qrCode = whatsappSessionManager.getSessionQRCode(id);
+      const conectadoMemoria = whatsappSessionManager.isSessionConnected(id);
+
+      res.json({
+        id: sessao.id,
+        empresaId: sessao.empresaId,
+        nome: sessao.nome,
+        numero: sessao.numero,
+        status: sessao.status,
+        qrCode,
+        conectado: conectadoMemoria,
+        conectadoMemoria,
+        conectadoBanco: sessao.status === 'conectado'
+      });
+    } catch (error) {
+      console.error('Erro ao obter status da sessão:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.get('/api/whatsapp/sessoes/:id/qrcode', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const qrCode = whatsappSessionManager.getSessionQRCode(id);
+      
+      if (!qrCode) {
+        return res.status(404).json({ error: 'QR Code não disponível' });
+      }
+
+      res.json({ qrCode });
+    } catch (error) {
+      console.error('Erro ao obter QR Code:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Envio direto de mensagem (sem candidato)
+  app.post('/api/whatsapp/mensagens/enviar-direto', async (req, res) => {
+    try {
+      const { sessaoId, telefone, mensagem } = req.body;
+      
+      if (!sessaoId || !telefone || !mensagem) {
+        return res.status(400).json({ 
+          error: 'sessaoId, telefone e mensagem são obrigatórios' 
+        });
+      }
+
+      // Verificar se a sessão existe e está conectada no banco
+      const [sessao] = await db
+        .select()
+        .from(whatsappSessoes)
+        .where(eq(whatsappSessoes.id, sessaoId));
+
+      if (!sessao) {
+        return res.status(404).json({ 
+          error: 'Sessão não encontrada' 
+        });
+      }
+
+      if (sessao.status !== 'conectado') {
+        return res.status(400).json({ 
+          error: `Sessão não está conectada. Status atual: ${sessao.status}` 
+        });
+      }
+
+      // Verificar se a sessão está ativa na memória
+      if (!whatsappSessionManager.isSessionConnected(sessaoId)) {
+        console.log(`Sessão ${sessaoId} não está ativa na memória, tentando reconectar...`);
+        
+        // Tentar reconectar a sessão
+        const sessionReconectada = await whatsappSessionManager.initializeSession(sessaoId);
+        
+        if (!sessionReconectada) {
+          return res.status(400).json({ 
+            error: 'Falha ao reconectar sessão WhatsApp' 
+          });
+        }
+        
+        // Aguardar um pouco para a conexão se estabelecer
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Verificar novamente
+        if (!whatsappSessionManager.isSessionConnected(sessaoId)) {
+          return res.status(400).json({ 
+            error: 'Sessão WhatsApp não conseguiu se conectar' 
+          });
+        }
+      }
+
+      // Enviar mensagem
+      const enviado = await whatsappSessionManager.sendMessage(sessaoId, telefone, mensagem);
+      
+      if (enviado) {
+        res.json({ 
+          success: true, 
+          message: 'Mensagem enviada com sucesso!' 
+        });
+      } else {
+        res.status(400).json({ 
+          error: 'Falha ao enviar mensagem' 
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem direta:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/mensagens/enviar', async (req, res) => {
+    try {
+      const { sessaoId, candidatoId, telefone, mensagem } = req.body;
+      
+      if (!sessaoId || !mensagem || (!candidatoId && !telefone)) {
+        return res.status(400).json({ 
+          error: 'sessaoId, mensagem e (candidatoId ou telefone) são obrigatórios' 
+        });
+      }
+
+      // Verificar se a sessão está conectada
+      if (!whatsappSessionManager.isSessionConnected(sessaoId)) {
+        return res.status(400).json({ 
+          error: 'Sessão WhatsApp não está conectada' 
+        });
+      }
+
+      let resultado;
+      
+      if (candidatoId) {
+        // Enviar para candidato cadastrado
+        resultado = await whatsappService.enviarMensagem({
+          sessaoId,
+          candidatoId,
+          mensagem,
+          enviadoPor: 'sistema'
+        });
+      } else if (telefone) {
+        // Enviar para não candidato
+        resultado = await whatsappService.enviarMensagemParaTelefone({
+          sessaoId,
+          telefone,
+          mensagem,
+          enviadoPor: 'sistema'
+        });
+      }
+
+      if (resultado.success) {
+        res.json(resultado);
+      } else {
+        res.status(400).json(resultado);
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Deletar sessão
+  app.delete('/api/whatsapp/sessoes/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Desconectar sessão se estiver ativa
+      if (whatsappSessionManager.isSessionConnected(id)) {
+        await whatsappSessionManager.disconnectSession(id);
+      }
+      
+      // Deletar do banco
+      await db
+        .delete(whatsappSessoes)
+        .where(eq(whatsappSessoes.id, id));
+      
+      res.json({ success: true, message: 'Sessão deletada com sucesso' });
+    } catch (error) {
+      console.error('Erro ao deletar sessão:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Deletar todas as sessões
+  app.delete('/api/whatsapp/sessoes', async (req, res) => {
+    try {
+      // Desconectar todas as sessões ativas
+      const sessoesAtivas = whatsappSessionManager.getAllSessions();
+      for (const sessao of sessoesAtivas) {
+        await whatsappSessionManager.disconnectSession(sessao.id);
+      }
+      
+      // Deletar todas do banco
+      await db.delete(whatsappSessoes);
+      
+      res.json({ success: true, message: 'Todas as sessões foram deletadas' });
+    } catch (error) {
+      console.error('Erro ao deletar todas as sessões:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/whatsapp/sessoes/:id/conectar', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const sessao = await whatsappSessionManager.initializeSession(id);
+      
+      if (!sessao) {
+        return res.status(404).json({ error: 'Sessão não encontrada' });
+      }
+
+      // Aguardar um pouco para o QR Code ser gerado
+      setTimeout(async () => {
+        const qrCode = whatsappSessionManager.getSessionQRCode(id);
+        res.json({ 
+          success: true, 
+          sessao: {
+            id: sessao.id,
+            empresaId: sessao.empresaId,
+            nome: sessao.nome,
+            numero: sessao.numero,
+            status: sessao.status
+          },
+          qrCode,
+          message: qrCode ? 'QR Code gerado com sucesso' : 'Sessão já conectada'
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Erro ao conectar sessão:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 

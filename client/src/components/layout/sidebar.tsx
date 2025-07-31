@@ -24,7 +24,8 @@ import {
   ChevronRight,
   Edit,
   Tag,
-  Activity
+  Activity,
+  Smartphone
 } from "lucide-react";
 
 export function Sidebar() {
@@ -107,6 +108,12 @@ export function Sidebar() {
       name: "Entrevistas",
       href: "/entrevistas",
       icon: Calendar,
+      show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
+    },
+    {
+      name: "WhatsApp",
+      href: "/whatsapp",
+      icon: Smartphone,
       show: ["admin", "recrutador", "gestor"].includes(user?.perfil || ""),
     },
     {

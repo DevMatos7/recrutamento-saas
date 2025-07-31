@@ -42,6 +42,9 @@ import EmpresaVagasPage from './pages/empresa/[slug]';
 import PipelineEngagementPage from "@/pages/PipelineEngagementPage";
 import CandidateAssignmentPage from "@/pages/CandidateAssignmentPage";
 import VagaAssignmentManagerPage from "@/pages/VagaAssignmentManagerPage";
+import WhatsAppPage from "@/pages/whatsapp";
+import WhatsAppConversationPage from "@/pages/whatsapp-conversation";
+import WhatsAppTemplatesPage from "@/pages/whatsapp-templates";
 
 function Router() {
   return (
@@ -57,6 +60,9 @@ function Router() {
       <ProtectedRoute path="/avaliacao-disc" component={AvaliacaoDiscPage} />
       <ProtectedRoute path="/avaliacao-disc/editor" component={DiscEditor} />
       <ProtectedRoute path="/entrevistas" component={EntrevistasPage} />
+      <ProtectedRoute path="/whatsapp" component={WhatsAppPage} />
+      <ProtectedRoute path="/whatsapp/conversation" component={WhatsAppConversationPage} />
+      <ProtectedRoute path="/whatsapp/templates" component={WhatsAppTemplatesPage} />
       <ProtectedRoute path="/configuracoes/dashboard" component={Dashboard} />
       <ProtectedRoute path="/configuracoes/departamentos" component={DepartamentosPage} />
       <ProtectedRoute path="/configuracoes/empresas" component={EmpresasPage} />

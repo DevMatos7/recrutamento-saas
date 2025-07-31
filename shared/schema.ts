@@ -1271,3 +1271,220 @@ export type MetricaEngajamento = typeof metricasEngajamento.$inferSelect;
 export type InsertMetricaEngajamento = z.infer<typeof insertMetricaEngajamentoSchema>;
 export type CandidatoParado = typeof candidatosParados.$inferSelect;
 export type InsertCandidatoParado = z.infer<typeof insertCandidatoParadoSchema>;
+
+// ===== MÓDULO WHATSAPP =====
+
+// Sessão do WhatsApp
+export const whatsappSessoes = pgTable("whatsapp_sessoes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  nome: varchar("nome", { length: 255 }).notNull(), // Nome da sessão (ex: "RH Principal")
+  numero: varchar("numero", { length: 20 }).notNull(), // Número do WhatsApp
+  status: varchar("status", { length: 20 }).notNull().default("desconectado"), // conectado, desconectado, erro
+  dadosSessao: jsonb("dados_sessao"), // Dados da sessão Baileys
+  ultimaConexao: timestamp("ultima_conexao"),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().notNull(),
+});
+
+// Templates de mensagens
+export const templatesMensagem = pgTable("templates_mensagem", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  evento: varchar("evento", { length: 50 }).notNull(), // triagem_aprovada, entrevista_agendada, etc
+  corpo: text("corpo").notNull(), // Template com variáveis {{nome}}, {{vaga}}, etc
+  ativo: boolean("ativo").notNull().default(true),
+  criadoPor: uuid("criado_por").references(() => usuarios.id),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().notNull(),
+});
+
+// Respostas rápidas
+export const respostasRapidas = pgTable("respostas_rapidas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  evento: varchar("evento", { length: 50 }).notNull(),
+  opcao: varchar("opcao", { length: 10 }).notNull(), // "1", "2", "3", etc
+  texto: varchar("texto", { length: 255 }).notNull(), // "Confirmar entrevista"
+  acao: varchar("acao", { length: 50 }).notNull(), // confirmar_entrevista, remarcar, etc
+  ativo: boolean("ativo").notNull().default(true),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+});
+
+// Mensagens do WhatsApp
+export const mensagensWhatsapp = pgTable("mensagens_whatsapp", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  candidatoId: uuid("candidato_id").references(() => candidatos.id, { onDelete: "cascade" }),
+  sessaoId: uuid("sessao_id").notNull().references(() => whatsappSessoes.id),
+  telefone: varchar("telefone", { length: 20 }).notNull(),
+  tipo: varchar("tipo", { length: 20 }).notNull(), // enviada, recebida
+  evento: varchar("evento", { length: 50 }), // triagem_aprovada, entrevista_agendada, etc
+  mensagem: text("mensagem").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pendente"), // pendente, enviado, entregue, lido, erro
+  dadosAdicionais: jsonb("dados_adicionais"), // Dados extras (midia, etc)
+  dataEnvio: timestamp("data_envio").defaultNow().notNull(),
+  dataRecebimento: timestamp("data_recebimento"),
+  erro: text("erro"),
+  enviadoPor: uuid("enviado_por").references(() => usuarios.id),
+});
+
+// Fila de envio
+export const filaEnvio = pgTable("fila_envio", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id, { onDelete: "cascade" }),
+  sessaoId: uuid("sessao_id").notNull().references(() => whatsappSessoes.id),
+  evento: varchar("evento", { length: 50 }).notNull(),
+  mensagem: text("mensagem").notNull(),
+  dataAgendada: timestamp("data_agendada").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pendente"), // pendente, processado, erro
+  tentativas: integer("tentativas").notNull().default(0),
+  maxTentativas: integer("max_tentativas").notNull().default(3),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  processadoEm: timestamp("processado_em"),
+  erro: text("erro"),
+});
+
+// Configurações de horário
+export const configuracoesHorario = pgTable("configuracoes_horario", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  evento: varchar("evento", { length: 50 }).notNull(),
+  horaInicio: varchar("hora_inicio", { length: 5 }).notNull(), // "08:00"
+  horaFim: varchar("hora_fim", { length: 5 }).notNull(), // "18:00"
+  diasSemana: jsonb("dias_semana").notNull(), // [1,2,3,4,5] (segunda a sexta)
+  ativo: boolean("ativo").notNull().default(true),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+});
+
+// Intenções do chatbot
+export const intencoesChatbot = pgTable("intencoes_chatbot", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id").notNull().references(() => empresas.id),
+  nome: varchar("nome", { length: 100 }).notNull(), // "remarcar_entrevista"
+  descricao: varchar("descricao", { length: 255 }),
+  palavrasChave: jsonb("palavras_chave").notNull(), // ["remarcar", "adiar", "mudar data"]
+  acao: varchar("acao", { length: 50 }).notNull(), // "enviar_nova_agenda"
+  ativo: boolean("ativo").notNull().default(true),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+});
+
+// Logs de análise NLP
+export const logsNlp = pgTable("logs_nlp", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  candidatoId: uuid("candidato_id").notNull().references(() => candidatos.id),
+  mensagemOriginal: text("mensagem_original").notNull(),
+  intencaoDetectada: varchar("intencao_detectada", { length: 100 }),
+  confianca: decimal("confianca", { precision: 3, scale: 2 }), // 0.00 a 1.00
+  acaoExecutada: varchar("acao_executada", { length: 100 }),
+  dadosAnalise: jsonb("dados_analise"), // Dados completos da análise
+  dataAnalise: timestamp("data_analise").defaultNow().notNull(),
+});
+
+// Relations para WhatsApp
+export const whatsappSessoesRelations = relations(whatsappSessoes, ({ one, many }) => ({
+  empresa: one(empresas, {
+    fields: [whatsappSessoes.empresaId],
+    references: [empresas.id],
+  }),
+  mensagens: many(mensagensWhatsapp),
+  filaEnvio: many(filaEnvio),
+}));
+
+export const templatesMensagemRelations = relations(templatesMensagem, ({ one }) => ({
+  empresa: one(empresas, {
+    fields: [templatesMensagem.empresaId],
+    references: [empresas.id],
+  }),
+  criadoPor: one(usuarios, {
+    fields: [templatesMensagem.criadoPor],
+    references: [usuarios.id],
+  }),
+}));
+
+export const mensagensWhatsappRelations = relations(mensagensWhatsapp, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [mensagensWhatsapp.candidatoId],
+    references: [candidatos.id],
+  }),
+  sessao: one(whatsappSessoes, {
+    fields: [mensagensWhatsapp.sessaoId],
+    references: [whatsappSessoes.id],
+  }),
+  enviadoPor: one(usuarios, {
+    fields: [mensagensWhatsapp.enviadoPor],
+    references: [usuarios.id],
+  }),
+}));
+
+export const filaEnvioRelations = relations(filaEnvio, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [filaEnvio.candidatoId],
+    references: [candidatos.id],
+  }),
+  sessao: one(whatsappSessoes, {
+    fields: [filaEnvio.sessaoId],
+    references: [whatsappSessoes.id],
+  }),
+}));
+
+// Schemas para WhatsApp
+export const insertWhatsappSessaoSchema = createInsertSchema(whatsappSessoes).omit({
+  id: true,
+  criadoEm: true,
+  atualizadoEm: true,
+});
+
+export const insertTemplateMensagemSchema = createInsertSchema(templatesMensagem).omit({
+  id: true,
+  criadoEm: true,
+  atualizadoEm: true,
+});
+
+export const insertRespostaRapidaSchema = createInsertSchema(respostasRapidas).omit({
+  id: true,
+  criadoEm: true,
+});
+
+export const insertMensagemWhatsappSchema = createInsertSchema(mensagensWhatsapp).omit({
+  id: true,
+  dataEnvio: true,
+});
+
+export const insertFilaEnvioSchema = createInsertSchema(filaEnvio).omit({
+  id: true,
+  criadoEm: true,
+});
+
+export const insertConfiguracaoHorarioSchema = createInsertSchema(configuracoesHorario).omit({
+  id: true,
+  criadoEm: true,
+});
+
+export const insertIntencaoChatbotSchema = createInsertSchema(intencoesChatbot).omit({
+  id: true,
+  criadoEm: true,
+});
+
+export const insertLogNlpSchema = createInsertSchema(logsNlp).omit({
+  id: true,
+  dataAnalise: true,
+});
+
+// Tipos para WhatsApp
+export type WhatsappSessao = typeof whatsappSessoes.$inferSelect;
+export type InsertWhatsappSessao = z.infer<typeof insertWhatsappSessaoSchema>;
+export type TemplateMensagem = typeof templatesMensagem.$inferSelect;
+export type InsertTemplateMensagem = z.infer<typeof insertTemplateMensagemSchema>;
+export type RespostaRapida = typeof respostasRapidas.$inferSelect;
+export type InsertRespostaRapida = z.infer<typeof insertRespostaRapidaSchema>;
+export type MensagemWhatsapp = typeof mensagensWhatsapp.$inferSelect;
+export type InsertMensagemWhatsapp = z.infer<typeof insertMensagemWhatsappSchema>;
+export type FilaEnvio = typeof filaEnvio.$inferSelect;
+export type InsertFilaEnvio = z.infer<typeof insertFilaEnvioSchema>;
+export type ConfiguracaoHorario = typeof configuracoesHorario.$inferSelect;
+export type InsertConfiguracaoHorario = z.infer<typeof insertConfiguracaoHorarioSchema>;
+export type IntencaoChatbot = typeof intencoesChatbot.$inferSelect;
+export type InsertIntencaoChatbot = z.infer<typeof insertIntencaoChatbotSchema>;
+export type LogNlp = typeof logsNlp.$inferSelect;
+export type InsertLogNlp = z.infer<typeof insertLogNlpSchema>;

@@ -39,11 +39,20 @@ export default defineConfig({
     },
     proxy: {
       "/ia": {
-        target: "http://localhost:5000",
+        target: "http://192.168.77.3:5000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api": {
+        target: "http://192.168.77.3:5000",
         changeOrigin: true,
         secure: false,
       },
       // Adicione outras rotas de API aqui se necessário
     },
+    hmr: {
+      port: 24678,
+      host: 'localhost'
+    }
   },
 });

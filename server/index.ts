@@ -7,15 +7,22 @@ import cron from "node-cron";
 import { EntrevistaService } from "./services/entrevista-service";
 import { CommunicationService } from "./services/communication-service";
 import cors from 'cors';
+import { createServer } from 'http';
+
+// Importar serviços do WhatsApp
+import { filaEnvioService } from "./cron/filaEnvio";
+import { whatsappSessionManager } from "./whatsapp/session";
+import { seedWhatsApp } from "./seed-whatsapp";
+import { initializeWebSocket } from "./websocket";
 
 const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://192.168.77.3:5000', 'http://localhost:5000', 'http://localhost:3000'],
+  origin: ['http://192.168.77.3:5000', 'http://localhost:5000', 'http://localhost:3000', 'http://192.168.77.3:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Desabilitar ETag para evitar respostas 304 e garantir sempre status 200
@@ -58,7 +65,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  const server = createServer(app);
+  await registerRoutes(app);
+  
+  // Inicializar WebSocket
+  initializeWebSocket(server);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -71,7 +82,7 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  if (app.get("env") === "development" && process.env.USE_INTEGRATED_VITE === "true") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
@@ -90,6 +101,20 @@ app.use((req, res, next) => {
     // Initialize database with seed data
     try {
       await seedDatabase();
+      
+      // Inicializar módulo WhatsApp
+      try {
+        await seedWhatsApp();
+        console.log("✅ Módulo WhatsApp inicializado com sucesso");
+        
+        // Iniciar serviço de fila de envio
+        filaEnvioService.reiniciar();
+        console.log("✅ Serviço de fila de envio WhatsApp iniciado");
+        
+      } catch (error) {
+        console.error("❌ Erro ao inicializar módulo WhatsApp:", error);
+      }
+      
     } catch (error) {
       console.error("Failed to seed database, but server will continue:", error);
     }

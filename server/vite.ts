@@ -27,8 +27,12 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true,
+    hmr: { 
+      server,
+      port: 24678,
+      host: 'localhost'
+    },
+    allowedHosts: ['localhost', '192.168.77.3'],
   };
 
   const vite = await createViteServer({
@@ -74,12 +78,16 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  const distPath = path.resolve(__dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
+    // Em desenvolvimento, redirecionar para uma mensagem de erro amigável
+    app.use("*", (_req, res) => {
+      res.status(404).json({ 
+        error: "Frontend not built. Run 'npm run build' first or use 'npm run dev:frontend' for development." 
+      });
+    });
+    return;
   }
 
   app.use(express.static(distPath));
