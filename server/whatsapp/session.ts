@@ -268,11 +268,16 @@ class WhatsAppSessionManager {
 
       if (connection === 'open') {
         console.log(`Sessão ${sessaoId} conectada com sucesso!`);
+        
+        // Atualizar status na memória e no banco
+        const session = this.sessions.get(sessaoId);
+        if (session) {
+          session.status = 'conectado';
+        }
         await this.updateSessionStatus(sessaoId, 'conectado');
         
         // Salvar o número do WhatsApp
         try {
-          const session = this.sessions.get(sessaoId);
           if (session?.sock) {
             const me = session.sock.user;
             if (me?.id) {
@@ -300,6 +305,12 @@ class WhatsAppSessionManager {
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         
+        // Atualizar status na memória
+        const session = this.sessions.get(sessaoId);
+        if (session) {
+          session.status = 'desconectado';
+        }
+        
         if (statusCode === DisconnectReason.restartRequired) {
           console.log(`Sessão ${sessaoId} requer reinicialização após scan do QR Code`);
           // Criar nova sessão após scan do QR Code
@@ -321,13 +332,19 @@ class WhatsAppSessionManager {
     sock.ev.on('messages.upsert', async (m) => {
       console.log('Mensagem recebida:', JSON.stringify(m, undefined, 2));
       
-      // Processar mensagens recebidas
+      // Processar apenas mensagens recebidas (não enviadas por nós)
       if (m.type === 'notify') {
         for (const msg of m.messages) {
+          // Verificar se a mensagem NÃO foi enviada por nós
           if (!msg.key.fromMe) {
+            console.log('📨 Processando mensagem recebida de terceiros');
             await this.handleIncomingMessage(sessaoId, msg);
+          } else {
+            console.log('📤 Ignorando mensagem enviada por nós (fromMe: true)');
           }
         }
+      } else if (m.type === 'append') {
+        console.log('📤 Mensagem enviada por nós (append) - não processar como recebida');
       }
     });
 
@@ -408,8 +425,46 @@ class WhatsAppSessionManager {
   // Processar atualização de status de mensagem
   private async handleMessageStatusUpdate(sessaoId: string, update: any) {
     try {
-      // Atualizar status da mensagem no banco
-      // Implementar conforme necessário
+      console.log('📊 Atualização de status de mensagem:', update);
+      
+      const { mensagensWhatsapp } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      // Mapear status do WhatsApp para nosso sistema
+      const statusMap: { [key: number]: string } = {
+        1: 'pendente',
+        2: 'enviado',
+        3: 'entregue',
+        4: 'lido'
+      };
+      
+      const status = statusMap[update.update.status] || 'enviado';
+      
+      // Atualizar status no banco
+      await db
+        .update(mensagensWhatsapp)
+        .set({ 
+          status
+        })
+        .where(eq(mensagensWhatsapp.id, update.key.id));
+      
+      // Notificar via WebSocket
+      try {
+        const { wsService } = await import('../websocket');
+        if (wsService) {
+          wsService.broadcastToAll({
+            type: 'message_status_update',
+            data: {
+              mensagemId: update.key.id,
+              status,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao notificar WebSocket:', error);
+      }
+      
     } catch (error) {
       console.error('Erro ao processar atualização de status:', error);
     }
@@ -456,6 +511,21 @@ class WhatsAppSessionManager {
       });
       
       console.log(`✅ Mensagem salva: ${telefone} - ${mensagem.substring(0, 50)}...`);
+      
+      // Notificar via WebSocket
+      try {
+        const { wsService } = await import('../websocket');
+        if (wsService) {
+          wsService.notifyNewMessage(sessaoId, candidatoId || telefone, {
+            candidatoId,
+            telefone,
+            mensagem,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao notificar WebSocket:', error);
+      }
     } catch (error) {
       console.error('Erro ao salvar mensagem recebida:', error);
     }
@@ -579,7 +649,16 @@ class WhatsAppSessionManager {
   // Verificar se sessão está conectada
   isSessionConnected(sessaoId: string): boolean {
     const session = this.sessions.get(sessaoId);
-    return session?.status === 'conectado' || false;
+    const isConnected = session?.status === 'conectado' && session?.sock;
+    
+    console.log(`🔍 Verificação de conexão para sessão ${sessaoId}:`, {
+      exists: !!session,
+      status: session?.status,
+      hasSock: !!session?.sock,
+      isConnected
+    });
+    
+    return isConnected;
   }
 
   // Obter QR Code da sessão

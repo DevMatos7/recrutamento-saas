@@ -5523,7 +5523,33 @@ app.post('/api/webhook/evento-recrutamento', validateWebhook, async (req, res) =
 
   app.post('/api/whatsapp/mensagens/enviar', async (req, res) => {
     try {
-      const resultado = await whatsappService.enviarMensagem(req.body);
+      const { sessaoId, candidatoId, telefone, mensagem } = req.body;
+      
+      if (!sessaoId || !mensagem || (!candidatoId && !telefone)) {
+        return res.status(400).json({ 
+          error: 'sessaoId, mensagem e (candidatoId ou telefone) são obrigatórios' 
+        });
+      }
+
+      let resultado;
+      
+      if (candidatoId) {
+        // Enviar para candidato cadastrado
+        resultado = await whatsappService.enviarMensagem({
+          sessaoId,
+          candidatoId,
+          mensagem,
+          enviadoPor: 'sistema'
+        });
+      } else if (telefone) {
+        // Enviar para não candidato
+        resultado = await whatsappService.enviarMensagemParaTelefone({
+          sessaoId,
+          telefone,
+          mensagem,
+          enviadoPor: 'sistema'
+        });
+      }
       
       if (resultado.success) {
         res.json(resultado);

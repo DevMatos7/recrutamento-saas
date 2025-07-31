@@ -127,9 +127,19 @@ export class WebSocketService {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    // Enviar histórico de mensagens do candidato
+    // Verificar se é um candidatoId válido (UUID) ou telefone
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.candidatoId);
+    
     try {
-      const historico = await whatsappService.obterHistorico(data.candidatoId);
+      let historico;
+      
+      if (isUUID) {
+        // É um candidatoId válido
+        historico = await whatsappService.obterHistorico(data.candidatoId);
+      } else {
+        // É um telefone (não candidato)
+        historico = await whatsappService.obterHistoricoPorTelefone(data.candidatoId);
+      }
       
       client.ws.send(JSON.stringify({
         type: 'candidato_historico',
@@ -139,7 +149,7 @@ export class WebSocketService {
         }
       }));
     } catch (error) {
-      console.error('Erro ao obter histórico do candidato:', error);
+      console.error('Erro ao obter histórico:', error);
     }
   }
 
@@ -237,12 +247,23 @@ export class WebSocketService {
   }
 
   public notifyNewMessage(sessionId: string, candidatoId: string, mensagem: any) {
-    this.broadcastToSession(sessionId, {
-      type: 'new_message',
-      data: {
-        candidatoId,
-        mensagem,
-        timestamp: new Date().toISOString()
+    console.log(`📡 Notificando nova mensagem: sessão=${sessionId}, candidato=${candidatoId}`);
+    
+    // Determinar se é um candidato (UUID) ou telefone
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidatoId);
+    
+    // Enviar para todos os clientes conectados
+    this.clients.forEach((client, clientId) => {
+      if (client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify({
+          type: 'new_message',
+          data: {
+            candidatoId: isUUID ? candidatoId : null,
+            telefone: isUUID ? null : candidatoId,
+            mensagem: mensagem.mensagem || mensagem,
+            timestamp: new Date().toISOString()
+          }
+        }));
       }
     });
   }

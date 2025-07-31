@@ -90,16 +90,8 @@ export class WhatsAppService {
         })
         .returning();
 
-      // Notificar via WebSocket
-      if (wsService) {
-        wsService.notifyNewMessage(data.sessaoId, data.candidatoId, {
-          id: mensagemSalva.id,
-          tipo: 'enviada',
-          mensagem: data.mensagem,
-          status: 'enviado',
-          dataEnvio: new Date().toISOString()
-        });
-      }
+      // Não notificar via WebSocket para mensagens enviadas por nós
+      // O frontend já adiciona a mensagem temporariamente e atualiza via API
 
       return { 
         success: true, 
@@ -124,8 +116,21 @@ export class WhatsAppService {
     enviadoPor?: string;
   }): Promise<{ success: boolean; error?: string; mensagemId?: string }> {
     try {
+      console.log(`🔍 Verificando sessão: ${data.sessaoId}`);
+      
       // Verificar se a sessão está conectada
-      if (!whatsappSessionManager.isSessionConnected(data.sessaoId)) {
+      const isConnected = whatsappSessionManager.isSessionConnected(data.sessaoId);
+      console.log(`📱 Status da sessão: ${isConnected ? 'conectado' : 'desconectado'}`);
+      
+      if (!isConnected) {
+        // Verificar se a sessão existe na memória
+        const session = whatsappSessionManager.getSession(data.sessaoId);
+        console.log(`📋 Sessão na memória:`, session ? {
+          id: session.id,
+          status: session.status,
+          hasSock: !!session.sock
+        } : 'não encontrada');
+        
         return { success: false, error: 'Sessão WhatsApp não está conectada' };
       }
 
@@ -151,21 +156,13 @@ export class WhatsAppService {
           evento: data.evento,
           mensagem: data.mensagem,
           status: 'enviado',
-          enviadoPor: data.enviadoPor,
+          enviadoPor: null, // Não temos usuário específico para mensagens do sistema
           dataEnvio: new Date()
         })
         .returning();
 
-      // Notificar via WebSocket
-      if (wsService) {
-        wsService.notifyNewMessage(data.sessaoId, data.telefone, {
-          id: mensagemSalva.id,
-          tipo: 'enviada',
-          mensagem: data.mensagem,
-          status: 'enviado',
-          dataEnvio: new Date().toISOString()
-        });
-      }
+      // Não notificar via WebSocket para mensagens enviadas por nós
+      // O frontend já adiciona a mensagem temporariamente e atualiza via API
 
       return { 
         success: true, 

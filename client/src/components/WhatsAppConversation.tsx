@@ -95,6 +95,10 @@ export default function WhatsAppConversation() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Refs para estado síncrono
+  const selectedCandidatoRef = useRef<string>('');
+  const selectedTelefoneRef = useRef<string>('');
 
   // Conectar WebSocket
   useEffect(() => {
@@ -161,22 +165,57 @@ export default function WhatsAppConversation() {
         break;
       
       case 'new_message':
-        if (message.data.candidatoId === selectedCandidato) {
+        console.log('📨 Nova mensagem recebida via WebSocket:', message.data);
+        console.log('🔍 Estado atual (refs):', { 
+          selectedCandidato: selectedCandidatoRef.current, 
+          selectedTelefone: selectedTelefoneRef.current 
+        });
+        console.log('🔍 Comparação detalhada:', {
+          'message.data.candidatoId': message.data.candidatoId,
+          'selectedCandidato': selectedCandidatoRef.current,
+          'message.data.telefone': message.data.telefone,
+          'selectedTelefone': selectedTelefoneRef.current,
+          'candidatoId_match': message.data.candidatoId === selectedCandidatoRef.current,
+          'telefone_match': message.data.telefone === selectedTelefoneRef.current,
+          'candidatoId_type': typeof message.data.candidatoId,
+          'selectedCandidato_type': typeof selectedCandidatoRef.current,
+          'telefone_type': typeof message.data.telefone,
+          'selectedTelefone_type': typeof selectedTelefoneRef.current
+        });
+        
+        // Verificar se a mensagem é para o candidato ou telefone selecionado (usando refs)
+        const isForSelectedConversation = 
+          (message.data.candidatoId === selectedCandidatoRef.current) || 
+          (message.data.telefone === selectedTelefoneRef.current);
+        
+        console.log('✅ É para conversa selecionada?', isForSelectedConversation);
+        
+        if (isForSelectedConversation) {
+          console.log('📝 Adicionando mensagem ao histórico...');
           // Adicionar nova mensagem ao histórico
           const novaMensagem: Mensagem = {
             id: Date.now().toString(),
-            candidatoId: message.data.candidatoId,
-            telefone: '',
+            candidatoId: message.data.candidatoId || '',
+            telefone: message.data.telefone || '',
             tipo: 'recebida',
             mensagem: message.data.mensagem,
             status: 'recebido',
             dataEnvio: message.data.timestamp
           };
           setMensagens(prev => [...prev, novaMensagem]);
+        } else {
+          console.log('❌ Mensagem não é para conversa selecionada');
+          console.log('💡 Dica: Verifique se o telefone selecionado corresponde ao da mensagem');
         }
+        
+        // Atualizar lista de conversas
+        setTimeout(() => {
+          atualizarListaConversas();
+        }, 100);
         break;
       
       case 'message_sent':
+        console.log('📤 Mensagem enviada via WebSocket:', message.data);
         if (message.data.success) {
           // Atualizar status da mensagem enviada
           setMensagens(prev => prev.map(msg => 
@@ -187,6 +226,16 @@ export default function WhatsAppConversation() {
         }
         break;
       
+      case 'message_status_update':
+        console.log('📊 Atualização de status:', message.data);
+        // Atualizar status da mensagem (entregue, lido, etc.)
+        setMensagens(prev => prev.map(msg => 
+          msg.id === message.data.mensagemId 
+            ? { ...msg, status: message.data.status }
+            : msg
+        ));
+        break;
+      
       case 'candidato_historico':
         if (message.data.candidatoId === selectedCandidato) {
           setMensagens(message.data.historico);
@@ -195,6 +244,19 @@ export default function WhatsAppConversation() {
       
       default:
         console.log('Mensagem WebSocket não tratada:', message.type);
+    }
+  };
+
+  const atualizarListaConversas = async () => {
+    try {
+      console.log('🔄 Atualizando lista de conversas...');
+      const conversasResponse = await fetch('/api/whatsapp/conversas', {
+        credentials: 'include'
+      });
+      const conversasData = await conversasResponse.json();
+      setConversas(conversasData);
+    } catch (error) {
+      console.error('Erro ao atualizar conversas:', error);
     }
   };
 
@@ -271,8 +333,15 @@ export default function WhatsAppConversation() {
   const selecionarConversa = async (telefone: string, candidatoId?: string) => {
     if (!ws || !connected) return;
     
+    console.log('🎯 Selecionando conversa:', { telefone, candidatoId });
+    
+    // Atualizar estado e refs simultaneamente
     setSelectedTelefone(telefone);
     setSelectedCandidato(candidatoId || '');
+    selectedTelefoneRef.current = telefone;
+    selectedCandidatoRef.current = candidatoId || '';
+    
+    console.log('📋 Estado após seleção:', { selectedTelefone: telefone, selectedCandidato: candidatoId || '' });
     
     // Carregar histórico de mensagens
     try {
@@ -302,8 +371,11 @@ export default function WhatsAppConversation() {
 
   const enviarMensagem = async () => {
     if (!novaMensagem.trim() || !selectedSession || (!selectedCandidato && !selectedTelefone)) {
+      console.log('❌ Validação falhou:', { novaMensagem: novaMensagem.trim(), selectedSession, selectedCandidato, selectedTelefone });
       return;
     }
+    
+    console.log('📤 Enviando mensagem:', { selectedCandidato, selectedTelefone, novaMensagem });
     
     const mensagemTemp: Mensagem = {
       id: Date.now().toString(),
@@ -319,6 +391,15 @@ export default function WhatsAppConversation() {
     setMensagens(prev => [...prev, mensagemTemp]);
     
     try {
+      const requestBody = {
+        sessaoId: selectedSession,
+        candidatoId: selectedCandidato || null,
+        telefone: selectedTelefone || null,
+        mensagem: novaMensagem
+      };
+      
+      console.log('📡 Enviando requisição:', requestBody);
+      
       // Enviar via API
       const response = await fetch('/api/whatsapp/mensagens/enviar', {
         method: 'POST',
@@ -326,12 +407,7 @@ export default function WhatsAppConversation() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          sessaoId: selectedSession,
-          candidatoId: selectedCandidato || null,
-          telefone: selectedTelefone || null,
-          mensagem: novaMensagem
-        })
+        body: JSON.stringify(requestBody)
       });
       
       const resultado = await response.json();
